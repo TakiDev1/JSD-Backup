@@ -31,6 +31,7 @@ function Router() {
   const { data: settings } = useQuery({
     queryKey: ['/api/admin/settings'],
     queryFn: () => apiRequest("GET", "/api/admin/settings"),
+    refetchInterval: 5000, // Check every 5 seconds
   });
 
   const showMaintenance = settings?.maintenanceMode && !settings?.isAdmin;

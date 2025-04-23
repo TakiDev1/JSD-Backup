@@ -41,58 +41,58 @@ const ModDetailsPage = () => {
   // Fetch mod details and versions
   const { data: modDetails, isLoading, error } = useModDetails(id);
   const { data: versions } = useModVersions(id);
-  
+
   const mod = modDetails?.mod || modDetails;
   const latestVersion = modDetails?.latestVersion || versions?.[0];
-  const reviews = modDetails?.reviews || [];
+  // reviews variable is removed as the reviews section is removed
 
-  // Find user's existing review
-  const userReview = reviews.find((review: Review) => review.userId === user?.id);
+  // Find user's existing review - Removed as reviews section is removed
+  //const userReview = reviews.find((review: Review) => review.userId === user?.id);
 
-  // Review form
-  const form = useForm<ReviewFormValues>({
-    resolver: zodResolver(reviewFormSchema),
-    defaultValues: {
-      rating: userReview?.rating || 0,
-      comment: userReview?.comment || "",
-    },
-  });
+  // Review form - Removed as reviews section is removed
+  // const form = useForm<ReviewFormValues>({
+  //   resolver: zodResolver(reviewFormSchema),
+  //   defaultValues: {
+  //     rating: userReview?.rating || 0,
+  //     comment: userReview?.comment || "",
+  //   },
+  // });
 
-  // Update form when user review changes
-  useEffect(() => {
-    if (userReview) {
-      form.reset({
-        rating: userReview.rating,
-        comment: userReview.comment || "",
-      });
-    }
-  }, [userReview, form]);
+  // Update form when user review changes - Removed as reviews section is removed
+  // useEffect(() => {
+  //   if (userReview) {
+  //     form.reset({
+  //       rating: userReview.rating,
+  //       comment: userReview.comment || "",
+  //     });
+  //   }
+  // }, [userReview, form]);
 
-  // Review mutations
-  const createReviewMutation = useCreateReview();
-  const updateReviewMutation = useUpdateReview();
+  // Review mutations - Removed as reviews section is removed
+  // const createReviewMutation = useCreateReview();
+  // const updateReviewMutation = useUpdateReview();
 
-  // Handle form submission
-  const onSubmit = (values: ReviewFormValues) => {
-    if (userReview) {
-      updateReviewMutation.mutate({
-        reviewId: userReview.id,
-        modId: id,
-        rating: values.rating,
-        comment: values.comment,
-      }, {
-        onSuccess: () => setIsReviewDialogOpen(false)
-      });
-    } else {
-      createReviewMutation.mutate({
-        modId: id,
-        rating: values.rating,
-        comment: values.comment,
-      }, {
-        onSuccess: () => setIsReviewDialogOpen(false)
-      });
-    }
-  };
+  // Handle form submission - Removed as reviews section is removed
+  // const onSubmit = (values: ReviewFormValues) => {
+  //   if (userReview) {
+  //     updateReviewMutation.mutate({
+  //       reviewId: userReview.id,
+  //       modId: id,
+  //       rating: values.rating,
+  //       comment: values.comment,
+  //     }, {
+  //       onSuccess: () => setIsReviewDialogOpen(false)
+  //     });
+  //   } else {
+  //     createReviewMutation.mutate({
+  //       modId: id,
+  //       rating: values.rating,
+  //       comment: values.comment,
+  //     }, {
+  //       onSuccess: () => setIsReviewDialogOpen(false)
+  //     });
+  //   }
+  // };
 
   // Check if mod is in cart
   const inCart = isModInCart(id);
@@ -157,19 +157,18 @@ const ModDetailsPage = () => {
             <TabsList className="w-full">
               <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
               <TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger>
-              <TabsTrigger value="reviews" className="flex-1">Reviews ({reviews.length})</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="overview" className="mt-6">
               <h2 className="text-2xl font-display font-bold text-white mb-4">Description</h2>
               <div className="text-neutral-light mb-8 whitespace-pre-wrap">
                 {mod.description}
               </div>
-              
+
               <Button variant="outline" onClick={() => setIsARPreviewOpen(true)} className="mb-8">
                 <Eye className="mr-2 h-4 w-4" /> View AR Preview
               </Button>
-              
+
               <h3 className="text-xl font-display font-bold text-white mb-4">Features</h3>
               <ul className="list-disc list-inside text-neutral-light mb-8 ml-4">
                 <li>High-quality 3D model with detailed textures</li>
@@ -179,7 +178,7 @@ const ModDetailsPage = () => {
                 <li>Regular updates and improvements</li>
               </ul>
             </TabsContent>
-            
+
             <TabsContent value="versions" className="mt-6">
               <h2 className="text-2xl font-display font-bold text-white mb-4">Version History</h2>
               {!versions || versions.length === 0 ? (
@@ -204,7 +203,7 @@ const ModDetailsPage = () => {
                           {(version.fileSize / 1024 / 1024).toFixed(2)} MB
                         </Badge>
                       </div>
-                      
+
                       {version.changelog && (
                         <div className="text-neutral-light text-sm whitespace-pre-wrap">
                           {version.changelog}
@@ -215,55 +214,13 @@ const ModDetailsPage = () => {
                 </div>
               )}
             </TabsContent>
-            
-            <TabsContent value="reviews" className="mt-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-display font-bold text-white">Customer Reviews</h2>
-                {isAuthenticated && (
-                  <Button onClick={() => setIsReviewDialogOpen(true)}>
-                    {userReview ? "Edit Review" : "Write a Review"}
-                  </Button>
-                )}
-              </div>
-              
-              {reviews.length === 0 ? (
-                <p className="text-neutral-light">No reviews yet. Be the first to review this mod!</p>
-              ) : (
-                <div className="space-y-6">
-                  {reviews.map((review: Review) => (
-                    <div key={review.id} className="bg-dark-card p-6 rounded-xl border border-dark-card">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center">
-                            <Rating value={review.rating} readOnly />
-                            <span className="ml-2 text-white font-medium">
-                              {review.rating.toFixed(1)}
-                            </span>
-                          </div>
-                          <p className="text-neutral text-sm">
-                            {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-                          </p>
-                        </div>
-                        {review.userId === user?.id && (
-                          <Badge variant="outline" className="text-primary">Your Review</Badge>
-                        )}
-                      </div>
-                      
-                      {review.comment && (
-                        <p className="text-neutral-light">{review.comment}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
           </Tabs>
         </div>
-        
+
         <div className="lg:col-span-1">
           <div className="bg-dark-card p-6 rounded-xl sticky top-24">
             <h1 className="text-3xl font-display font-bold text-white mb-2">{mod.title}</h1>
-            
+
             <div className="flex items-center mb-4">
               <Rating value={mod.averageRating} readOnly />
               <span className="ml-2 text-white">
@@ -272,16 +229,16 @@ const ModDetailsPage = () => {
               <span className="mx-2 text-neutral">•</span>
               <span className="text-neutral">{mod.downloadCount} downloads</span>
             </div>
-            
+
             <div className="flex flex-wrap gap-2 mb-6">
               <Badge variant="outline" className="bg-dark text-secondary">{mod.category}</Badge>
               {mod.tags && mod.tags.map((tag: string) => (
                 <Badge key={tag} variant="outline" className="bg-dark text-secondary">{tag}</Badge>
               ))}
             </div>
-            
+
             <Separator className="mb-6" />
-            
+
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span className="text-neutral-light flex items-center">
@@ -291,7 +248,7 @@ const ModDetailsPage = () => {
                   {latestVersion?.version || "N/A"}
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-neutral-light flex items-center">
                   <Calendar className="mr-2 h-4 w-4" /> Released
@@ -302,7 +259,7 @@ const ModDetailsPage = () => {
                     formatDistanceToNow(new Date(mod.createdAt), { addSuffix: true })}
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-neutral-light flex items-center">
                   <Tag className="mr-2 h-4 w-4" /> Price
@@ -321,7 +278,7 @@ const ModDetailsPage = () => {
                 </span>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               {mod.isSubscriptionOnly ? (
                 <Button
@@ -340,7 +297,7 @@ const ModDetailsPage = () => {
                   {inCart ? "Added to Cart" : "Add to Cart"}
                 </Button>
               )}
-              
+
               {user && (
                 <Button
                   variant="outline"
@@ -350,7 +307,7 @@ const ModDetailsPage = () => {
                   <Download className="mr-2 h-4 w-4" /> Download Now
                 </Button>
               )}
-              
+
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1">
                   <Heart className="mr-2 h-4 w-4" /> Wishlist
@@ -363,78 +320,6 @@ const ModDetailsPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Review Dialog */}
-      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
-        <DialogContent className="bg-dark-card">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display font-bold">
-              {userReview ? "Edit your review" : "Write a review"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rating</FormLabel>
-                    <FormControl>
-                      <Rating
-                        value={field.value}
-                        onChange={field.onChange}
-                        size="large"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="comment"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Review (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Share your experience with this mod..."
-                        className="h-32 bg-dark resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsReviewDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createReviewMutation.isPending || updateReviewMutation.isPending}
-                >
-                  {createReviewMutation.isPending || updateReviewMutation.isPending ? (
-                    <span className="flex items-center">
-                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                      Submitting...
-                    </span>
-                  ) : userReview ? "Update Review" : "Submit Review"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
 
       {/* AR Preview Dialog */}
       <Dialog open={isARPreviewOpen} onOpenChange={setIsARPreviewOpen}>
