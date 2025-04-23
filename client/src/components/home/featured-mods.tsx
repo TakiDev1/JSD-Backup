@@ -46,7 +46,7 @@ const FeaturedMods = () => {
         card.removeEventListener('mouseleave', () => handleMouseLeave(card));
       });
     };
-  }, [data]);
+  }, [modsData]);
   
   const handleAddToCart = async (modId: number, e: React.MouseEvent) => {
     e.preventDefault();
