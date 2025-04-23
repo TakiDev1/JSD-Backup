@@ -52,7 +52,11 @@ function AdminRoute({ path, component: Component }: AdminRouteProps) {
     );
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <Route path={path}>
+      <Component />
+    </Route>
+  );
 }
 
 export default AdminRoute;

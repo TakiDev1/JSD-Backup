@@ -25,7 +25,7 @@ const AdminDashboard = () => {
   const queryClient = useQueryClient();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   
-  // Get site stats
+  // Get site stats - only fetch if user is authenticated and admin
   const { data: stats = { 
     users: 0, 
     mods: 0, 
@@ -36,18 +36,21 @@ const AdminDashboard = () => {
   }, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
     queryFn: getQueryFn,
+    enabled: !!user && isAdmin,
   });
   
-  // Get site settings
+  // Get site settings - only fetch if user is authenticated and admin
   const { data: settings = { maintenanceMode: false }, isLoading: settingsLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
     queryFn: getQueryFn,
+    enabled: !!user && isAdmin,
   });
   
-  // Recent activity
+  // Recent activity - only fetch if user is authenticated and admin
   const { data: activityData = { activity: [] }, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
     queryFn: getQueryFn,
+    enabled: !!user && isAdmin,
   });
   
   const recentActivity = activityData.activity || [];
