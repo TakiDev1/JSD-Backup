@@ -19,6 +19,7 @@ import Subscribe from "@/pages/subscribe";
 import Forum from "@/pages/forum";
 import Profile from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
+import Login from "@/pages/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/forum/:categoryId" component={Forum} />
       <Route path="/forum/thread/:id" component={Forum} />
       <Route path="/profile" component={Profile} />
+      <Route path="/login" component={Login} />
       <Route path="/admin-login" component={AdminLogin} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
