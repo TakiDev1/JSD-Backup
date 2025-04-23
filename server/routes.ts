@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { z } from "zod";
 import {
