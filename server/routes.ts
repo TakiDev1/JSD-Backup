@@ -65,6 +65,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin login route
+  app.post("/api/auth/admin-login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Find admin user
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+      
+      // Verify password - only if the user has a password set
+      if (user.password) {
+        const passwordValid = await comparePasswords(password, user.password);
+        
+        if (!passwordValid) {
+          return res.status(401).json({ message: "Invalid admin credentials" });
+        }
+      } else {
+        // If the admin user doesn't have a password yet (initial login), set it
+        const hashedPassword = await hashPassword(password);
+        await storage.updateUser(user.id, { password: hashedPassword });
+      }
+      
+      // Login the user
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login error" });
+        }
+        
+        // Log this login
+        storage.logAdminActivity({
+          userId: user.id,
+          action: "Admin Login",
+          details: `Admin login for ${username}`,
+          ipAddress: req.ip
+        });
+        
+        // Don't send password back to client
+        const userWithoutPassword = { ...user };
+        delete userWithoutPassword.password;
+        
+        res.json({ success: true, user: userWithoutPassword });
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.post("/api/auth/logout", (req, res) => {
     req.logout(() => {
       res.json({ success: true });

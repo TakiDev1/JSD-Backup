@@ -5,7 +5,26 @@ import session from 'express-session';
 import MemoryStore from 'memorystore';
 import { Express } from 'express';
 import crypto from 'crypto';
+import { promisify } from 'util';
 import { storage } from './storage';
+
+// Password hashing with scrypt
+const scryptAsync = promisify(crypto.scrypt);
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${derivedKey.toString('hex')}.${salt}`;
+}
+
+export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+  const [hashedPassword, salt] = stored.split('.');
+  const derivedKey = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return crypto.timingSafeEqual(
+    Buffer.from(hashedPassword, 'hex'),
+    derivedKey
+  );
+}
 
 // Discord OAuth scopes
 const DISCORD_SCOPES = ['identify', 'email'];
