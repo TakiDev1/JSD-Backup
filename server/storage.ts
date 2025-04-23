@@ -203,11 +203,11 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (params.featured !== undefined) {
-        query = query.where(eq(mods.featured, params.featured ? 1 : 0));
+        query = query.where(eq(mods.isFeatured, params.featured));
       }
       
       if (params.subscriptionOnly !== undefined) {
-        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly ? 1 : 0));
+        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
       if (params.limit) {
@@ -237,11 +237,11 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (params.featured !== undefined) {
-        query = query.where(eq(mods.featured, params.featured ? 1 : 0));
+        query = query.where(eq(mods.isFeatured, params.featured));
       }
       
       if (params.subscriptionOnly !== undefined) {
-        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly ? 1 : 0));
+        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
     }
     
@@ -271,14 +271,14 @@ export class DatabaseStorage implements IStorage {
 
   async getLatestModVersion(modId: number): Promise<schema.ModVersion | undefined> {
     const result = await db.select().from(modVersions)
-      .where(and(eq(modVersions.modId, modId), eq(modVersions.isLatest, 1)));
+      .where(and(eq(modVersions.modId, modId), eq(modVersions.isLatest, true)));
     return result[0];
   }
 
   async createModVersion(version: schema.InsertModVersion): Promise<schema.ModVersion> {
     // First, set all existing versions to non-latest
     await db.update(modVersions)
-      .set({ isLatest: 0 })
+      .set({ isLatest: false })
       .where(eq(modVersions.modId, version.modId));
     
     // Insert the new version
@@ -467,7 +467,7 @@ export class DatabaseStorage implements IStorage {
     
     // Get total revenue
     const revenueResult = await db.select({
-      sum: sql`SUM(${purchases.amount})`
+      sum: sql`SUM(${purchases.price})`
     }).from(purchases);
     const totalRevenue = revenueResult[0]?.sum || 0;
     
@@ -477,21 +477,16 @@ export class DatabaseStorage implements IStorage {
     
     const activeUsersResult = await db.select({ count: count() })
       .from(users)
-      .where(gt(users.lastLoginAt, thirtyDaysAgo));
+      .where(gt(users.lastLogin, thirtyDaysAgo));
     const activeUsers = activeUsersResult[0]?.count || 0;
     
-    // Get pending reviews (added in the last 7 days and not yet approved)
+    // Get pending reviews (added in the last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
     const pendingReviewsResult = await db.select({ count: count() })
       .from(reviews)
-      .where(
-        and(
-          gt(reviews.createdAt, sevenDaysAgo),
-          eq(reviews.isApproved, false)
-        )
-      );
+      .where(gt(reviews.createdAt, sevenDaysAgo));
     const pendingReviews = pendingReviewsResult[0]?.count || 0;
     
     return {
