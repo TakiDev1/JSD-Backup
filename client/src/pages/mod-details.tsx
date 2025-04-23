@@ -44,8 +44,9 @@ const ModDetailsPage = () => {
   const { data: modDetails, isLoading, error } = useModDetails(id);
   const { data: versions } = useModVersions(id);
 
-  const mod = modDetails?.mod || modDetails;
-const latestVersion = modDetails?.latestVersion || versions?.[0];
+  // Ensure we have a mod object with proper fallbacks
+  const mod = modDetails?.mod || null;
+  const latestVersion = modDetails?.latestVersion || (Array.isArray(versions) && versions.length > 0 ? versions[0] : null);
 
 if (!mod) {
   return (
@@ -181,11 +182,11 @@ if (!mod) {
                 <Eye className="mr-2 h-4 w-4" /> View AR Preview
               </Button>
 
-              {mod.features && mod.features.length > 0 ? (
+              {mod.features && Array.isArray(mod.features) && mod.features.length > 0 ? (
                 <>
                   <h3 className="text-xl font-display font-bold text-white mb-4">Features</h3>
                   <ul className="list-disc list-inside text-neutral-light mb-8 ml-4">
-                    {(mod.features as string[]).map((feature, index) => (
+                    {mod.features.map((feature, index) => (
                       <li key={index}>{feature}</li>
                     ))}
                   </ul>
@@ -246,7 +247,7 @@ if (!mod) {
 
             <div className="flex flex-wrap gap-2 mb-6">
               <Badge variant="outline" className="bg-dark text-secondary">{mod.category}</Badge>
-              {mod.tags && mod.tags.map((tag: string) => (
+              {mod.tags && Array.isArray(mod.tags) && mod.tags.map((tag: string) => (
                 <Badge key={tag} variant="outline" className="bg-dark text-secondary">{tag}</Badge>
               ))}
             </div>
