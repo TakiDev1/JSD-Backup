@@ -77,8 +77,8 @@ const ModCard = ({ mod }: ModCardProps) => {
             alt={mod.title} 
             className="w-full h-48 object-cover"
             onError={(e) => {
-              // Fallback image if thumbnail fails to load
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1567818735868-e71b99932e29?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+              // Use a simple gradient as fallback if thumbnail fails to load
+              (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
             }}
           />
           <div className="absolute top-4 right-4 bg-primary text-white text-sm font-semibold py-1 px-3 rounded-full">
