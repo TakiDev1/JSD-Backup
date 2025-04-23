@@ -73,11 +73,11 @@ const ModCard = ({ mod }: ModCardProps) => {
       <Link href={`/mods/${mod.id}`}>
         <div className="relative">
           <img 
-            src={mod.thumbnail} 
+            src={mod.previewImageUrl || "/images/mod-placeholder.jpg"} 
             alt={mod.title} 
             className="w-full h-48 object-cover"
             onError={(e) => {
-              // Use a simple gradient as fallback if thumbnail fails to load
+              // Use a placeholder if image fails to load
               (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
             }}
           />

@@ -3,6 +3,7 @@ import { getCart, addToCart, removeFromCart, clearCart, calculateCartTotal } fro
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { CartItem } from "@/lib/cart";
 
 interface CartContextType {
@@ -32,14 +33,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
-  const cartQuery = useQuery({
+  const { data: cartItems = [], isLoading } = useQuery({
     queryKey: ["/api/cart"],
+    queryFn: () => getCart(),
     enabled: isAuthenticated,
     staleTime: 60000, // 1 minute
   });
 
-  const cartItems: CartItem[] = cartQuery.data || [];
-  //const cartTotal = calculateCartTotal(cartItems); //Removed, calculation moved to useCart
+  const cartTotal = calculateCartTotal(cartItems);
   const cartCount = cartItems.length;
 
   const addItemMutation = useMutation({
@@ -102,8 +103,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = {
     cartItems,
-    isLoading: cartQuery.isLoading,
-    cartTotal: 0, //Initialized to 0, updated in useCart
+    isLoading,
+    cartTotal,
     cartCount,
     addItem: async (modId: number) => {
       await addItemMutation.mutateAsync(modId);
@@ -121,21 +122,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCart() {
-  const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
-
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ["/api/cart"], //Assuming API.CART.LIST is equivalent to "/api/cart"
-    queryFn: () => apiRequest("GET", "/api/cart"), //Changed to use string literal for API endpoint.  Needs apiRequest function defined elsewhere
-    enabled: isAuthenticated,
-  });
-
-  // Calculate total
-  const cartTotal = cartItems.reduce((total: number, item: any) => {
-    const price = item.mod?.discountPrice || item.mod?.price || 0;
-    return total + price;
-  }, 0);
-
-  return {cartItems, cartTotal};
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
 }

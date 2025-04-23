@@ -34,22 +34,22 @@ export const API = {
 
 // Mod categories
 export const MOD_CATEGORIES = [
-  { id: "sports", name: "Sports Cars", count: 36 },
-  { id: "offroad", name: "Off-Road", count: 28 },
-  { id: "classic", name: "Classics", count: 25 },
-  { id: "trucks", name: "Trucks & SUVs", count: 31 },
-  { id: "racing", name: "Racing", count: 22 },
-  { id: "electric", name: "Electric", count: 14 },
-  { id: "motorcycle", name: "Motorcycles", count: 18 },
-  { id: "parts", name: "Parts & Accessories", count: 45 },
+  { id: "vehicles", name: "Vehicles", count: 0 },
+  { id: "maps", name: "Maps & Environments", count: 0 },
+  { id: "parts", name: "Parts & Components", count: 0 },
+  { id: "configs", name: "Configurations", count: 0 },
+  { id: "handling", name: "Handling & Physics", count: 0 },
+  { id: "sounds", name: "Sound Mods", count: 0 },
+  { id: "graphics", name: "Graphics & Visuals", count: 0 },
+  { id: "utilities", name: "Utilities & Tools", count: 0 },
 ];
 
-// Site statistics (for home page)
+// Site statistics (for home page) - these will be replaced by dynamic data from the admin panel
 export const SITE_STATS = {
-  MODS: "120+",
-  DOWNLOADS: "50K+",
-  USERS: "25K+",
-  RATING: "4.9/5",
+  MODS: "0",
+  DOWNLOADS: "0",
+  USERS: "0",
+  RATING: "0.0/5",
 };
 
 // Breakpoints
