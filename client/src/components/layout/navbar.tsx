@@ -125,9 +125,13 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button onClick={login} className="hidden md:flex bg-primary hover:bg-primary-light text-white">
-              <i className="fab fa-discord mr-2"></i> Login with Discord
-            </Button>
+            <Button 
+  onClick={login} 
+  className="hidden md:flex bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium transition-colors"
+  size="lg"
+>
+  <i className="fab fa-discord mr-2"></i> Login with Discord
+</Button>
           )}
 
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

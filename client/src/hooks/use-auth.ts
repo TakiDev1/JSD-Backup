@@ -1,79 +1,90 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { checkAuth, logout, loginWithDiscord, isAdmin, getUserAvatar } from "@/lib/auth";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 
-interface AuthContextType {
-  user: any;
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+interface AuthState {
+  user: any | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: () => void;
   logout: () => Promise<void>;
   getUserAvatar: (user: any) => string;
-  refreshUser: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isLoading: true,
-  isAuthenticated: false,
-  isAdmin: false,
-  login: () => {},
-  logout: async () => {},
-  getUserAvatar: () => "",
-  refreshUser: () => {},
-});
+export const useAuth = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isLoading: true,
+      isAuthenticated: false,
+      isAdmin: false,
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const {
-    data: user,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["/api/auth/user"],
-    staleTime: 300000, // 5 minutes
-  });
-  
-  const handleLogin = () => {
-    loginWithDiscord();
-  };
-  
-  const handleLogout = async () => {
-    const success = await logout();
-    
-    if (success) {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
+      login: () => {
+        const width = 500;
+        const height = 800;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+
+        const popup = window.open(
+          `/api/auth/discord`,
+          "discord-auth",
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        if (popup) {
+          const checkClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkClosed);
+              window.location.reload();
+            }
+          }, 500);
+        }
+      },
+
+      logout: async () => {
+        try {
+          await apiRequest("POST", "/api/auth/logout");
+          set({ user: null, isAuthenticated: false, isAdmin: false });
+          window.location.reload();
+        } catch (error) {
+          console.error("Logout failed:", error);
+        }
+      },
+
+      getUserAvatar: (user) => {
+        if (!user) return "";
+        if (user.discordAvatar) {
+          return `https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png`;
+        }
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}`;
+      }
+    }),
+    {
+      name: "auth-storage",
+      skipHydration: true,
     }
-  };
-  
-  const value = {
+  )
+);
+
+// Auth provider wrapper component
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: () => apiRequest("GET", "/api/auth/user"),
+    retry: false,
+    refetchOnWindowFocus: false
+  });
+
+  useAuth.setState({
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: isAdmin(user),
-    login: handleLogin,
-    logout: handleLogout,
-    getUserAvatar: getUserAvatar,
-    refreshUser: () => refetch(),
-  };
-  
-  return React.createElement(AuthContext.Provider, { value }, children);
-}
+    isAdmin: user?.isAdmin || false,
+  });
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+  return children;
+};

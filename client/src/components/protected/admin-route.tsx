@@ -20,10 +20,29 @@ function AdminRoute({ path, component: Component }: AdminRouteProps) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <Route path={path}>
-        <Redirect to="/admin-login" />
+        <div className="min-h-screen flex items-center justify-center bg-dark p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>
+                You must be logged in as an administrator to access this page.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => navigate("/")}>
+                Go Home
+              </Button>
+              {!isAuthenticated && (
+                <Button onClick={login}>
+                  <i className="fab fa-discord mr-2"></i> Login
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
       </Route>
     );
   }
