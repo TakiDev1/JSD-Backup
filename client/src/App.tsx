@@ -8,6 +8,7 @@ import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 import MouseParticles from "@/components/shared/mouse-particles";
 import CartDrawer from "@/components/shared/cart-drawer";
+import AdminRoute from "@/components/protected/admin-route";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Mods from "@/pages/mods";
@@ -17,6 +18,7 @@ import Checkout from "@/pages/checkout";
 import Subscribe from "@/pages/subscribe";
 import Forum from "@/pages/forum";
 import Profile from "@/pages/profile";
+import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
@@ -35,9 +37,10 @@ function Router() {
       <Route path="/forum/:categoryId" component={Forum} />
       <Route path="/forum/thread/:id" component={Forum} />
       <Route path="/profile" component={Profile} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/mods" component={AdminMods} />
-      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin-login" component={AdminLogin} />
+      <AdminRoute path="/admin" component={AdminDashboard} />
+      <AdminRoute path="/admin/mods" component={AdminMods} />
+      <AdminRoute path="/admin/users" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>
   );
