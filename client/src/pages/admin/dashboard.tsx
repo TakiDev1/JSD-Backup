@@ -7,7 +7,6 @@ import {
   Users, Package, CreditCard, BarChart3, Activity, Settings,
   ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock 
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";

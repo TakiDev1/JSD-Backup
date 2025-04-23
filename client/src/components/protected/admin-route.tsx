@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Route, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AdminRouteProps {
   path: string;
@@ -20,7 +22,7 @@ function AdminRoute({ path, component: Component }: AdminRouteProps) {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!user || !isAdmin) {
     return (
       <Route path={path}>
         <div className="min-h-screen flex items-center justify-center bg-dark p-4">
