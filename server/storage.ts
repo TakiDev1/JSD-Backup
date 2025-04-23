@@ -22,6 +22,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<schema.User | undefined>;
   getUserByDiscordId(discordId: string): Promise<schema.User | undefined>;
   getUserByPatreonId(patreonId: string): Promise<schema.User | undefined>;
+  getAllUsers(): Promise<schema.User[]>;
   createUser(user: schema.InsertUser): Promise<schema.User>;
   updateUser(id: number, user: Partial<schema.InsertUser>): Promise<schema.User | undefined>;
   updateUserStripeInfo(id: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<schema.User | undefined>;
@@ -127,6 +128,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByPatreonId(patreonId: string): Promise<schema.User | undefined> {
     const result = await db.select().from(users).where(eq(users.patreonId, patreonId));
     return result[0];
+  }
+  
+  async getAllUsers(): Promise<schema.User[]> {
+    return await db.select().from(users).orderBy(users.username);
   }
 
   async updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined> {

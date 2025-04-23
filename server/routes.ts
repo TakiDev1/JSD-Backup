@@ -620,6 +620,195 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get("/api/admin/stats", auth.isAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/admin/activity", auth.isAdmin, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const activity = await storage.getAdminActivity(limit);
+      res.json(activity);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/admin/activity", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { action, details } = req.body;
+      
+      const logEntry = await storage.logAdminActivity({
+        userId,
+        action,
+        details,
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(logEntry);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/admin/users", auth.isAdmin, async (req, res) => {
+    try {
+      // Implement user listing logic
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/admin/users", auth.isAdmin, async (req, res) => {
+    try {
+      const { username, email, isAdmin, isPremium } = req.body;
+      
+      const user = await storage.createUser({
+        username,
+        email,
+        isAdmin: isAdmin || false,
+        isPremium: isPremium || false
+      });
+      
+      res.status(201).json(user);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.put("/api/admin/users/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const user = await storage.updateUser(userId, updateData);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/admin/users/:id/ban", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { banned } = req.body;
+      
+      const user = await storage.banUser(userId, banned);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: banned ? "Ban User" : "Unban User",
+        details: `User ID: ${userId}, Username: ${user.username}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(user);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/admin/settings", auth.isAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      res.json(settings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/admin/settings", auth.isAdmin, async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      
+      const setting = await storage.setSiteSetting(key, value);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Site Setting",
+        details: `Key: ${key}, Value: ${value}`,
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(setting);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Initialize site settings and admin users if not present
+  (async () => {
+    try {
+      // Create default site settings
+      const existingSettings = await storage.getSiteSettings();
+      
+      if (Object.keys(existingSettings).length === 0) {
+        // Site stats
+        await storage.setSiteSetting('totalDownloads', '0');
+        await storage.setSiteSetting('happyUsers', '1000');
+        await storage.setSiteSetting('modsCreated', '0');
+        await storage.setSiteSetting('maintenanceMode', 'false');
+        await storage.setSiteSetting('siteTitle', 'JSD BeamNG Drive Mods');
+        await storage.setSiteSetting('siteDescription', 'Premium BeamNG Drive mods by JSD');
+        
+        // Create default admin users
+        const jsdExists = await storage.getUserByUsername('JSD');
+        if (!jsdExists) {
+          await storage.createUser({
+            username: 'JSD',
+            email: 'jsd@example.com',
+            isAdmin: true,
+            isPremium: true,
+          });
+        }
+        
+        const vonExists = await storage.getUserByUsername('Von');
+        if (!vonExists) {
+          await storage.createUser({
+            username: 'Von',
+            email: 'von@example.com',
+            isAdmin: true,
+            isPremium: true,
+          });
+        }
+        
+        const devExists = await storage.getUserByUsername('Developer');
+        if (!devExists) {
+          await storage.createUser({
+            username: 'Developer',
+            email: 'dev@example.com',
+            isAdmin: true,
+            isPremium: true,
+          });
+        }
+        
+        console.log('Initial site settings and admin users created');
+      }
+    } catch (error) {
+      console.error('Failed to initialize site settings:', error);
+    }
+  })();
+
   const httpServer = createServer(app);
   return httpServer;
 }
