@@ -65,17 +65,18 @@ export function setupAuth(app: Express) {
   });
 
   // Setup Discord strategy
-  passport.use(
-    new DiscordStrategy(
-      {
-        clientID: process.env.DISCORD_CLIENT_ID || '',
-        clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
-        callbackURL: process.env.DISCORD_CALLBACK_URL || 
-                     (process.env.REPLIT_DOMAINS ? 
-                      `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/api/auth/discord/callback` : 
-                      'http://localhost:5000/api/auth/discord/callback'),
-        scope: DISCORD_SCOPES
-      },
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    passport.use(
+      new DiscordStrategy(
+        {
+          clientID: process.env.DISCORD_CLIENT_ID,
+          clientSecret: process.env.DISCORD_CLIENT_SECRET,
+          callbackURL: process.env.DISCORD_CALLBACK_URL || 
+                       (process.env.REPLIT_DOMAINS ? 
+                        `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/api/auth/discord/callback` : 
+                        'http://localhost:5000/api/auth/discord/callback'),
+          scope: DISCORD_SCOPES
+        },
         async (accessToken, refreshToken, profile, done) => {
           try {
             // Check if user exists
