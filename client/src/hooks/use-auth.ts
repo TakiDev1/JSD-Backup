@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { checkAuth, logout, loginWithDiscord, isAdmin, getUserAvatar } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,8 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetch,
   } = useQuery({
     queryKey: ["/api/auth/user"],
-    staleTime: 300000, // 5 minutes
+    queryFn: checkAuth,
+    staleTime: 60000, // 1 minute
     retry: false, // Don't retry failed auth requests
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
   
   const handleLogin = () => {

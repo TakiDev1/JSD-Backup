@@ -3,14 +3,21 @@ import { apiRequest } from "./queryClient";
 // Check if the user is logged in
 export async function checkAuth() {
   try {
+    console.log("Checking auth status...");
     const res = await fetch("/api/auth/user", {
       credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache",
+      },
     });
     
     if (res.ok) {
-      return await res.json();
+      const userData = await res.json();
+      console.log("Auth status: Authenticated as", userData?.username);
+      return userData;
     }
     
+    console.log("Auth status: Not authenticated");
     return null;
   } catch (error) {
     console.error("Error checking auth:", error);
@@ -52,10 +59,15 @@ export async function adminLogin(username: string, password: string) {
     console.log("Admin login response:", data);
     
     if (response.ok) {
-      return { 
-        success: true, 
-        user: data 
-      };
+      console.log("Admin login response data:", data);
+      if (data && data.success && data.user) {
+        return { 
+          success: true, 
+          user: data.user 
+        };
+      } else {
+        return data; // Server response should already be in the correct format
+      }
     }
     
     return { 

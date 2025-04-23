@@ -44,12 +44,18 @@ export default function AdminLogin() {
       console.log("Admin login result:", result);
       
       if (result.success) {
+        // Force refresh user data from server
         await refreshUser();
+        
         toast({
           title: "Login successful",
           description: "Welcome to the admin panel",
         });
-        navigate("/admin");
+        
+        // Navigate to admin dashboard
+        setTimeout(() => {
+          navigate("/admin");
+        }, 500); // Small delay to ensure user data is updated
       } else {
         toast({
           title: "Login failed",

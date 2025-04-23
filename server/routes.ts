@@ -76,8 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Find admin user
       const user = await storage.getUserByUsername(username);
+      console.log("Admin login attempt for user:", username, "Found:", !!user);
       
-      if (!user || !(user.isAdmin || user.is_admin)) {
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (!(user.isAdmin || user.is_admin)) {
+        console.log("User is not an admin. isAdmin:", user.isAdmin, "is_admin:", user.is_admin);
         return res.status(401).json({ message: "Invalid admin credentials" });
       }
       
@@ -109,9 +115,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Don't send password back to client
+        // Create a user object without password
         const userWithoutPassword = { ...user };
         delete userWithoutPassword.password;
         
+        // Add both isAdmin and is_admin properties for compatibility
+        userWithoutPassword.isAdmin = true;
+        userWithoutPassword.is_admin = true;
+        
+        // Return the user object directly as this will be the authenticated user session
         res.json({ success: true, user: userWithoutPassword });
       });
     } catch (error: any) {
