@@ -18,12 +18,20 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
-  const [hashedPassword, salt] = stored.split('.');
-  const derivedKey = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return crypto.timingSafeEqual(
-    Buffer.from(hashedPassword, 'hex'),
-    derivedKey
-  );
+  try {
+    const [hashedPassword, salt] = stored.split('.');
+    if (!hashedPassword || !salt) {
+      return false;
+    }
+    const derivedKey = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return crypto.timingSafeEqual(
+      Buffer.from(hashedPassword, 'hex'),
+      derivedKey
+    );
+  } catch (error) {
+    console.error("Password comparison error:", error);
+    return false;
+  }
 }
 
 // Discord OAuth scopes
@@ -121,7 +129,7 @@ export function setupAuth(app: Express) {
     },
     
     isAdmin: (req: any, res: any, next: any) => {
-      if (req.isAuthenticated() && req.user.isAdmin) {
+      if (req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
         return next();
       }
       res.status(403).json({ message: 'Forbidden' });

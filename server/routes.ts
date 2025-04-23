@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find admin user
       const user = await storage.getUserByUsername(username);
       
-      if (!user || !user.isAdmin) {
+      if (!user || !(user.isAdmin || user.is_admin)) {
         return res.status(401).json({ message: "Invalid admin credentials" });
       }
       
