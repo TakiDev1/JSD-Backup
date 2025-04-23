@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Route, useLocation } from "wouter";
+import { Route, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -11,6 +11,7 @@ interface AdminRouteProps {
 
 function AdminRoute({ path, component: Component }: AdminRouteProps) {
   const { user, isLoading, isAdmin } = useAuth();
+  const [, navigate] = useLocation();
 
   if (isLoading) {
     return (
