@@ -28,6 +28,15 @@ export function useModsList(params: ModsQueryParams = {}) {
 
   return useQuery({
     queryKey: [endpoint],
+    queryFn: async () => {
+      const response = await apiRequest("GET", endpoint);
+      // Ensure we have proper structure
+      if (!response) return { mods: [], pagination: { total: 0, pageSize: 10, page: 1 } };
+      return {
+        mods: Array.isArray(response.mods) ? response.mods : [],
+        pagination: response.pagination || { total: 0, pageSize: 10, page: 1 }
+      };
+    },
     staleTime: 60000, // 1 minute
   });
 }
@@ -35,6 +44,19 @@ export function useModsList(params: ModsQueryParams = {}) {
 export function useModDetails(id: number | undefined) {
   return useQuery({
     queryKey: [API.MODS.DETAILS(id || 0)],
+    queryFn: async () => {
+      if (!id) return { mod: null, reviews: [] };
+      const response = await apiRequest("GET", API.MODS.DETAILS(id));
+      // Ensure we have proper structure
+      if (!response) return { mod: null, reviews: [] };
+      return {
+        mod: response.mod || null,
+        reviews: Array.isArray(response.reviews) ? response.reviews : [],
+        latestVersion: Array.isArray(response.latestVersion) && response.latestVersion.length > 0 
+          ? response.latestVersion[0] 
+          : null
+      };
+    },
     enabled: !!id,
     staleTime: 60000, // 1 minute
   });
@@ -43,6 +65,11 @@ export function useModDetails(id: number | undefined) {
 export function useModVersions(modId: number | undefined) {
   return useQuery({
     queryKey: [API.MODS.VERSIONS(modId || 0)],
+    queryFn: async () => {
+      if (!modId) return [];
+      const response = await apiRequest("GET", API.MODS.VERSIONS(modId));
+      return Array.isArray(response) ? response : [];
+    },
     enabled: !!modId,
     staleTime: 60000, // 1 minute
   });

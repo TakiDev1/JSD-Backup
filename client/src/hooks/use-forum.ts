@@ -16,7 +16,11 @@ export function useForumCategories() {
 export function useForumThreads(categoryId?: number) {
   return useQuery({
     queryKey: [API.FORUM.THREADS, categoryId],
-    queryFn: () => categoryId ? apiRequest("GET", API.FORUM.THREADS(categoryId)) : null,
+    queryFn: async () => {
+      if (!categoryId) return [];
+      const response = await apiRequest("GET", API.FORUM.THREADS(categoryId));
+      return Array.isArray(response) ? response : [];
+    },
     enabled: !!categoryId,
   });
 }
@@ -24,7 +28,14 @@ export function useForumThreads(categoryId?: number) {
 export function useForumThread(threadId?: number) {
   return useQuery({
     queryKey: [API.FORUM.THREAD, threadId],
-    queryFn: () => threadId ? apiRequest("GET", API.FORUM.THREAD(threadId)) : null,
+    queryFn: async () => {
+      if (!threadId) return { thread: null, replies: [] };
+      const response = await apiRequest("GET", API.FORUM.THREAD(threadId));
+      return {
+        thread: response?.thread || null,
+        replies: Array.isArray(response?.replies) ? response.replies : [],
+      };
+    },
     enabled: !!threadId,
   });
 }
