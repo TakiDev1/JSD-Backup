@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Users, Package, FileCheck, Activity, Settings, CreditCard, ShieldAlert } from "lucide-react";
+import { BarChart3, Users, Package, FileCheck, Activity, Settings, CreditCard, ShieldAlert, RefreshCw } from "lucide-react";
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
