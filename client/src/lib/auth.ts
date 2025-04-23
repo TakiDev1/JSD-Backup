@@ -37,7 +37,7 @@ export function loginWithDiscord() {
 // Admin login with username and password
 export async function adminLogin(username: string, password: string) {
   try {
-    const response = await apiRequest("POST", "/api/admin/login", {
+    const response = await apiRequest("POST", "/api/auth/admin-login", {
       username,
       password
     });
