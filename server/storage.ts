@@ -1,8 +1,9 @@
-import { and, count, eq, gt, like, sql } from "drizzle-orm";
-import { db } from "./database";
+import { and, count, eq, gt, like, sql, desc, asc } from "drizzle-orm";
+import { db } from "./db";
 import * as schema from "@shared/schema";
 import { 
   users,
+  siteSettings,
   mods,
   modVersions,
   purchases,
@@ -10,7 +11,8 @@ import {
   forumCategories,
   forumThreads,
   forumReplies,
-  cartItems
+  cartItems,
+  adminActivityLog
 } from "@shared/schema";
 
 // Define interface for storage operations
@@ -83,8 +85,8 @@ export interface IStorage {
   }>;
 }
 
-// Implement storage with SQLite via drizzle
-export class SqliteStorage implements IStorage {
+// Implement storage with PostgreSQL via drizzle
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<schema.User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
@@ -120,6 +122,64 @@ export class SqliteStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return result[0];
+  }
+  
+  async getUserByPatreonId(patreonId: string): Promise<schema.User | undefined> {
+    const result = await db.select().from(users).where(eq(users.patreonId, patreonId));
+    return result[0];
+  }
+
+  async updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined> {
+    const result = await db.update(users)
+      .set({
+        patreonId: patreonInfo.patreonId,
+        patreonTier: patreonInfo.patreonTier
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async banUser(id: number, banned: boolean): Promise<schema.User | undefined> {
+    const result = await db.update(users)
+      .set({ isBanned: banned })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  // Site settings operations
+  async getSiteSettings(): Promise<Record<string, string>> {
+    const settings = await db.select().from(siteSettings);
+    const result: Record<string, string> = {};
+    
+    for (const setting of settings) {
+      result[setting.key] = setting.value;
+    }
+    
+    return result;
+  }
+  
+  async getSiteSetting(key: string): Promise<string | undefined> {
+    const result = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
+    return result[0]?.value;
+  }
+  
+  async setSiteSetting(key: string, value: string): Promise<schema.SiteSetting> {
+    const existing = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
+    
+    if (existing.length > 0) {
+      const result = await db.update(siteSettings)
+        .set({ value })
+        .where(eq(siteSettings.key, key))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(siteSettings)
+        .values({ key, value })
+        .returning();
+      return result[0];
+    }
   }
 
   // Mod operations
@@ -201,7 +261,7 @@ export class SqliteStorage implements IStorage {
 
   async deleteMod(id: number): Promise<boolean> {
     const result = await db.delete(mods).where(eq(mods.id, id));
-    return result.changes > 0;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Mod version operations
@@ -360,14 +420,90 @@ export class SqliteStorage implements IStorage {
   async removeFromCart(userId: number, modId: number): Promise<boolean> {
     const result = await db.delete(cartItems)
       .where(and(eq(cartItems.userId, userId), eq(cartItems.modId, modId)));
-    return result.changes > 0;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async clearCart(userId: number): Promise<boolean> {
     const result = await db.delete(cartItems).where(eq(cartItems.userId, userId));
-    return result.changes > 0;
+    // For PostgreSQL, use rowCount instead of changes
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Admin operations
+  async logAdminActivity(activity: schema.InsertAdminActivityLog): Promise<schema.AdminActivityLog> {
+    const result = await db.insert(adminActivityLog).values(activity).returning();
+    return result[0];
+  }
+  
+  async getAdminActivity(limit?: number): Promise<schema.AdminActivityLog[]> {
+    let query = db.select().from(adminActivityLog).orderBy(desc(adminActivityLog.timestamp));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+  
+  async getAdminStats(): Promise<{
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  }> {
+    // Get total users
+    const usersResult = await db.select({ count: count() }).from(users);
+    const totalUsers = usersResult[0]?.count || 0;
+    
+    // Get total mods
+    const modsResult = await db.select({ count: count() }).from(mods);
+    const totalMods = modsResult[0]?.count || 0;
+    
+    // Get total purchases
+    const purchasesResult = await db.select({ count: count() }).from(purchases);
+    const totalPurchases = purchasesResult[0]?.count || 0;
+    
+    // Get total revenue
+    const revenueResult = await db.select({
+      sum: sql`SUM(${purchases.amount})`
+    }).from(purchases);
+    const totalRevenue = revenueResult[0]?.sum || 0;
+    
+    // Get active users (logged in within the last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const activeUsersResult = await db.select({ count: count() })
+      .from(users)
+      .where(gt(users.lastLoginAt, thirtyDaysAgo));
+    const activeUsers = activeUsersResult[0]?.count || 0;
+    
+    // Get pending reviews (added in the last 7 days and not yet approved)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const pendingReviewsResult = await db.select({ count: count() })
+      .from(reviews)
+      .where(
+        and(
+          gt(reviews.createdAt, sevenDaysAgo),
+          eq(reviews.isApproved, false)
+        )
+      );
+    const pendingReviews = pendingReviewsResult[0]?.count || 0;
+    
+    return {
+      users: totalUsers,
+      mods: totalMods,
+      purchases: totalPurchases,
+      revenue: totalRevenue,
+      activeUsers,
+      pendingReviews
+    };
   }
 }
 
 // Create storage instance
-export const storage = new SqliteStorage();
+export const storage = new DatabaseStorage();
