@@ -9,7 +9,7 @@ import { Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const FeaturedMods = () => {
-  const { data, isLoading } = useModsList({ featured: true, limit: 3 });
+  const { data: { mods = [] } = {}, isLoading } = useModsList({ featured: true, limit: 3 });
   const { addItem, isModInCart } = useCart();
   
   // Setup card rotation effect

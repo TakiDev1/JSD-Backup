@@ -153,7 +153,8 @@ const ModsPage = () => {
             </div>
           ) : mods.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-neutral-light">No mods found with the current filters.</p>
+              <h2 className="text-2xl font-display font-bold text-white mb-4">No Mods Available Yet</h2>
+              <p className="text-neutral-light">Stay tuned for upcoming mods!</p>
               <Button
                 variant="outline"
                 className="mt-4"

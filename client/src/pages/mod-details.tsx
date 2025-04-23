@@ -43,11 +43,18 @@ const ModDetailsPage = () => {
   const { data: versions } = useModVersions(id);
 
   const mod = modDetails?.mod || modDetails;
-  const latestVersion = modDetails?.latestVersion || versions?.[0];
-  // reviews variable is removed as the reviews section is removed
+const latestVersion = modDetails?.latestVersion || versions?.[0];
 
-  // Find user's existing review - Removed as reviews section is removed
-  //const userReview = reviews.find((review: Review) => review.userId === user?.id);
+if (!mod) {
+  return (
+    <div className="container mx-auto px-4 py-24 min-h-screen">
+      <div className="text-center">
+        <h2 className="text-2xl font-display font-bold text-white mb-4">No Mods Available</h2>
+        <p className="text-neutral-light mb-8">Check back soon for new mods!</p>
+      </div>
+    </div>
+  );
+}
 
   // Review form - Removed as reviews section is removed
   // const form = useForm<ReviewFormValues>({
