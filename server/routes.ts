@@ -58,11 +58,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } else {
     console.log("Discord authentication not configured - routes not added");
     
-    // Add placeholder routes to avoid 404 errors
+    // Add a route to check Discord auth status
     app.get("/api/auth/discord", (req, res) => {
-      res.status(503).json({ message: "Discord authentication not configured" });
+      res.status(503).json({ message: "Discord authentication not configured. Please contact the administrator." });
     });
-    
+  }
+  
+  // Add a route to check Discord auth availability
+  app.get("/api/auth/discord-status", (req, res) => {
+    const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
+    res.json({ available });
+  });
+  
+  // Add placeholder route for callback to avoid 404 errors
+  if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
     app.get("/api/auth/discord/callback", (req, res) => {
       res.status(503).json({ message: "Discord authentication not configured" });
     });
