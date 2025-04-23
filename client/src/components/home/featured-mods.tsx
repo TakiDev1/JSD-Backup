@@ -12,34 +12,34 @@ const FeaturedMods = () => {
   const { data: modsData, isLoading } = useModsList({ featured: true, limit: 3 });
   const { addItem, isModInCart } = useCart();
   const mods = modsData?.mods || [];
-  
+
   // Setup card rotation effect
   useEffect(() => {
     const cards = document.querySelectorAll('.card-3d');
-    
+
     const handleMouseMove = (e: MouseEvent, card: Element) => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      
+
       const rotateX = (y - centerY) / 20;
       const rotateY = (centerX - x) / 20;
-      
+
       card.setAttribute('style', `transform: perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`);
     };
-    
+
     const handleMouseLeave = (card: Element) => {
       card.setAttribute('style', 'transform: perspective(1000px) rotateX(0) rotateY(0)');
     };
-    
+
     cards.forEach(card => {
       card.addEventListener('mousemove', (e) => handleMouseMove(e as MouseEvent, card));
       card.addEventListener('mouseleave', () => handleMouseLeave(card));
     });
-    
+
     return () => {
       cards.forEach(card => {
         card.removeEventListener('mousemove', (e) => handleMouseMove(e as MouseEvent, card));
@@ -47,7 +47,7 @@ const FeaturedMods = () => {
       });
     };
   }, [modsData]);
-  
+
   const handleAddToCart = async (modId: number, e: React.MouseEvent) => {
     e.preventDefault();
     await addItem(modId);
@@ -67,7 +67,7 @@ const FeaturedMods = () => {
             View all mods <i className="fas fa-arrow-right ml-2"></i>
           </Link>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {isLoading ? (
             [...Array(3)].map((_, index) => (
@@ -153,7 +153,7 @@ const FeaturedMods = () => {
             ))
           )}
         </div>
-        
+
         <div className="mt-8 text-center md:hidden">
           <Link href="/mods" className="inline-flex items-center text-primary hover:text-primary-light font-display font-semibold transition-colors">
             View all mods <i className="fas fa-arrow-right ml-2"></i>

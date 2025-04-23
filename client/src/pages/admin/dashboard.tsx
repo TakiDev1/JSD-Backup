@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users, Package, CreditCard, BarChart3, Activity, Settings,
