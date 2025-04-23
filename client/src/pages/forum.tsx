@@ -51,10 +51,11 @@ const ForumPage = () => {
   
   // Current thread and replies
   const thread = threadData?.thread;
-  const replies = threadData?.replies || [];
+  const replies = Array.isArray(threadData?.replies) ? threadData?.replies : [];
   
   // Get current category name
-  const currentCategory = categories?.find((cat: any) => cat.id === categoryId);
+  const categoriesArray = Array.isArray(categories) ? categories : [];
+  const currentCategory = categoriesArray.find((cat: any) => cat.id === categoryId);
   
   // Thread form
   const threadForm = useForm<ThreadFormValues>({
@@ -112,7 +113,8 @@ const ForumPage = () => {
   };
   
   // Filter threads based on search
-  const filteredThreads = threads?.filter((thread: any) => 
+  const threadsArray = Array.isArray(threads) ? threads : [];
+  const filteredThreads = threadsArray.filter((thread: any) => 
     searchTerm === "" || 
     thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     thread.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -480,7 +482,7 @@ const ForumPage = () => {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
-        ) : !categories || categories.length === 0 ? (
+        ) : !categoriesArray || categoriesArray.length === 0 ? (
           <Card className="bg-dark-card">
             <CardContent className="pt-6">
               <div className="text-center py-8">
@@ -490,7 +492,7 @@ const ForumPage = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.map((category: any) => (
+            {categoriesArray.map((category: any) => (
               <Card 
                 key={category.id}
                 className="bg-dark-card hover:border-primary/30 transition-all duration-300 cursor-pointer"

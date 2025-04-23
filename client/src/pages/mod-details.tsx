@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useModDetails, useModVersions, useCreateReview, useUpdateReview } from "@/hooks/use-mods";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -34,6 +35,7 @@ const ModDetailsPage = () => {
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { addItem, isModInCart } = useCart();
+  const { toast } = useToast();
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [isARPreviewOpen, setIsARPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -148,9 +150,12 @@ if (!mod) {
         <div className="lg:col-span-2">
           <div className="relative overflow-hidden rounded-xl mb-8">
             <img
-              src={mod.thumbnail}
+              src={mod.previewImageUrl || "/images/mod-placeholder.jpg"}
               alt={mod.title}
               className="w-full h-[400px] object-cover rounded-xl"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
+              }}
             />
             {mod.featured && (
               <Badge className="absolute top-4 left-4 bg-primary text-white">Featured</Badge>
@@ -176,14 +181,16 @@ if (!mod) {
                 <Eye className="mr-2 h-4 w-4" /> View AR Preview
               </Button>
 
-              <h3 className="text-xl font-display font-bold text-white mb-4">Features</h3>
-              <ul className="list-disc list-inside text-neutral-light mb-8 ml-4">
-                <li>High-quality 3D model with detailed textures</li>
-                <li>Realistic physics and handling</li>
-                <li>Fully customizable parts and options</li>
-                <li>Compatible with all BeamNG.drive versions</li>
-                <li>Regular updates and improvements</li>
-              </ul>
+              {mod.features && mod.features.length > 0 ? (
+                <>
+                  <h3 className="text-xl font-display font-bold text-white mb-4">Features</h3>
+                  <ul className="list-disc list-inside text-neutral-light mb-8 ml-4">
+                    {(mod.features as string[]).map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
             </TabsContent>
 
             <TabsContent value="versions" className="mt-6">
@@ -316,10 +323,33 @@ if (!mod) {
               )}
 
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate("/login");
+                      return;
+                    }
+                    toast({
+                      title: "Feature coming soon",
+                      description: "Wishlist functionality will be available soon!",
+                    });
+                  }}
+                >
                   <Heart className="mr-2 h-4 w-4" /> Wishlist
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast({
+                      title: "Link copied",
+                      description: "Mod link copied to clipboard!",
+                    });
+                  }}
+                >
                   <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
               </div>

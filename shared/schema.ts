@@ -51,6 +51,7 @@ export const mods = pgTable("mods", {
   downloadUrl: text("download_url"),
   category: text("category").notNull(),
   tags: json("tags").$type<string[]>().default([]),
+  features: json("features").$type<string[]>().default([]),
   isFeatured: boolean("is_featured").default(false),
   downloadCount: integer("download_count").default(0),
   averageRating: doublePrecision("average_rating").default(0),

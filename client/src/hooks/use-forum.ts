@@ -5,7 +5,11 @@ import { apiRequest } from "@/lib/queryClient";
 export function useForumCategories() {
   return useQuery({
     queryKey: [API.FORUM.CATEGORIES],
-    queryFn: () => apiRequest("GET", API.FORUM.CATEGORIES),
+    queryFn: async () => {
+      const response = await apiRequest("GET", API.FORUM.CATEGORIES);
+      // Ensure we always return an array
+      return Array.isArray(response) ? response : [];
+    },
   });
 }
 
