@@ -34,7 +34,7 @@ function Router() {
     refetchInterval: 5000, // Check every 5 seconds
   });
 
-  const showMaintenance = settings?.maintenanceMode && !settings?.isAdmin;
+  const showMaintenance = settings?.maintenanceMode === true && settings?.isAdmin !== true;
   
   if (showMaintenance) {
     return <MaintenanceMode />;

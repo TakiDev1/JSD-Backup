@@ -92,7 +92,7 @@ const FeaturedMods = () => {
               </div>
             ))
           ) : (
-            data?.mods.map((mod) => (
+            mods.map((mod) => (
               <motion.div 
                 key={mod.id}
                 className="card-3d bg-dark-card rounded-xl overflow-hidden border border-dark-card hover:border-primary/30 transition-all duration-300"
