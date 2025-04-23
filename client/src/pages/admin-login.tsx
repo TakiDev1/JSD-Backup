@@ -41,6 +41,8 @@ export default function AdminLogin() {
       const { username, password } = values;
       const result = await adminLogin(username, password);
       
+      console.log("Admin login result:", result);
+      
       if (result.success) {
         await refreshUser();
         toast({
@@ -51,7 +53,7 @@ export default function AdminLogin() {
       } else {
         toast({
           title: "Login failed",
-          description: result.error,
+          description: result.error || "Authentication failed",
           variant: "destructive",
         });
       }

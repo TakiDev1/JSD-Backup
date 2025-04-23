@@ -37,6 +37,8 @@ export function loginWithDiscord() {
 // Admin login with username and password
 export async function adminLogin(username: string, password: string) {
   try {
+    console.log("Attempting admin login for:", username);
+    
     const response = await fetch("/api/auth/admin-login", {
       method: "POST",
       headers: {
@@ -47,9 +49,13 @@ export async function adminLogin(username: string, password: string) {
     });
     
     const data = await response.json();
+    console.log("Admin login response:", data);
     
     if (response.ok) {
-      return { success: true, data };
+      return { 
+        success: true, 
+        user: data 
+      };
     }
     
     return { 
