@@ -34,6 +34,32 @@ export function loginWithDiscord() {
   window.location.href = "/api/auth/discord";
 }
 
+// Admin login with username and password
+export async function adminLogin(username: string, password: string) {
+  try {
+    const response = await apiRequest("POST", "/api/admin/login", {
+      username,
+      password
+    });
+    
+    if (response.ok) {
+      return { success: true, data: await response.json() };
+    }
+    
+    const errorData = await response.json();
+    return { 
+      success: false, 
+      error: errorData.message || "Invalid credentials" 
+    };
+  } catch (error: any) {
+    console.error("Admin login error:", error);
+    return { 
+      success: false, 
+      error: error.message || "Login failed. Please try again." 
+    };
+  }
+}
+
 // Check if the user is an admin
 export function isAdmin(user: any) {
   return user && user.isAdmin;

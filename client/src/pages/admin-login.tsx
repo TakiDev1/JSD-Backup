@@ -1,110 +1,143 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { Redirect, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { adminLogin } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+
+const formSchema = z.object({
+  username: z.string().min(3, {
+    message: "Username must be at least 3 characters.",
+  }),
+  password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+});
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [, navigate] = useLocation();
-  const { refreshUser } = useAuth();
+  const [location, navigate] = useLocation();
+  const { user, isLoading, isAdmin, refreshUser } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!username || !password) {
-      toast({
-        title: "Missing credentials",
-        description: "Both username and password are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
 
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/admin-login", { 
-        username,
-        password
-      });
+      const { username, password } = values;
+      const result = await adminLogin(username, password);
       
-      if (response.ok) {
+      if (result.success) {
         await refreshUser();
         toast({
-          title: "Admin login successful",
-          description: `Welcome back, ${username}!`,
+          title: "Login successful",
+          description: "Welcome to the admin panel",
         });
-        navigate("/admin/dashboard");
+        navigate("/admin");
       } else {
-        const data = await response.json();
-        throw new Error(data.message || "Admin login failed");
+        toast({
+          title: "Login failed",
+          description: result.error,
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error.message || "An error occurred during login",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
+  }
+
+  // Redirect if already logged in as admin
+  if (user && isAdmin && !isSubmitting) {
+    return <Redirect to="/admin" />;
+  }
 
   return (
-    <div className="container flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-md">
+    <div className="container flex items-center justify-center py-20">
+      <Card className="w-full max-w-md bg-card/50 backdrop-blur-sm border-primary/20">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
           <CardDescription className="text-center">
-            Login to the JSD BeamNG Mods admin panel
+            Enter your credentials to access the admin panel
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                placeholder="Enter your admin username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="off"
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your username"
+                        className="bg-background/50" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter your password"
+                        className="bg-background/50"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="text-sm text-slate-500">
-              <p>Available admin accounts:</p>
-              <ul className="list-disc list-inside ml-2 mt-1">
-                <li>JSD (Owner)</li>
-                <li>Von (Co-owner)</li>
-                <li>Developer (Developer Account)</li>
-              </ul>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login as Admin"}
-            </Button>
-          </CardFooter>
-        </form>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Login"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex justify-center text-sm text-muted-foreground">
+          This area is restricted to authorized personnel only
+        </CardFooter>
       </Card>
     </div>
   );
