@@ -129,6 +129,14 @@ export function setupAuth(app: Express) {
     },
     
     isAdmin: (req: any, res: any, next: any) => {
+      // Debug logging
+      console.log("Auth check - user:", req.user ? { 
+        id: req.user.id, 
+        username: req.user.username, 
+        isAdmin: req.user.isAdmin, 
+        is_admin: req.user.is_admin 
+      } : 'No user');
+      
       if (req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
         return next();
       }
