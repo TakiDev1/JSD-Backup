@@ -28,11 +28,15 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 function Router() {
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
     queryFn: () => apiRequest("GET", "/api/admin/settings"),
     refetchInterval: 5000, // Check every 5 seconds
   });
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   const showMaintenance = settings?.maintenanceMode === true;
   

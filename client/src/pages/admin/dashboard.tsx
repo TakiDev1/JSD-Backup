@@ -251,21 +251,22 @@ const AdminDashboard = () => {
     </CardContent>
   </Card>
 </div>
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-light text-sm font-medium">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-3xl font-bold text-white">{stats.users}</div>
-                <div className="p-2 bg-purple-500/10 rounded-full">
-                  <Users className="w-6 h-6 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-neutral-light text-sm font-medium">Total Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <div className="text-3xl font-bold text-white">{stats.users}</div>
+                  <div className="p-2 bg-purple-500/10 rounded-full">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-neutral-light text-sm font-medium">Total Mods</CardTitle>
             </CardHeader>
