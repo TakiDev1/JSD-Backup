@@ -1,0 +1,46 @@
+[vite] connecting...
+[vite] connected.
+cn is not defined
+cn is not defined
+The above error occurred in the <AdminDashboard> component:
+
+    at AdminDashboard (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/pages/admin/dashboard.tsx:33:29)
+    at Route (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=51934543:323:16)
+    at AdminRoute (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/protected/admin-route.tsx:21:23)
+    at Switch (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=51934543:379:17)
+    at Router (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/App.tsx?v=Z4JgFcYDttTGIoa-qXGho:48:41)
+    at main
+    at div
+    at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5AJU3CG7.js?v=51934543:38:15)
+    at TooltipProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=51934543:63:5)
+    at AuthProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/hooks/use-auth.ts:18:32)
+    at V (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=51934543:44:25)
+    at J (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=51934543:42:18)
+    at QueryClientProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=51934543:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+at AdminDashboard (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/pages/admin/dashboard.tsx:33:29)
+at Route (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=51934543:323:16)
+at AdminRoute (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/protected/admin-route.tsx:21:23)
+at Switch (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=51934543:379:17)
+at Router (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/App.tsx?v=Z4JgFcYDttTGIoa-qXGho:48:41)
+at main
+at div
+at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5AJU3CG7.js?v=51934543:38:15)
+at TooltipProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=51934543:63:5)
+at AuthProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/hooks/use-auth.ts:18:32)
+at V (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=51934543:44:25)
+at J (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=51934543:42:18)
+at QueryClientProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=51934543:2805:3)
+at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+at t.value (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+cn is not defined
