@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery({
     queryKey: ["/api/auth/user"],
     staleTime: 300000, // 5 minutes
+    retry: false, // Don't retry failed auth requests
   });
   
   const handleLogin = () => {
@@ -86,7 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: handleLogin,
     logout: handleLogout,
     getUserAvatar: getUserAvatar,
-    refreshUser: () => refetch(),
+    refreshUser: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      return refetch();
+    },
   };
   
   return React.createElement(AuthContext.Provider, { value }, children);

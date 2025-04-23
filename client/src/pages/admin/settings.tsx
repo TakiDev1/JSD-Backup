@@ -61,7 +61,7 @@ const AdminSettings = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("general");
   
-  // Get general settings
+  // Get general settings - only fetch if user is authenticated and admin
   const { data: generalSettings = {
     siteName: "JSD Mods",
     siteDescription: "Premium BeamNG Drive mods",
@@ -73,9 +73,10 @@ const AdminSettings = () => {
     queryFn: async () => {
       return {};
     },
+    enabled: !!user && isAdmin,
   });
   
-  // Get integration settings
+  // Get integration settings - only fetch if user is authenticated and admin
   const { data: integrationSettings = {
     patreonClientId: "",
     patreonClientSecret: "",
@@ -87,9 +88,10 @@ const AdminSettings = () => {
     queryFn: async () => {
       return {};
     },
+    enabled: !!user && isAdmin,
   });
   
-  // Get payment settings
+  // Get payment settings - only fetch if user is authenticated and admin
   const { data: paymentSettings = {
     currency: "USD",
     defaultSubscriptionPrice: "9.99",
@@ -101,6 +103,7 @@ const AdminSettings = () => {
     queryFn: async () => {
       return {};
     },
+    enabled: !!user && isAdmin,
   });
   
   // General settings form
