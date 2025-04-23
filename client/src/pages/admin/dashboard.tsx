@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Users, Package, CreditCard, BarChart3, Activity, Settings,
+  ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock 
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +25,7 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-
+  
   // Get site stats
   const { data: stats = { 
     users: 0, 
@@ -32,21 +38,21 @@ const AdminDashboard = () => {
     queryKey: ['/api/admin/stats'],
     queryFn: getQueryFn,
   });
-
+  
   // Get site settings
   const { data: settings = { maintenanceMode: false }, isLoading: settingsLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
     queryFn: getQueryFn,
   });
-
+  
   // Recent activity
   const { data: activityData = { activity: [] }, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
     queryFn: getQueryFn,
   });
-
+  
   const recentActivity = activityData.activity || [];
-
+  
   // Mutation to toggle maintenance mode
   const { mutate: toggleMaintenance, isPending: isTogglingMaintenance } = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -69,7 +75,7 @@ const AdminDashboard = () => {
       });
     },
   });
-
+  
   // Patreon integration sync
   const { mutate: syncPatreon, isPending: isSyncingPatreon } = useMutation({
     mutationFn: async () => {
@@ -89,17 +95,17 @@ const AdminDashboard = () => {
       });
     },
   });
-
+  
   // For demo purposes, use state to simulate loading
   useState(() => {
     if (settingsLoading) return;
     setMaintenanceMode(settings.maintenanceMode);
   });
-
+  
   async function getQueryFn() {
     return {};
   }
-
+  
   if (!isAdmin) {
     return (
       <div className="container mx-auto px-4 py-24 h-screen flex items-center justify-center">
@@ -117,7 +123,7 @@ const AdminDashboard = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="container mx-auto px-4 py-24">
       <div className="flex flex-col space-y-8">
@@ -126,7 +132,7 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
             <p className="text-neutral-light">Welcome back, {user?.username}</p>
           </div>
-
+          
           <div className="flex items-center gap-4">
             <div className="flex items-center space-x-2">
               <Switch
@@ -139,7 +145,7 @@ const AdminDashboard = () => {
                 Maintenance Mode {maintenanceMode && <Badge variant="destructive">Active</Badge>}
               </Label>
             </div>
-
+            
             <Button 
               variant="outline" 
               onClick={() => syncPatreon()} 
@@ -149,7 +155,7 @@ const AdminDashboard = () => {
             </Button>
           </div>
         </div>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
   <Card className="bg-dark-card">
     <CardHeader className="space-y-1">
@@ -193,21 +199,21 @@ const AdminDashboard = () => {
           <span>Manage Mods</span>
         </Link>
       </Button>
-
+      
       <Button variant="outline" asChild className="h-24 flex flex-col gap-2">
         <Link to="/admin/users">
           <Users className="h-8 w-8" />
           <span>Manage Users</span>
         </Link>
       </Button>
-
+      
       <Button variant="outline" asChild className="h-24 flex flex-col gap-2">
         <Link to="/admin/settings">
           <Settings className="h-8 w-8" />
           <span>Settings</span>
         </Link>
       </Button>
-
+      
       <Button 
         variant="outline" 
         className="h-24 flex flex-col gap-2"
@@ -266,7 +272,7 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-neutral-light text-sm font-medium">Total Mods</CardTitle>
@@ -280,7 +286,7 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-neutral-light text-sm font-medium">Sales</CardTitle>
@@ -294,7 +300,7 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-neutral-light text-sm font-medium">Revenue</CardTitle>
@@ -309,8 +315,8 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="bg-dark-card border-dark-lighter/50 col-span-1 lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-white">Quick Actions</CardTitle>
@@ -323,21 +329,21 @@ const AdminDashboard = () => {
                     <span>Manage Mods</span>
                   </Button>
                 </Link>
-
+                
                 <Link href="/admin/users">
                   <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                     <Users className="w-5 h-5" />
                     <span>Manage Users</span>
                   </Button>
                 </Link>
-
+                
                 <Link href="/admin/reviews">
                   <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                     <FileCheck className="w-5 h-5" />
                     <span>Reviews</span>
                   </Button>
                 </Link>
-
+                
                 <Link href="/admin/settings">
                   <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                     <Settings className="w-5 h-5" />
@@ -347,7 +353,7 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="bg-dark-card border-dark-lighter/50">
             <CardHeader>
               <CardTitle className="text-white">System Health</CardTitle>
@@ -363,7 +369,7 @@ const AdminDashboard = () => {
                     <div className="h-full bg-green-500" style={{ width: "98%" }}></div>
                   </div>
                 </div>
-
+                
                 <div className="flex flex-col space-y-1">
                   <div className="flex justify-between">
                     <Label>Database</Label>
@@ -373,7 +379,7 @@ const AdminDashboard = () => {
                     <div className="h-full bg-green-500" style={{ width: "95%" }}></div>
                   </div>
                 </div>
-
+                
                 <div className="flex flex-col space-y-1">
                   <div className="flex justify-between">
                     <Label>API Response</Label>
@@ -383,9 +389,9 @@ const AdminDashboard = () => {
                     <div className="h-full bg-green-500" style={{ width: "90%" }}></div>
                   </div>
                 </div>
-
+                
                 <Separator className="my-4" />
-
+                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 text-primary" />
@@ -397,7 +403,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
-
+        
         <Card className="bg-dark-card border-dark-lighter/50">
           <CardHeader>
             <CardTitle className="text-white">Recent Activity</CardTitle>

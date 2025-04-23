@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API } from "@/lib/constants";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth"; // Added import for useAuth
 import { Mod } from "@shared/schema";
 
 interface ModsQueryParams {
@@ -21,10 +22,10 @@ export function useModsList(params: ModsQueryParams = {}) {
   if (params.subscription !== undefined) queryParams.append("subscription", params.subscription.toString());
   if (params.limit !== undefined) queryParams.append("limit", params.limit.toString());
   if (params.page !== undefined) queryParams.append("page", params.page.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = `${API.MODS.LIST}${queryString ? `?${queryString}` : ""}`;
-  
+
   return useQuery({
     queryKey: [endpoint],
     staleTime: 60000, // 1 minute
@@ -48,16 +49,43 @@ export function useModVersions(modId: number | undefined) {
 }
 
 export function useModLocker() {
+  const { isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: [API.MOD_LOCKER],
-    staleTime: 60000, // 1 minute
+    queryFn: () => apiRequest("GET", API.MOD_LOCKER),
+    enabled: isAuthenticated,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useDownloadMod(modId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/mods/${modId}/download`);
+      if (!response.ok) throw new Error('Download failed');
+      return response.blob();
+    },
+    onSuccess: (blob) => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mod-${modId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
   });
 }
 
 export function useCreateReview() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({
       modId,
@@ -94,7 +122,7 @@ export function useCreateReview() {
 export function useUpdateReview() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({
       reviewId,
@@ -135,7 +163,7 @@ export function useUpdateReview() {
 export function useCreateMod() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (mod: Omit<Mod, "id" | "downloadCount" | "averageRating" | "createdAt" | "updatedAt">) => {
       const res = await apiRequest("POST", API.MODS.LIST, mod);
@@ -161,7 +189,7 @@ export function useCreateMod() {
 export function useUpdateMod() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({
       id,
@@ -194,7 +222,7 @@ export function useUpdateMod() {
 export function useDeleteMod() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", API.MODS.DETAILS(id));

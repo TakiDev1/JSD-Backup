@@ -31,17 +31,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const cartQuery = useQuery({
     queryKey: ["/api/cart"],
     enabled: isAuthenticated,
     staleTime: 60000, // 1 minute
   });
-  
+
   const cartItems: CartItem[] = cartQuery.data || [];
-  const cartTotal = calculateCartTotal(cartItems);
+  //const cartTotal = calculateCartTotal(cartItems); //Removed, calculation moved to useCart
   const cartCount = cartItems.length;
-  
+
   const addItemMutation = useMutation({
     mutationFn: (modId: number) => addToCart(modId),
     onSuccess: () => {
@@ -59,7 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-  
+
   const removeItemMutation = useMutation({
     mutationFn: (modId: number) => removeFromCart(modId),
     onSuccess: () => {
@@ -77,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-  
+
   const clearCartMutation = useMutation({
     mutationFn: () => clearCart(),
     onSuccess: () => {
@@ -95,15 +95,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-  
+
   const isModInCart = (modId: number) => {
     return cartItems.some(item => item.modId === modId);
   };
-  
+
   const value = {
     cartItems,
     isLoading: cartQuery.isLoading,
-    cartTotal,
+    cartTotal: 0, //Initialized to 0, updated in useCart
     cartCount,
     addItem: async (modId: number) => {
       await addItemMutation.mutateAsync(modId);
@@ -116,10 +116,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     },
     isModInCart,
   };
-  
+
   return React.createElement(CartContext.Provider, { value }, children);
 }
 
 export function useCart() {
-  return useContext(CartContext);
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  const { data: cartItems = [] } = useQuery({
+    queryKey: ["/api/cart"], //Assuming API.CART.LIST is equivalent to "/api/cart"
+    queryFn: () => apiRequest("GET", "/api/cart"), //Changed to use string literal for API endpoint.  Needs apiRequest function defined elsewhere
+    enabled: isAuthenticated,
+  });
+
+  // Calculate total
+  const cartTotal = cartItems.reduce((total: number, item: any) => {
+    const price = item.mod?.discountPrice || item.mod?.price || 0;
+    return total + price;
+  }, 0);
+
+  return {cartItems, cartTotal};
 }
