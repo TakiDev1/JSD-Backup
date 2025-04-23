@@ -39,10 +39,12 @@ const AdminDashboard = () => {
   });
   
   // Recent activity
-  const { data: recentActivity = [], isLoading: activityLoading } = useQuery({
+  const { data: activityData = { activity: [] }, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
     queryFn: getQueryFn,
   });
+  
+  const recentActivity = activityData.activity || [];
   
   // Mutation to toggle maintenance mode
   const { mutate: toggleMaintenance, isPending: isTogglingMaintenance } = useMutation({
