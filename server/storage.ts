@@ -19,9 +19,17 @@ export interface IStorage {
   getUser(id: number): Promise<schema.User | undefined>;
   getUserByUsername(username: string): Promise<schema.User | undefined>;
   getUserByDiscordId(discordId: string): Promise<schema.User | undefined>;
+  getUserByPatreonId(patreonId: string): Promise<schema.User | undefined>;
   createUser(user: schema.InsertUser): Promise<schema.User>;
   updateUser(id: number, user: Partial<schema.InsertUser>): Promise<schema.User | undefined>;
   updateUserStripeInfo(id: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<schema.User | undefined>;
+  updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined>;
+  banUser(id: number, banned: boolean): Promise<schema.User | undefined>;
+  
+  // Site settings operations
+  getSiteSettings(): Promise<Record<string, string>>;
+  getSiteSetting(key: string): Promise<string | undefined>;
+  setSiteSetting(key: string, value: string): Promise<schema.SiteSetting>;
   
   // Mod operations
   getMod(id: number): Promise<schema.Mod | undefined>;
@@ -61,6 +69,18 @@ export interface IStorage {
   addToCart(item: schema.InsertCartItem): Promise<schema.CartItem>;
   removeFromCart(userId: number, modId: number): Promise<boolean>;
   clearCart(userId: number): Promise<boolean>;
+  
+  // Admin operations
+  logAdminActivity(activity: schema.InsertAdminActivityLog): Promise<schema.AdminActivityLog>;
+  getAdminActivity(limit?: number): Promise<schema.AdminActivityLog[]>;
+  getAdminStats(): Promise<{
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  }>;
 }
 
 // Implement storage with SQLite via drizzle

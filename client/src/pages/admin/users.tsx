@@ -1,345 +1,593 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useState } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  BarChart,
-  Loader2,
-  Users,
-  Package,
-  MoreVertical,
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  AlertTriangle,
-  User,
-  Shield,
-  ShieldOff,
-  Check,
-  X
-} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { format, formatDistanceToNow } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users, User, Shield, ShieldCheck, ShieldX, MoreHorizontal, Edit, Trash, Check, X, RefreshCw, Filter, Search, ChevronUp, ChevronDown, UserPlus, UserCheck, ExternalLink } from "lucide-react";
 
-// Mock users for demo purposes
-const MOCK_USERS = [
-  {
-    id: 1,
-    username: "JohnDoe",
-    email: "john@example.com",
-    discordId: "123456789",
-    discordAvatar: null,
-    isAdmin: false,
-    stripeCustomerId: "cus_123",
-    stripeSubscriptionId: "sub_123",
-    createdAt: new Date(2023, 1, 15).toISOString(),
-    lastLogin: new Date(2023, 5, 20).toISOString()
-  },
-  {
-    id: 2,
-    username: "JaneDoe",
-    email: "jane@example.com",
-    discordId: "987654321",
-    discordAvatar: null,
-    isAdmin: true,
-    stripeCustomerId: "cus_456",
-    stripeSubscriptionId: null,
-    createdAt: new Date(2023, 2, 20).toISOString(),
-    lastLogin: new Date(2023, 5, 22).toISOString()
-  },
-  {
-    id: 3,
-    username: "AliceSmith",
-    email: "alice@example.com",
-    discordId: "456789123",
-    discordAvatar: null,
-    isAdmin: false,
-    stripeCustomerId: "cus_789",
-    stripeSubscriptionId: "sub_789",
-    createdAt: new Date(2023, 3, 10).toISOString(),
-    lastLogin: new Date(2023, 5, 18).toISOString()
-  }
-];
+const userSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Must be a valid email address").optional().or(z.literal("")),
+  isAdmin: z.boolean().default(false),
+  isPremium: z.boolean().default(false),
+  isBanned: z.boolean().default(false),
+});
+
+type UserFormValues = z.infer<typeof userSchema>;
 
 const AdminUsers = () => {
-  const [, navigate] = useLocation();
-  const { isAuthenticated, isAdmin, getUserAvatar } = useAuth();
+  const { user, isAdmin, getUserAvatar } = useAuth();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("all");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [searchQuery, setSearchQuery] = useState("");
   
-  // Normally we'd fetch users from the API
-  // For demo, we'll use mock data
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["/api/admin/users"],
-    // This would be the real API call
-    // queryFn: () => apiRequest("GET", "/api/admin/users").then(res => res.json()),
+  // Get users list
+  const { data = { users: [], pagination: { total: 0, pageSize: 10, currentPage: 1 } }, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
+    queryKey: ['/api/admin/users', activeTab, sortBy, sortOrder, searchQuery],
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return MOCK_USERS;
-    }
+      return {
+        users: [],
+        pagination: { total: 0, pageSize: 10, currentPage: 1 }
+      };
+    },
   });
   
-  const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, isAdmin }: { userId: number, isAdmin: boolean }) => {
-      // This would be the real API call
-      // return apiRequest("PATCH", `/api/admin/users/${userId}`, { isAdmin }).then(res => res.json())
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { success: true };
+  // Edit user form
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      isAdmin: false,
+      isPremium: false,
+      isBanned: false,
+    },
+  });
+  
+  // Update user mutation
+  const { mutate: updateUser, isPending: isUpdating } = useMutation({
+    mutationFn: async (values: UserFormValues & { id: number }) => {
+      const { id, ...userData } = values;
+      return apiRequest("PATCH", `/api/admin/users/${id}`, userData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({
-        title: "User role updated",
-        description: "The user's role has been successfully updated.",
+        title: "User Updated",
+        description: "The user has been updated successfully",
       });
+      setIsEditDialogOpen(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update user role",
+        description: "Failed to update user. Please try again.",
         variant: "destructive",
       });
-    }
+    },
   });
   
-  // Redirect if not authenticated or not admin
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-    } else if (!isAdmin) {
-      navigate("/profile");
-    }
-  }, [isAuthenticated, isAdmin, navigate]);
+  // Ban/unban user mutation
+  const { mutate: toggleBanUser, isPending: isTogglingBan } = useMutation({
+    mutationFn: async ({ id, banned }: { id: number, banned: boolean }) => {
+      return apiRequest("PATCH", `/api/admin/users/${id}/ban`, { banned });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: currentUser?.isBanned ? "User Unbanned" : "User Banned",
+        description: currentUser?.isBanned 
+          ? "The user has been unbanned and can now access the site" 
+          : "The user has been banned from accessing the site",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update user ban status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
   
-  const handleToggleAdmin = (userId: number, currentIsAdmin: boolean) => {
-    updateUserRoleMutation.mutate({ 
-      userId, 
-      isAdmin: !currentIsAdmin 
+  // Delete user mutation
+  const { mutate: deleteUser, isPending: isDeleting } = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/admin/users/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "User Deleted",
+        description: "The user has been deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setCurrentUser(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Link Discord mutation
+  const { mutate: syncPatreonUser, isPending: isSyncingPatreon } = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/admin/users/${id}/sync-patreon`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "Patreon Status Synced",
+        description: "The user's Patreon status has been updated",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to sync Patreon status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Edit user handler
+  const handleEditUser = (user: any) => {
+    setCurrentUser(user);
+    form.reset({
+      username: user.username,
+      email: user.email || "",
+      isAdmin: user.isAdmin || false,
+      isPremium: user.isPremium || false,
+      isBanned: user.isBanned || false,
     });
+    setIsEditDialogOpen(true);
   };
   
-  if (!isAuthenticated || !isAdmin) {
+  // Delete user handler
+  const handleDeleteUser = (user: any) => {
+    setCurrentUser(user);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Ban/unban user handler
+  const handleToggleBanUser = (user: any) => {
+    setCurrentUser(user);
+    toggleBanUser({ id: user.id, banned: !user.isBanned });
+  };
+  
+  // Form submit handler
+  const onSubmit = (values: UserFormValues) => {
+    if (currentUser) {
+      updateUser({ ...values, id: currentUser.id });
+    }
+  };
+  
+  // Sort handler
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+  };
+  
+  if (!isAdmin) {
     return (
-      <div className="container mx-auto px-4 py-24 min-h-screen flex items-center justify-center">
-        <Card className="bg-dark-card">
-          <CardContent className="flex flex-col items-center pt-6">
-            <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-            <h3 className="text-xl font-display font-bold text-white mb-2">
-              Checking permissions...
-            </h3>
-          </CardContent>
+      <div className="container mx-auto px-4 py-24 h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md bg-dark-card">
+          <CardHeader>
+            <CardTitle className="text-white">Access Denied</CardTitle>
+            <CardDescription>You don't have permission to access the admin dashboard</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild>
+              <Link href="/">Return to Home</Link>
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     );
   }
   
-  const filteredUsers = users?.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
-  
   return (
-    <div className="container mx-auto px-4 py-24 min-h-screen">
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="w-full lg:w-1/5">
-          <Card className="bg-dark-card sticky top-24">
-            <CardHeader>
-              <CardTitle className="font-display text-white flex items-center">
-                <BarChart className="mr-2 h-5 w-5 text-primary" />
-                Admin Panel
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <nav className="space-y-2">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => navigate("/admin")}
-                >
-                  <BarChart className="mr-2 h-4 w-4" /> 
-                  Dashboard
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => navigate("/admin/mods")}
-                >
-                  <Package className="mr-2 h-4 w-4" /> 
-                  Manage Mods
-                </Button>
-                <Button 
-                  variant="default" 
-                  className="w-full justify-start bg-primary/20 hover:bg-primary/30 text-primary"
-                >
-                  <Users className="mr-2 h-4 w-4" /> 
-                  Manage Users
-                </Button>
-              </nav>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="w-full lg:w-4/5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-white">
-              Manage Users
-            </h1>
-            
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-light h-4 w-4" />
-              <Input 
-                type="text"
-                placeholder="Search users..."
-                className="pl-10 bg-dark-lighter border-dark-lighter w-full md:w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+    <div className="container mx-auto px-4 py-24">
+      <div className="flex flex-col space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Manage Users</h1>
+            <p className="text-neutral-light">View and manage user accounts</p>
           </div>
           
-          <Card className="bg-dark-card">
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => refetchUsers()}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <Card className="bg-dark-card border-dark-lighter/50">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+              <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+                <TabsList className="w-full md:w-auto">
+                  <TabsTrigger value="all">All Users</TabsTrigger>
+                  <TabsTrigger value="admin">Admins</TabsTrigger>
+                  <TabsTrigger value="premium">Premium</TabsTrigger>
+                  <TabsTrigger value="banned">Banned</TabsTrigger>
+                </TabsList>
+                
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full max-w-xs"
+                  />
                 </div>
-              ) : filteredUsers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8">
-                  <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
-                  <p className="text-neutral-light">No users found matching your search.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
+              </Tabs>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="relative overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[250px] cursor-pointer" onClick={() => handleSort("username")}>
+                      User
+                      {sortBy === "username" && (
+                        sortOrder === "asc" ? <ChevronUp className="h-4 w-4 inline ml-1" /> : <ChevronDown className="h-4 w-4 inline ml-1" />
+                      )}
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("email")}>
+                      Email
+                      {sortBy === "email" && (
+                        sortOrder === "asc" ? <ChevronUp className="h-4 w-4 inline ml-1" /> : <ChevronDown className="h-4 w-4 inline ml-1" />
+                      )}
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("createdAt")}>
+                      Joined
+                      {sortBy === "createdAt" && (
+                        sortOrder === "asc" ? <ChevronUp className="h-4 w-4 inline ml-1" /> : <ChevronDown className="h-4 w-4 inline ml-1" />
+                      )}
+                    </TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersLoading ? (
                     <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Discord ID</TableHead>
-                      <TableHead>Subscription</TableHead>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={5} className="text-center py-10">
+                        <div className="flex justify-center items-center gap-2">
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                          <span>Loading users...</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
+                  ) : data.users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-10">
+                        <div className="flex flex-col items-center gap-3">
+                          <Users className="h-10 w-10 text-neutral" />
+                          <p>No users found</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    data.users.map((user: any) => (
+                      <TableRow key={user.id} className="hover:bg-dark-lighter/50">
                         <TableCell className="font-medium">
-                          <div className="flex items-center">
-                            <Avatar className="h-8 w-8 mr-3">
-                              <AvatarImage src={user.discordAvatar ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png` : undefined} />
-                              <AvatarFallback className="bg-primary/20 text-primary">
-                                {user.username.charAt(0).toUpperCase()}
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={getUserAvatar(user)} alt={user.username} />
+                              <AvatarFallback className="bg-primary text-white">
+                                {user.username.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-white">{user.username}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-white">{user.username}</span>
+                              {user.discordId && (
+                                <span className="text-xs text-neutral-light flex items-center gap-1">
+                                  <i className="fab fa-discord"></i> Connected
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {user.email || "—"}
+                          {user.email || "-"}
                         </TableCell>
                         <TableCell>
-                          {user.discordId ? (
-                            <Badge variant="outline" className="bg-[#5865F2]/20 text-[#5865F2] border-[#5865F2]/30">
-                              {user.discordId}
-                            </Badge>
-                          ) : "—"}
+                          <div className="flex flex-wrap gap-1">
+                            {user.isAdmin && (
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
+                                Admin
+                              </Badge>
+                            )}
+                            {user.isPremium && (
+                              <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+                                Premium
+                              </Badge>
+                            )}
+                            {user.isBanned && (
+                              <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
+                                Banned
+                              </Badge>
+                            )}
+                            {!user.isAdmin && !user.isPremium && !user.isBanned && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                Standard
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {user.stripeSubscriptionId ? (
-                            <Badge className="bg-secondary/20 text-secondary border-secondary/30">
-                              Premium
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-neutral-light">
-                              None
-                            </Badge>
-                          )}
+                          {new Date(user.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          {user.isAdmin ? (
-                            <Badge className="bg-red-500/20 text-red-500 border-red-500/30">
-                              Admin
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-neutral-light">
-                              User
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-neutral-light">
-                          {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="text-sm text-neutral-light">
-                          {formatDistanceToNow(new Date(user.lastLogin), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-dark-card border-dark-lighter">
-                              <DropdownMenuItem 
-                                onClick={() => navigate(`/admin/users/${user.id}`)}
-                                className="cursor-pointer"
-                              >
-                                <User className="mr-2 h-4 w-4" />
-                                View Details
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit User
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => syncPatreonUser(user.id)}>
+                                <UserCheck className="mr-2 h-4 w-4" /> Sync Patreon
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
-                                className="cursor-pointer"
-                                disabled={updateUserRoleMutation.isPending}
+                                onClick={() => handleToggleBanUser(user)}
+                                className={user.isBanned ? "text-green-500" : "text-red-500"}
                               >
-                                {user.isAdmin ? (
+                                {user.isBanned ? (
                                   <>
-                                    <ShieldOff className="mr-2 h-4 w-4" />
-                                    Remove Admin
+                                    <ShieldCheck className="mr-2 h-4 w-4" /> Unban User
                                   </>
                                 ) : (
                                   <>
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Make Admin
+                                    <ShieldX className="mr-2 h-4 w-4" /> Ban User
                                   </>
                                 )}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteUser(user)}
+                                className="text-red-500 focus:text-red-500"
+                              >
+                                <Trash className="mr-2 h-4 w-4" /> Delete User
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+      
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-dark-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit User</DialogTitle>
+            <DialogDescription>Update the user details below.</DialogDescription>
+          </DialogHeader>
+          
+          {currentUser && (
+            <div className="flex items-center gap-3 p-3 bg-dark-lighter rounded-md">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={getUserAvatar(currentUser)} alt={currentUser.username} />
+                <AvatarFallback className="bg-primary text-white">
+                  {currentUser.username.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h4 className="font-medium text-white">{currentUser.username}</h4>
+                <p className="text-sm text-neutral-light">
+                  {currentUser.discordId ? (
+                    <span className="flex items-center gap-1">
+                      <i className="fab fa-discord"></i> Connected to Discord
+                    </span>
+                  ) : "No Discord connection"}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex flex-col space-y-4">
+                <FormField
+                  control={form.control}
+                  name="isAdmin"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-4">
+                      <div>
+                        <FormLabel className="text-base">Administrator</FormLabel>
+                        <FormDescription>
+                          Grant full admin privileges to this user
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="isPremium"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-4">
+                      <div>
+                        <FormLabel className="text-base">Premium User</FormLabel>
+                        <FormDescription>
+                          Grant access to premium/subscription content
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="isBanned"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-4">
+                      <div>
+                        <FormLabel className="text-base">Banned</FormLabel>
+                        <FormDescription>
+                          Prevent user from accessing the site
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="bg-primary hover:bg-primary-light"
+                >
+                  {isUpdating ? "Updating..." : "Update User"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-dark-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {currentUser && (
+            <div className="flex items-center gap-3 p-3 bg-dark-lighter rounded-md">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={getUserAvatar(currentUser)} alt={currentUser.username} />
+                <AvatarFallback className="bg-primary text-white">
+                  {currentUser.username.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h4 className="font-medium text-white">{currentUser.username}</h4>
+                <p className="text-sm text-neutral-light">Joined: {new Date(currentUser.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+          )}
+          
+          <Alert variant="destructive" className="bg-red-950 border-red-900">
+            <AlertTitle className="text-red-400">Warning</AlertTitle>
+            <AlertDescription className="text-neutral-light">
+              Deleting this user will remove all their data, including purchases, reviews, and forum posts.
+            </AlertDescription>
+          </Alert>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => currentUser && deleteUser(currentUser.id)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,10 +1,10 @@
-import { sqliteTable, text, integer, real, blob } from "drizzle-orm/sqlite-core";
+import { pgTable, text, serial, integer, doublePrecision, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // User schema
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email"),
   discordId: text("discord_id").unique(),
@@ -12,9 +12,13 @@ export const users = sqliteTable("users", {
   discordAvatar: text("discord_avatar"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
-  isAdmin: integer("is_admin", { mode: "boolean" }).default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  lastLogin: integer("last_login", { mode: "timestamp" }),
+  isAdmin: boolean("is_admin").default(false),
+  isPremium: boolean("is_premium").default(false),
+  isBanned: boolean("is_banned").default(false),
+  patreonId: text("patreon_id").unique(),
+  patreonTier: text("patreon_tier"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastLogin: timestamp("last_login"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -22,22 +26,38 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+// Site settings schema
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 // Mod schema
-export const mods = sqliteTable("mods", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const mods = pgTable("mods", {
+  id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  price: real("price").notNull(),
-  discountPrice: real("discount_price"),
-  thumbnail: text("thumbnail").notNull(),
+  price: doublePrecision("price").notNull(),
+  discountPrice: doublePrecision("discount_price"),
+  previewImageUrl: text("preview_image_url"),
+  downloadUrl: text("download_url"),
   category: text("category").notNull(),
-  tags: text("tags", { mode: "json" }).$type<string[]>().default([]),
-  featured: integer("featured", { mode: "boolean" }).default(false),
+  tags: json("tags").$type<string[]>().default([]),
+  isFeatured: boolean("is_featured").default(false),
   downloadCount: integer("download_count").default(0),
-  averageRating: real("average_rating").default(0),
-  isSubscriptionOnly: integer("is_subscription_only", { mode: "boolean" }).default(false),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  averageRating: doublePrecision("average_rating").default(0),
+  isSubscriptionOnly: boolean("is_subscription_only").default(false),
+  version: text("version").default("1.0.0"),
+  releaseNotes: text("release_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertModSchema = createInsertSchema(mods).omit({
@@ -49,15 +69,15 @@ export const insertModSchema = createInsertSchema(mods).omit({
 });
 
 // Mod version schema
-export const modVersions = sqliteTable("mod_versions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const modVersions = pgTable("mod_versions", {
+  id: serial("id").primaryKey(),
   modId: integer("mod_id").notNull(),
   version: text("version").notNull(),
   filePath: text("file_path").notNull(),
   fileSize: integer("file_size").notNull(),
   changelog: text("changelog"),
-  isLatest: integer("is_latest", { mode: "boolean" }).default(true),
-  releaseDate: integer("release_date", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  isLatest: boolean("is_latest").default(true),
+  releaseDate: timestamp("release_date").notNull().defaultNow(),
 });
 
 export const insertModVersionSchema = createInsertSchema(modVersions).omit({
@@ -66,13 +86,15 @@ export const insertModVersionSchema = createInsertSchema(modVersions).omit({
 });
 
 // User purchases schema
-export const purchases = sqliteTable("purchases", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const purchases = pgTable("purchases", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   modId: integer("mod_id").notNull(),
   transactionId: text("transaction_id").notNull(),
-  price: real("price").notNull(),
-  purchaseDate: integer("purchase_date", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  price: doublePrecision("price").notNull(),
+  status: text("status").default("completed"),
+  purchaseDate: timestamp("purchase_date").notNull().defaultNow(),
 });
 
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({
@@ -81,14 +103,14 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
 });
 
 // Reviews schema
-export const reviews = sqliteTable("reviews", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   modId: integer("mod_id").notNull(),
   rating: integer("rating").notNull(),
   comment: text("comment"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertReviewSchema = createInsertSchema(reviews).omit({
@@ -98,8 +120,8 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
 });
 
 // Forum categories schema
-export const forumCategories = sqliteTable("forum_categories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const forumCategories = pgTable("forum_categories", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   order: integer("order").default(0),
@@ -110,17 +132,17 @@ export const insertForumCategorySchema = createInsertSchema(forumCategories).omi
 });
 
 // Forum threads schema
-export const forumThreads = sqliteTable("forum_threads", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const forumThreads = pgTable("forum_threads", {
+  id: serial("id").primaryKey(),
   categoryId: integer("category_id").notNull(),
   userId: integer("user_id").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  isPinned: integer("is_pinned", { mode: "boolean" }).default(false),
-  isLocked: integer("is_locked", { mode: "boolean" }).default(false),
+  isPinned: boolean("is_pinned").default(false),
+  isLocked: boolean("is_locked").default(false),
   viewCount: integer("view_count").default(0),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({
@@ -131,13 +153,13 @@ export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({
 });
 
 // Forum replies schema
-export const forumReplies = sqliteTable("forum_replies", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const forumReplies = pgTable("forum_replies", {
+  id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull(),
   userId: integer("user_id").notNull(),
   content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertForumReplySchema = createInsertSchema(forumReplies).omit({
@@ -147,11 +169,11 @@ export const insertForumReplySchema = createInsertSchema(forumReplies).omit({
 });
 
 // Cart items schema
-export const cartItems = sqliteTable("cart_items", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const cartItems = pgTable("cart_items", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   modId: integer("mod_id").notNull(),
-  addedAt: integer("added_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
 });
 
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
@@ -159,9 +181,27 @@ export const insertCartItemSchema = createInsertSchema(cartItems).omit({
   addedAt: true,
 });
 
+// Admin activity log
+export const adminActivityLog = pgTable("admin_activity_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  action: text("action").notNull(),
+  details: text("details"),
+  ipAddress: text("ip_address"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLog).omit({
+  id: true,
+  timestamp: true,
+});
+
 // Define type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type InsertSiteSetting = z.infer<typeof insertSiteSettingsSchema>;
 
 export type Mod = typeof mods.$inferSelect;
 export type InsertMod = z.infer<typeof insertModSchema>;
@@ -186,3 +226,6 @@ export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
 
 export type CartItem = typeof cartItems.$inferSelect;
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+
+export type AdminActivityLog = typeof adminActivityLog.$inferSelect;
+export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;
