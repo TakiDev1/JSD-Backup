@@ -23,8 +23,21 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
 import { AuthProvider } from "@/hooks/use-auth";
+import { MaintenanceMode } from "@/components/shared/maintenance-mode";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 function Router() {
+  const { data: settings } = useQuery({
+    queryKey: ['/api/admin/settings'],
+    queryFn: () => apiRequest("GET", "/api/admin/settings"),
+  });
+
+  const showMaintenance = settings?.maintenanceMode && !settings?.isAdmin;
+  
+  if (showMaintenance) {
+    return <MaintenanceMode />;
+  }
   return (
     <Switch>
       <Route path="/" component={Home} />
