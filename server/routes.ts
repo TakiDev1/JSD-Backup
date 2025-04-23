@@ -42,17 +42,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const auth = setupAuth(app);
 
   // Auth routes
-  app.get("/api/auth/discord", passport.authenticate("discord"));
-  
-  app.get(
-    "/api/auth/discord/callback",
-    passport.authenticate("discord", {
-      failureRedirect: "/login-failed"
-    }),
-    (req, res) => {
-      res.redirect("/");
-    }
-  );
+  // Only set up Discord routes if credentials are available
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    app.get("/api/auth/discord", passport.authenticate("discord"));
+    
+    app.get(
+      "/api/auth/discord/callback",
+      passport.authenticate("discord", {
+        failureRedirect: "/login-failed"
+      }),
+      (req, res) => {
+        res.redirect("/");
+      }
+    );
+  } else {
+    console.log("Discord authentication not configured - routes not added");
+    
+    // Add placeholder routes to avoid 404 errors
+    app.get("/api/auth/discord", (req, res) => {
+      res.status(503).json({ message: "Discord authentication not configured" });
+    });
+    
+    app.get("/api/auth/discord/callback", (req, res) => {
+      res.status(503).json({ message: "Discord authentication not configured" });
+    });
+  }
   
   app.get("/api/auth/user", (req, res) => {
     if (req.isAuthenticated()) {

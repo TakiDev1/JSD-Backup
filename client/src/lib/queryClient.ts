@@ -11,6 +11,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  throwOnError: boolean = true,
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
@@ -19,7 +20,9 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  if (throwOnError) {
+    await throwIfResNotOk(res);
+  }
   return res;
 }
 
