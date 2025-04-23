@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring, useAnimationControls, animate } from "framer-motion";
 
 interface Particle {
   id: number;
@@ -9,6 +9,7 @@ interface Particle {
   color: string;
   lifespan: number;
   timestamp: number;
+  trailParticle: boolean;
 }
 
 const MouseParticles = () => {
@@ -16,15 +17,33 @@ const MouseParticles = () => {
   const requestRef = useRef<number | null>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const smoothX = useSpring(mouseX, { damping: 25, stiffness: 100 });
-  const smoothY = useSpring(mouseY, { damping: 25, stiffness: 100 });
+  const smoothX = useSpring(mouseX, { damping: 20, stiffness: 200 });
+  const smoothY = useSpring(mouseY, { damping: 20, stiffness: 200 });
   const lastEmitTime = useRef(0);
-  const emitInterval = 15; // ms between particle emissions
-  const particleLifespan = 1000; // ms
-  const maxParticles = 50;
+  const cursorControls = useAnimationControls();
   
-  // Colors for particles
-  const colors = ["#7300ff", "#8b1aff", "#00e5ff", "#33eaff"];
+  const emitInterval = 8; // ms between particle emissions (lower = more solid trail)
+  const particleLifespan = 1500; // ms - longer life for more visible trail
+  const maxParticles = 100; // Higher max for denser trail
+  
+  // JSD brand colors
+  const primaryColor = "#7300ff";
+  const secondaryColor = "#00e5ff";
+  const colors = [primaryColor, "#8b1aff", secondaryColor, "#33eaff", "#ff00aa"];
+  
+  // Cursor pulse animation
+  useEffect(() => {
+    cursorControls.start({
+      scale: [1, 1.3, 1],
+      opacity: [0.5, 0.8, 0.5],
+      transition: {
+        duration: 2,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatType: "loop"
+      }
+    });
+  }, [cursorControls]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -33,7 +52,13 @@ const MouseParticles = () => {
       
       const now = Date.now();
       if (now - lastEmitTime.current >= emitInterval) {
-        createParticle(e.clientX, e.clientY);
+        createParticle(e.clientX, e.clientY, true); // Trail particles
+        
+        // Occasionally create accent particles
+        if (Math.random() < 0.1) {
+          createParticle(e.clientX, e.clientY, false); // Accent particles
+        }
+        
         lastEmitTime.current = now;
       }
     };
@@ -73,15 +98,24 @@ const MouseParticles = () => {
     };
   }, []);
 
-  const createParticle = (x: number, y: number) => {
+  const createParticle = (x: number, y: number, isTrailParticle: boolean) => {
     const newParticle: Particle = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       x,
       y,
-      size: Math.random() * 8 + 2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      lifespan: Math.random() * 500 + particleLifespan,
+      // Trail particles are smaller and more consistent for the solid trail effect
+      size: isTrailParticle 
+        ? 6 + Math.random() * 4
+        : 10 + Math.random() * 15,
+      // Use more consistent colors for trail particles
+      color: isTrailParticle 
+        ? colors[Math.floor(Math.random() * 2)] // Primarily use the first two colors for trail
+        : colors[Math.floor(Math.random() * colors.length)],
+      lifespan: isTrailParticle 
+        ? particleLifespan
+        : particleLifespan * 0.7,
       timestamp: Date.now(),
+      trailParticle: isTrailParticle
     };
     
     setParticles((prevParticles) => [...prevParticles, newParticle]);
@@ -89,30 +123,61 @@ const MouseParticles = () => {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-50">
+      {/* Main cursor ball with pulsing effect */}
       <motion.div
-        className="absolute w-4 h-4 rounded-full bg-primary opacity-30"
+        className="absolute rounded-full shadow-lg shadow-primary/50"
         style={{
           x: smoothX,
           y: smoothY,
           translateX: "-50%",
           translateY: "-50%",
+          width: 24,
+          height: 24,
+          background: `radial-gradient(circle, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+          filter: "blur(1px)"
+        }}
+        animate={cursorControls}
+      />
+      
+      {/* Small center dot for precision */}
+      <motion.div
+        className="absolute rounded-full bg-white"
+        style={{
+          x: smoothX,
+          y: smoothY,
+          translateX: "-50%",
+          translateY: "-50%",
+          width: 4,
+          height: 4,
+          zIndex: 60
         }}
       />
       
+      {/* Particle trail */}
       {particles.map((particle) => {
         const age = Date.now() - particle.timestamp;
-        const opacity = 1 - age / particle.lifespan;
-        const scale = 1 - age / particle.lifespan;
+        const lifeProgress = age / particle.lifespan;
+        const opacity = particle.trailParticle
+          ? 0.8 - lifeProgress * 0.8 // Trail particles maintain higher opacity
+          : 1 - lifeProgress;
         
+        // Apply different styles based on particle type
         return (
           <motion.div
             key={particle.id}
             className="absolute rounded-full"
-            initial={{ opacity: 0.7, scale: 1 }}
-            animate={{ opacity: 0, scale: 0.5 }}
+            initial={{ 
+              opacity: particle.trailParticle ? 0.8 : 0.9, 
+              scale: 1,
+              filter: particle.trailParticle ? "blur(1px)" : "blur(2px)"
+            }}
+            animate={{ 
+              opacity: 0, 
+              scale: particle.trailParticle ? 0.7 : 0.2
+            }}
             transition={{ 
               duration: particle.lifespan / 1000,
-              ease: "easeOut" 
+              ease: particle.trailParticle ? "linear" : "easeOut" 
             }}
             style={{
               x: particle.x,
@@ -120,6 +185,7 @@ const MouseParticles = () => {
               width: particle.size,
               height: particle.size,
               backgroundColor: particle.color,
+              boxShadow: particle.trailParticle ? "none" : `0 0 8px ${particle.color}`,
               translateX: "-50%",
               translateY: "-50%",
             }}

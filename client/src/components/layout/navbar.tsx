@@ -13,7 +13,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { motion } from "framer-motion";
-import { Menu, X, Search, ShoppingCart, User } from "lucide-react";
+import { Menu, X, Search, ShoppingCart, User, Settings } from "lucide-react";
+import jsdLogo from "@/assets/jsd_logo.png";
 
 const Navbar = () => {
   const [location] = useLocation();
@@ -43,11 +44,11 @@ const Navbar = () => {
     <nav className={`fixed top-0 left-0 right-0 z-50 ${isScrolled ? 'bg-dark-lighter bg-opacity-90 backdrop-blur-md' : 'bg-transparent'} transition-all duration-300`}>
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
-          <div className="mr-2 text-primary text-3xl">
-            <i className="fas fa-car-crash"></i>
-          </div>
-          <Link href="/" className="text-2xl font-display font-bold tracking-wider text-white">
-            JSD<span className="text-primary-light">Mods</span>
+          <Link href="/" className="flex items-center gap-2">
+            <img src={jsdLogo} alt="JSD Logo" className="h-10 w-auto hover:animate-pulse" />
+            <span className="text-2xl font-display font-bold tracking-wider text-white">
+              JSD<span className="text-primary-light">Mods</span>
+            </span>
           </Link>
         </div>
         
@@ -138,9 +139,12 @@ const Navbar = () => {
             <SheetContent side="right" className="w-[300px] bg-dark-lighter">
               <div className="flex flex-col gap-6 py-6">
                 <div className="px-4 py-2">
-                  <h2 className="text-2xl font-display font-bold mb-6">
-                    JSD<span className="text-primary-light">Mods</span>
-                  </h2>
+                  <div className="flex items-center gap-2 mb-6">
+                    <img src={jsdLogo} alt="JSD Logo" className="h-10 w-auto" />
+                    <h2 className="text-2xl font-display font-bold">
+                      JSD<span className="text-primary-light">Mods</span>
+                    </h2>
+                  </div>
                   <div className="flex flex-col space-y-4">
                     {navLinks.map((link) => (
                       !link.authRequired || isAuthenticated ? (
