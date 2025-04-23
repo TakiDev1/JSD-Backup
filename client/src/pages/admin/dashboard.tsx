@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users, Package, CreditCard, BarChart3, Activity, Settings,
-  ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock 
+  ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock,
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Users, Package, FileCheck, Activity, Settings, CreditCard, ShieldAlert, RefreshCw } from "lucide-react";
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();

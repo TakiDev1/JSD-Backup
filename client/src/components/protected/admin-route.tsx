@@ -37,9 +37,11 @@ function AdminRoute({ path, component: Component }: AdminRouteProps) {
               <Button variant="outline" onClick={() => navigate("/")}>
                 Go Home
               </Button>
-              {!isAuthenticated && (
-                <Button onClick={login}>
-                  <i className="fab fa-discord mr-2"></i> Login
+              {!user && (
+                <Button asChild>
+                  <Link href="/admin-login">
+                    <i className="fab fa-discord mr-2"></i> Login
+                  </Link>
                 </Button>
               )}
             </CardFooter>
