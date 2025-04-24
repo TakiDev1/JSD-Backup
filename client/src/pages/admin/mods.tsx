@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePublishMod, useUnpublishMod } from "@/hooks/use-mods";
+import { useTogglePublishMod, usePublishMod, useUnpublishMod } from "@/hooks/use-mods";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -172,6 +172,7 @@ const AdminMods = () => {
   });
   
   // Use our custom hooks from use-mods.ts for publish/unpublish
+  const { mutate: togglePublish, isPending: isTogglingPublish } = useTogglePublishMod();
   const { mutate: publishMod, isPending: isPublishing } = usePublishMod();
   const { mutate: unpublishMod, isPending: isUnpublishing } = useUnpublishMod();
   
@@ -201,14 +202,18 @@ const AdminMods = () => {
     setIsDeleteDialogOpen(true);
   };
   
-  // Publish mod handler
-  const handlePublishMod = (mod: any) => {
-    publishMod(mod.id);
+  // Toggle publish status handler
+  const handleTogglePublish = (mod: any) => {
+    togglePublish({ id: mod.id, currentState: mod.isPublished });
   };
   
-  // Unpublish mod handler
+  // Old handlers kept for backward compatibility
+  const handlePublishMod = (mod: any) => {
+    togglePublish({ id: mod.id, currentState: false });
+  };
+  
   const handleUnpublishMod = (mod: any) => {
-    unpublishMod(mod.id);
+    togglePublish({ id: mod.id, currentState: true });
   };
   
   // Form submit handler
