@@ -254,7 +254,7 @@ const AdminMods = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add New Mod
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] bg-dark-card">
+            <DialogContent className="sm:max-w-[800px] bg-dark-card max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-white">Create New Mod</DialogTitle>
                 <DialogDescription>Fill out the form below to create a new mod.</DialogDescription>
@@ -652,7 +652,7 @@ const AdminMods = () => {
       
       {/* Edit Mod Dialog - Reusing the create dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] bg-dark-card">
+        <DialogContent className="sm:max-w-[800px] bg-dark-card max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">Edit Mod</DialogTitle>
             <DialogDescription>Update the mod details below.</DialogDescription>
@@ -860,7 +860,7 @@ const AdminMods = () => {
       
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-dark-card">
+        <DialogContent className="sm:max-w-[500px] bg-dark-card max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">Confirm Deletion</DialogTitle>
             <DialogDescription>
