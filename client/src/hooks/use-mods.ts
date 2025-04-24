@@ -300,3 +300,61 @@ export function useDeleteMod() {
     },
   });
 }
+
+export function usePublishMod() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/mods/${id}/publish`, {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate all potentially affected queries
+      queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(data.id)] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
+      toast({
+        title: "Mod Published",
+        description: "The mod has been published and is now publicly visible.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to publish the mod. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useUnpublishMod() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/mods/${id}/unpublish`, {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate all potentially affected queries
+      queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(data.id)] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
+      toast({
+        title: "Mod Unpublished",
+        description: "The mod has been unpublished and is no longer publicly visible.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unpublish the mod. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+}

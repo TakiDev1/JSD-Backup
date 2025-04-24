@@ -170,49 +170,9 @@ const AdminMods = () => {
     },
   });
   
-  // Publish mod mutation
-  const { mutate: publishMod, isPending: isPublishing } = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("POST", `/api/mods/${id}/publish`, {});
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/mods/counts/by-category'] });
-      toast({
-        title: "Mod Published",
-        description: "The mod has been published and is now visible to users",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to publish mod. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Unpublish mod mutation
-  const { mutate: unpublishMod, isPending: isUnpublishing } = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("POST", `/api/mods/${id}/unpublish`, {});
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/mods/counts/by-category'] });
-      toast({
-        title: "Mod Unpublished",
-        description: "The mod has been unpublished and is no longer visible to users",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to unpublish mod. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // Use our custom hooks from use-mods.ts for publish/unpublish
+  const { mutate: publishMod, isPending: isPublishing } = usePublishMod();
+  const { mutate: unpublishMod, isPending: isUnpublishing } = useUnpublishMod();
   
   // Edit mod handler
   const handleEditMod = (mod: any) => {
