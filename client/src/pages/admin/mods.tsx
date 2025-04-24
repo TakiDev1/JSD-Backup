@@ -36,6 +36,7 @@ const modSchema = z.object({
   version: z.string().min(1, "Version is required"),
   isFeatured: z.boolean().default(false),
   isSubscriptionOnly: z.boolean().default(false),
+  isPublished: z.boolean().default(false),
   releaseNotes: z.string().optional(),
   tags: z.string().optional(),
 });
@@ -84,6 +85,7 @@ const AdminMods = () => {
       version: "1.0.0",
       isFeatured: false,
       isSubscriptionOnly: false,
+      isPublished: false,
       releaseNotes: "",
       tags: "",
     },
@@ -225,6 +227,7 @@ const AdminMods = () => {
       version: mod.version || "1.0.0",
       isFeatured: mod.isFeatured || false,
       isSubscriptionOnly: mod.isSubscriptionOnly || false,
+      isPublished: mod.isPublished || false,
       releaseNotes: mod.releaseNotes || "",
       tags: mod.tags ? mod.tags.join(", ") : "",
     });
@@ -433,7 +436,7 @@ const AdminMods = () => {
                       )}
                     />
                     
-                    <div className="flex space-x-6 items-center md:col-span-2">
+                    <div className="flex flex-wrap space-x-6 items-center md:col-span-2">
                       <FormField
                         control={form.control}
                         name="isFeatured"
@@ -462,6 +465,22 @@ const AdminMods = () => {
                               />
                             </FormControl>
                             <FormLabel>Subscription Only</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="isPublished"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel>Publish Immediately</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -669,6 +688,16 @@ const AdminMods = () => {
                                 Standard
                               </Badge>
                             )}
+                            
+                            {mod.isPublished ? (
+                              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                                Published
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
+                                Unpublished
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>{new Date(mod.createdAt).toLocaleDateString()}</TableCell>
@@ -847,7 +876,7 @@ const AdminMods = () => {
                   )}
                 />
                 
-                <div className="flex space-x-6 items-center md:col-span-2">
+                <div className="flex flex-wrap space-x-6 items-center md:col-span-2">
                   <FormField
                     control={form.control}
                     name="isFeatured"
@@ -876,6 +905,22 @@ const AdminMods = () => {
                           />
                         </FormControl>
                         <FormLabel>Subscription Only</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="isPublished"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Published</FormLabel>
                       </FormItem>
                     )}
                   />
