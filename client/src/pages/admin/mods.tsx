@@ -510,7 +510,7 @@ const AdminMods = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="relative overflow-x-auto">
+            <div className="relative overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-primary scrollbar-track-transparent">
               <Table>
                 <TableHeader>
                   <TableRow>
