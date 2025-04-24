@@ -378,9 +378,12 @@ const ForumPage = () => {
             </div>
             
             {isAuthenticated && (
-              <Button onClick={() => setIsNewThreadOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" /> New Thread
-              </Button>
+              // Show the New Thread button unless we're in Announcements category (ID 1) and user is not JSD or Von
+              (categoryId !== 1 || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
+                <Button onClick={() => setIsNewThreadOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> New Thread
+                </Button>
+              ) : null
             )}
           </div>
         </div>
@@ -395,12 +398,17 @@ const ForumPage = () => {
               <div className="text-center py-8">
                 <p className="text-neutral-light">No threads found in this category</p>
                 {isAuthenticated && (
-                  <Button 
-                    className="mt-4"
-                    onClick={() => setIsNewThreadOpen(true)}
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create First Thread
-                  </Button>
+                  // Only show the Create First Thread button if user has permission
+                  (categoryId !== 1 || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
+                    <Button 
+                      className="mt-4"
+                      onClick={() => setIsNewThreadOpen(true)}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Create First Thread
+                    </Button>
+                  ) : (
+                    <p className="mt-4 text-neutral">Only JSD and Von can post announcements</p>
+                  )
                 )}
               </div>
             </CardContent>

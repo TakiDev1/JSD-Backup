@@ -764,8 +764,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/forum/categories/:id/threads", auth.isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
+      const user = req.user as any;
+      const userId = user.id;
       const categoryId = parseInt(req.params.id);
+      
+      // Check if this is the announcements category (ID 1) and if the user is not JSD or Von
+      if (categoryId === 1 && !user.isAdmin) {
+        // Check if the user is JSD or Von (assuming usernames are 'JSD' and 'Von')
+        const isAuthorized = user.username === 'JSD' || user.username === 'Von';
+        
+        if (!isAuthorized) {
+          return res.status(403).json({ 
+            message: "Only JSD and Von can post announcements" 
+          });
+        }
+      }
       
       const threadData = {
         categoryId,
@@ -785,7 +798,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/forum/threads/:id/replies", auth.isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
+      const user = req.user as any;
+      const userId = user.id;
       const threadId = parseInt(req.params.id);
       
       // Check if thread exists
@@ -798,6 +812,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if thread is locked
       if (thread.isLocked) {
         return res.status(403).json({ message: "Thread is locked" });
+      }
+      
+      // If this is a thread in the Announcements category, check if the user is authorized
+      if (thread.categoryId === 1) {
+        // We want to allow all users to reply to announcements, so no restriction here
+        // But if we wanted to restrict replies to admins only, we would uncomment this:
+        /*
+        // Check if the user is JSD or Von (assuming usernames are 'JSD' and 'Von') or is admin
+        const isAuthorized = user.username === 'JSD' || user.username === 'Von' || user.isAdmin;
+        
+        if (!isAuthorized) {
+          return res.status(403).json({ 
+            message: "Only JSD and Von can reply to announcements" 
+          });
+        }
+        */
       }
       
       const replyData = {
