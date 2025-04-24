@@ -240,38 +240,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Mods routes
+  // SIMPLIFIED MODS ROUTES - All mods with admin & public filtering
   app.get("/api/mods", async (req, res) => {
     try {
-      const { category, search, featured, subscription, limit, page, showAll } = req.query;
-      const pageSize = limit ? parseInt(limit as string) : 12;
-      const currentPage = page ? parseInt(page as string) : 1;
+      const { 
+        category, 
+        search, 
+        featured, 
+        subscription, 
+        limit = "12", 
+        page = "1",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = req.query;
+      
+      const pageSize = parseInt(limit as string);
+      const currentPage = parseInt(page as string);
       const offset = (currentPage - 1) * pageSize;
       
-      // For admin panel, we can show all mods including unpublished ones
-      // For public access, we only show published mods
-      const showUnpublished = showAll === "true";
+      // For admin users show all mods, for everyone else only show published
+      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
       
-      const mods = await storage.getMods({
-        category: category as string,
-        searchTerm: search as string,
-        featured: featured === "true",
-        subscriptionOnly: subscription === "true",
-        onlyPublished: !showUnpublished,
-        limit: pageSize,
-        offset
-      });
+      // Query database directly with SQL for better performance and reliability
+      let query = db.select().from(mods);
       
-      const total = await storage.getModsCount({
-        category: category as string,
-        searchTerm: search as string,
-        featured: featured === "true",
-        subscriptionOnly: subscription === "true",
-        onlyPublished: !showUnpublished
-      });
+      // Apply filters
+      if (category) {
+        query = query.where(eq(mods.category, category as string));
+      }
       
+      if (search) {
+        query = query.where(
+          sql`${mods.title} ILIKE ${'%' + search + '%'} OR ${mods.description} ILIKE ${'%' + search + '%'}`
+        );
+      }
+      
+      if (featured === "true") {
+        query = query.where(eq(mods.isFeatured, true));
+      }
+      
+      if (subscription === "true") {
+        query = query.where(eq(mods.isSubscriptionOnly, true));
+      }
+      
+      // Only admins can see unpublished mods
+      if (!isAdmin) {
+        query = query.where(eq(mods.isPublished, true));
+      }
+      
+      // Count total first
+      const countQuery = db.select({ count: sql`COUNT(*)` }).from(mods);
+      
+      // Apply same filters to count query
+      if (category) {
+        countQuery.where(eq(mods.category, category as string));
+      }
+      
+      if (search) {
+        countQuery.where(
+          sql`${mods.title} ILIKE ${'%' + search + '%'} OR ${mods.description} ILIKE ${'%' + search + '%'}`
+        );
+      }
+      
+      if (featured === "true") {
+        countQuery.where(eq(mods.isFeatured, true));
+      }
+      
+      if (subscription === "true") {
+        countQuery.where(eq(mods.isSubscriptionOnly, true));
+      }
+      
+      if (!isAdmin) {
+        countQuery.where(eq(mods.isPublished, true));
+      }
+      
+      // Execute the count query
+      const [totalResult] = await countQuery;
+      const total = Number(totalResult.count);
+      
+      // Apply sorting to main query
+      const column = sortBy === 'title' ? mods.title :
+                    sortBy === 'price' ? mods.price :
+                    sortBy === 'category' ? mods.category :
+                    sortBy === 'version' ? mods.version :
+                    sortBy === 'downloadCount' ? mods.downloadCount :
+                    mods.createdAt;
+                    
+      if (sortOrder === 'asc') {
+        query = query.orderBy(asc(column));
+      } else {
+        query = query.orderBy(desc(column));
+      }
+      
+      // Apply pagination to main query
+      query = query.limit(pageSize).offset(offset);
+      
+      // Execute the main query
+      const results = await query;
+      
+      // Return result
       res.json({
-        mods,
+        mods: results,
         pagination: {
           total,
           pageSize,
@@ -280,38 +349,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error: any) {
+      console.error("Error fetching mods:", error);
       res.status(500).json({ message: error.message });
     }
   });
   
-  // Get mod counts by category
+  // SIMPLIFIED categories with direct SQL counts
   app.get("/api/mods/counts/by-category", async (req, res) => {
     try {
-      // Use all known categories including our newly added ones
-      const allCategories = [
-        "vehicles", "sports", "drift", "offroad", "racing", "muscle",
-        "maps", "parts", "configs", "handling", "sounds", "graphics", "utilities"
-      ];
+      // Check if this is an admin request
+      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
       
-      // Check if this is an admin request, which should show all mods including unpublished ones
-      const showAll = req.query.showAll === "true";
+      // Get categories directly from database - more efficient than hardcoding
+      let query = db
+        .select({ id: mods.category, count: sql`COUNT(*)` })
+        .from(mods)
+        .groupBy(mods.category);
       
-      const counts = await Promise.all(
-        allCategories.map(async (category) => {
-          const count = await storage.getModsCount({ 
-            category,
-            // Only show published mods to regular users
-            onlyPublished: !showAll
-          });
-          return {
-            id: category,
-            count
-          };
-        })
-      );
+      // Only show published mods for non-admin users
+      if (!isAdmin) {
+        query = query.where(eq(mods.isPublished, true));
+      }
       
-      res.json(counts);
+      const categoryCounts = await query;
+      
+      // Fallback to default categories if none found
+      if (categoryCounts.length === 0) {
+        const defaults = [
+          { id: "vehicles", count: 0 },
+          { id: "sports", count: 0 },
+          { id: "drift", count: 0 },
+          { id: "offroad", count: 0 },
+          { id: "racing", count: 0 },
+          { id: "muscle", count: 0 },
+          { id: "maps", count: 0 },
+          { id: "parts", count: 0 }
+        ];
+        res.json(defaults);
+      } else {
+        res.json(categoryCounts);
+      }
     } catch (error: any) {
+      console.error("Error fetching category counts:", error);
       res.status(500).json({ message: error.message });
     }
   });
