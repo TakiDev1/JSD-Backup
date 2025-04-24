@@ -27,8 +27,6 @@ const generalSettingsSchema = z.object({
   siteName: z.string().min(1, "Site name is required"),
   siteDescription: z.string().min(1, "Site description is required"),
   contactEmail: z.string().email("Must be a valid email address"),
-  maintenanceMode: z.boolean().default(false),
-  maintenanceMessage: z.string().optional(),
 });
 
 const integrationSettingsSchema = z.object({
@@ -66,8 +64,6 @@ const AdminSettings = () => {
     siteName: "JSD Mods",
     siteDescription: "Premium BeamNG Drive mods",
     contactEmail: "contact@jsdmods.com",
-    maintenanceMode: false,
-    maintenanceMessage: "Site is currently undergoing maintenance. Please check back soon.",
   }, isLoading: generalSettingsLoading } = useQuery({
     queryKey: ['/api/admin/settings/general'],
     queryFn: async () => {
