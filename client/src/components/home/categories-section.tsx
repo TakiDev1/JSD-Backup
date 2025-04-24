@@ -41,13 +41,15 @@ const CategoriesSection = () => {
   
   // Process categories with their counts
   const categoriesWithCounts = MOD_CATEGORIES.map(category => {
+    // Find count data for this category
     const countInfo = Array.isArray(categoryCounts) 
-      ? categoryCounts.find(c => c.id === category.value) 
+      ? categoryCounts.find((c: any) => c && c.id === category.value) 
       : null;
     
+    // Return category with count information
     return {
       ...category,
-      count: countInfo ? countInfo.count : 0
+      count: countInfo && typeof countInfo.count === 'number' ? countInfo.count : 0
     };
   });
 

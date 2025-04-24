@@ -92,7 +92,8 @@ export function useCategoryCounts() {
     queryKey: ["/api/mods/counts/by-category"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/mods/counts/by-category");
-      return response || [];
+      const data = await response.json();
+      return data || [];
     },
     staleTime: 60000, // 1 minute
   });
@@ -209,6 +210,7 @@ export function useCreateMod() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
       toast({
         title: "Mod created",
         description: "The mod has been created successfully.",
@@ -242,6 +244,7 @@ export function useUpdateMod() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
       queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(id)] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
       toast({
         title: "Mod updated",
         description: "The mod has been updated successfully.",
@@ -268,6 +271,7 @@ export function useDeleteMod() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
       toast({
         title: "Mod deleted",
         description: "The mod has been deleted successfully.",
