@@ -113,9 +113,10 @@ export function setupAuth(app: Express) {
                        (process.env.REPLIT_DOMAINS ? 
                         `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/api/auth/discord/callback` : 
                         'http://localhost:5000/api/auth/discord/callback'),
+          passReqToCallback: true,
           scope: DISCORD_SCOPES
         },
-        async (accessToken, refreshToken, profile, done) => {
+        async (req, accessToken, refreshToken, profile, done) => {
           try {
             // Check if user exists
             let user = await storage.getUserByDiscordId(profile.id);

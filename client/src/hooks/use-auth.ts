@@ -45,38 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const handleLogin = async () => {
     try {
-      // Check if Discord auth is configured
-      const response = await apiRequest("GET", "/api/auth/discord", undefined, false);
+      // Use the loginWithDiscord function from auth.ts
+      const result = await loginWithDiscord();
       
-      if (response.status === 503) {
-        // Discord auth not configured
+      // The function will redirect to Discord OAuth page
+      // If it returns false, that means Discord auth is not available
+      if (result === false) {
         toast({
           title: "Login Failed",
           description: "Discord authentication is not currently available. Please try again later or contact support.",
           variant: "destructive",
         });
-        return;
-      }
-      
-      // Discord auth is available, proceed with popup
-      const width = 500;
-      const height = 800;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(
-        `/api/auth/discord`,
-        "discord-auth",
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
-
-      if (popup) {
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed);
-            window.location.reload();
-          }
-        }, 500);
       }
     } catch (error) {
       console.error("Discord login error:", error);

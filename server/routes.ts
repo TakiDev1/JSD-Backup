@@ -227,7 +227,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         password: hashedPassword,
         isAdmin: false,
-        createdAt: new Date(),
       });
       
       // Login the user
