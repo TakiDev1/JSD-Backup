@@ -102,9 +102,15 @@ const MouseParticles = () => {
     };
   }, []);
 
+  // Track a counter for unique particle IDs
+  const particleIdCounter = useRef(0);
+  
   const createParticle = (x: number, y: number, isTrailParticle: boolean) => {
+    // Increment counter for truly unique IDs
+    particleIdCounter.current += 1;
+    
     const newParticle: Particle = {
-      id: Date.now() + Math.random(),
+      id: particleIdCounter.current, // Use counter instead of timestamp for unique IDs
       x,
       y,
       // Trail particles are consistent size for solid trail effect

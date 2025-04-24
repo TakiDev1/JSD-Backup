@@ -1,0 +1,118 @@
+Warning: Each child in a list should have a unique &quot;key&quot; prop.
+
+Check the render method of `Controller`. See https://reactjs.org/link/warning-keys for more information.
+    at _c11 (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/select.tsx:208:13)
+    at Controller (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:298:35)
+    at FormField (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/form.tsx:33:6)
+    at div
+    at form
+    at FormProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:102:11)
+    at div
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:61:7
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HG7P5XMB.js?v=e111e7b2:29:5
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:238:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:161:58
+    at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:152:64
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:260:22
+    at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+    at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+    at DialogPortal (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:114:11)
+    at _c3 (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/dialog.tsx:52:12)
+    at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+    at Dialog (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:55:5)
+    at div
+    at div
+    at div
+    at AdminMods (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/pages/admin/mods.tsx:59:29)
+    at Route (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e111e7b2:323:16)
+    at AdminRoute (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/protected/admin-route.tsx:23:23)
+    at Switch…
+Warning: Each child in a list should have a unique &quot;key&quot; prop.
+
+Check the render method of `Select`. It was passed a child from SelectItemText. See https://reactjs.org/link/warning-keys for more information.
+    at option
+    at Select (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=e111e7b2:88:5)
+    at div
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/form.tsx:72:6
+    at Controller (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:298:35)
+    at FormField (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/form.tsx:33:6)
+    at div
+    at form
+    at FormProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:102:11)
+    at div
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:61:7
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HG7P5XMB.js?v=e111e7b2:29:5
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:238:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:161:58
+    at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:152:64
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+    at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:260:22
+    at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+    at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+    at DialogPortal (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:114:11)
+    at _c3 (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/dialog.tsx:52:12)
+    at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+    at Dialog (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:55:5)
+    at div
+    at div
+    at div
+    at AdminMods (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/pages/admin/mods.tsx:59:29)
+    at Route (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e111e7b2:323:16)
+    at AdminRoute…
+
+Check the render method of &#x60;Select&#x60;. It was passed a child from SelectItemText. See https://reactjs.org/link/warning-keys for more information.
+at option
+at Select (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=e111e7b2:88:5)
+at div
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/form.tsx:72:6
+at Controller (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:298:35)
+at FormField (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/form.tsx:33:6)
+at div
+at form
+at FormProvider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=e111e7b2:102:11)
+at div
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:61:7
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-HG7P5XMB.js?v=e111e7b2:29:5
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:238:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:161:58
+at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:152:64
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:79:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=e111e7b2:56:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=e111e7b2:42:13
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AFLIZ4FI.js?v=e111e7b2:260:22
+at Presence (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LUE5KDWX.js?v=e111e7b2:24:11)
+at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+at DialogPortal (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:114:11)
+at _c3 (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/components/ui/dialog.tsx:52:12)
+at Provider (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e111e7b2:38:15)
+at Dialog (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=e111e7b2:55:5)
+at div
+at div
+at div
+at AdminMods (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/src/pages/admin/mods.tsx:59:29)
+at Route (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e111e7b2:323:16)
+at AdminRoute…
+at t.value (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://0af586b4-9dd5-4ac9-84ab-5a9bdf0393cc-00-1b1xo5jp53i0f.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
