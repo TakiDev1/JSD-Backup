@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -71,7 +71,8 @@ const AdminSettings = () => {
   }, isLoading: generalSettingsLoading } = useQuery({
     queryKey: ['/api/admin/settings/general'],
     queryFn: async () => {
-      return {};
+      const res = await apiRequest("GET", "/api/admin/settings/general");
+      return await res.json();
     },
     enabled: !!user && isAdmin,
   });
@@ -86,7 +87,8 @@ const AdminSettings = () => {
   }, isLoading: integrationSettingsLoading } = useQuery({
     queryKey: ['/api/admin/settings/integrations'],
     queryFn: async () => {
-      return {};
+      const res = await apiRequest("GET", "/api/admin/settings/integrations");
+      return await res.json();
     },
     enabled: !!user && isAdmin,
   });
@@ -101,7 +103,8 @@ const AdminSettings = () => {
   }, isLoading: paymentSettingsLoading } = useQuery({
     queryKey: ['/api/admin/settings/payments'],
     queryFn: async () => {
-      return {};
+      const res = await apiRequest("GET", "/api/admin/settings/payments");
+      return await res.json();
     },
     enabled: !!user && isAdmin,
   });
@@ -282,7 +285,7 @@ const AdminSettings = () => {
   };
   
   // Update form values when data changes
-  useState(() => {
+  useEffect(() => {
     if (!generalSettingsLoading) {
       generalForm.reset({
         siteName: generalSettings.siteName,
@@ -292,27 +295,31 @@ const AdminSettings = () => {
         maintenanceMessage: generalSettings.maintenanceMessage,
       });
     }
-    
+  }, [generalSettings, generalSettingsLoading, generalForm]);
+  
+  useEffect(() => {
     if (!integrationSettingsLoading) {
       integrationForm.reset({
         patreonClientId: integrationSettings.patreonClientId,
         patreonClientSecret: integrationSettings.patreonClientSecret,
-        patreonWebhookSecret: integrationSettings.patreonWebhookSecret,
+        patreonWebhookSecret: integrationSettings.patreonWebhookSecret || "",
         patreonCreatorAccessToken: integrationSettings.patreonCreatorAccessToken,
         discordWebhookUrl: integrationSettings.discordWebhookUrl,
       });
     }
-    
+  }, [integrationSettings, integrationSettingsLoading, integrationForm]);
+  
+  useEffect(() => {
     if (!paymentSettingsLoading) {
       paymentForm.reset({
         currency: paymentSettings.currency,
-        defaultSubscriptionPrice: paymentSettings.defaultSubscriptionPrice.toString(),
+        defaultSubscriptionPrice: paymentSettings.defaultSubscriptionPrice?.toString() || "9.99",
         enableStripe: paymentSettings.enableStripe,
         enableSubscriptions: paymentSettings.enableSubscriptions,
-        taxRate: paymentSettings.taxRate.toString(),
+        taxRate: paymentSettings.taxRate?.toString() || "0",
       });
     }
-  });
+  }, [paymentSettings, paymentSettingsLoading, paymentForm]);
   
   if (!isAdmin) {
     return (
