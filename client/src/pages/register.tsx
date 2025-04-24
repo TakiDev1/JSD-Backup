@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2, LogIn, UserPlus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { SiDiscord } from "react-icons/si";
 
@@ -18,12 +18,19 @@ const formSchema = z.object({
   username: z.string().min(3, {
     message: "Username must be at least 3 characters.",
   }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
   password: z.string().min(6, {
     message: "Password must be at least 6 characters.",
   }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [location, navigate] = useLocation();
   const { user, isLoading, refreshUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +38,7 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   // Check if Discord auth is available
-  useEffect(() => {
+  useState(() => {
     async function checkDiscordAuth() {
       try {
         const response = await fetch("/api/auth/discord-status");
@@ -45,13 +52,15 @@ export default function LoginPage() {
     }
     
     checkDiscordAuth();
-  }, []);
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
+      email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -63,25 +72,25 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const { username, password } = values;
+      const { username, email, password } = values;
       
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, email, password }),
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        throw new Error(errorData.message || "Registration failed");
       }
       
       const userData = await response.json();
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${userData.username}!`,
+        title: "Registration successful",
+        description: `Welcome, ${userData.username}!`,
       });
       
       // Force refresh auth state
@@ -91,8 +100,8 @@ export default function LoginPage() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: "Login failed",
-        description: error.message || "Invalid username or password. Please try again.",
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration.",
         variant: "destructive",
       });
     } finally {
@@ -117,12 +126,12 @@ export default function LoginPage() {
     <div className="container flex items-center justify-center min-h-screen">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
-          <CardDescription>Choose your preferred login method</CardDescription>
+          <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
+          <CardDescription>Choose your preferred registration method</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
-            <div className="text-center font-semibold text-sm">Discord Login (Recommended)</div>
+            <div className="text-center font-semibold text-sm">Discord Registration (Recommended)</div>
             <Button 
               variant="outline" 
               className="w-full flex items-center gap-2 py-6" 
@@ -130,14 +139,14 @@ export default function LoginPage() {
               disabled={discordAuthAvailable === false}
             >
               <SiDiscord className="h-5 w-5 text-[#5865F2]" />
-              <span>{discordAuthAvailable === false ? "Discord Login Unavailable" : "Login with Discord"}</span>
+              <span>{discordAuthAvailable === false ? "Discord Login Unavailable" : "Register with Discord"}</span>
             </Button>
           </div>
           
           <Separator className="my-4" />
           
           <div className="space-y-4">
-            <div className="text-center font-semibold text-sm">Email & Password Login</div>
+            <div className="text-center font-semibold text-sm">Email & Password Registration</div>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -147,7 +156,21 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your username" {...field} />
+                        <Input placeholder="Choose a username" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter your email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -161,7 +184,21 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Enter your password" {...field} />
+                        <Input type="password" placeholder="Create a password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Confirm your password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -172,12 +209,12 @@ export default function LoginPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Logging in...
+                      Registering...
                     </>
                   ) : (
                     <>
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Login
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Register
                     </>
                   )}
                 </Button>
@@ -188,11 +225,11 @@ export default function LoginPage() {
         
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-muted-foreground text-center w-full">
-            Don't have an account? Please use Discord login to register automatically.
+            Already have an account?
           </div>
           
-          <Button variant="link" onClick={() => navigate("/admin-login")} className="w-full">
-            Admin Login
+          <Button variant="link" onClick={() => navigate("/login")} className="w-full">
+            Login to your account
           </Button>
         </CardFooter>
       </Card>
