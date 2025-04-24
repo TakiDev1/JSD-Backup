@@ -87,6 +87,17 @@ export function useModLocker() {
   });
 }
 
+export function useCategoryCounts() {
+  return useQuery({
+    queryKey: ["/api/mods/counts/by-category"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/mods/counts/by-category");
+      return response || [];
+    },
+    staleTime: 60000, // 1 minute
+  });
+}
+
 export function useDownloadMod(modId: number) {
   const queryClient = useQueryClient();
 

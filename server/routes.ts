@@ -290,6 +290,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get mod counts by category
+  app.get("/api/mods/counts/by-category", async (req, res) => {
+    try {
+      const categories = [
+        "vehicles", "maps", "parts", "configs", 
+        "handling", "sounds", "graphics", "utilities"
+      ];
+      
+      const counts = await Promise.all(
+        categories.map(async (category) => {
+          const count = await storage.getModsCount({ category });
+          return {
+            id: category,
+            count
+          };
+        })
+      );
+      
+      res.json(counts);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.get("/api/mods/:id", async (req, res) => {
     try {
       const mod = await storage.getMod(parseInt(req.params.id));
