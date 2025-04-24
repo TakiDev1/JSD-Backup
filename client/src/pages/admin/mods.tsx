@@ -686,14 +686,14 @@ const AdminMods = () => {
                               <DropdownMenuSeparator />
                               {mod.isPublished ? (
                                 <DropdownMenuItem 
-                                  onClick={() => handleUnpublishMod(mod)}
+                                  onClick={() => handleTogglePublish(mod)}
                                   className="text-amber-500 focus:text-amber-500"
                                 >
                                   <Eye className="mr-2 h-4 w-4" /> Unpublish
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem 
-                                  onClick={() => handlePublishMod(mod)}
+                                  onClick={() => handleTogglePublish(mod)}
                                   className="text-green-500 focus:text-green-500"
                                 >
                                   <Eye className="mr-2 h-4 w-4" /> Publish
