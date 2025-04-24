@@ -58,12 +58,16 @@ const AdminMods = () => {
   
   // Get mods list
   const { data = { mods: [], pagination: { total: 0, pageSize: 10, currentPage: 1 } }, isLoading: modsLoading, refetch: refetchMods } = useQuery({
-    queryKey: ['/api/admin/mods', activeTab, sortBy, sortOrder, searchQuery, filterCategory],
+    queryKey: ['/api/mods', activeTab, sortBy, sortOrder, searchQuery, filterCategory],
     queryFn: async () => {
-      return {
-        mods: [],
-        pagination: { total: 0, pageSize: 10, currentPage: 1 }
-      };
+      const params = new URLSearchParams();
+      if (filterCategory) params.append('category', filterCategory);
+      if (searchQuery) params.append('search', searchQuery);
+      if (sortBy) params.append('sortBy', sortBy);
+      if (sortOrder) params.append('sortOrder', sortOrder);
+      
+      const response = await fetch(`/api/mods?${params.toString()}`);
+      return await response.json();
     },
   });
   
@@ -96,7 +100,7 @@ const AdminMods = () => {
       return apiRequest("POST", "/api/mods", formattedValues);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
       toast({
         title: "Mod Created",
         description: "The mod has been created successfully",
@@ -125,7 +129,7 @@ const AdminMods = () => {
       return apiRequest("PATCH", `/api/mods/${id}`, formattedValues);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
       toast({
         title: "Mod Updated",
         description: "The mod has been updated successfully",
@@ -147,7 +151,7 @@ const AdminMods = () => {
       return apiRequest("DELETE", `/api/mods/${id}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
       toast({
         title: "Mod Deleted",
         description: "The mod has been deleted successfully",
