@@ -111,10 +111,6 @@ const AdminSettings = () => {
   const integrationForm = useForm<IntegrationSettingsValues>({
     resolver: zodResolver(integrationSettingsSchema),
     defaultValues: {
-      patreonClientId: integrationSettings.patreonClientId,
-      patreonClientSecret: integrationSettings.patreonClientSecret,
-      patreonWebhookSecret: integrationSettings.patreonWebhookSecret,
-      patreonCreatorAccessToken: integrationSettings.patreonCreatorAccessToken,
       discordWebhookUrl: integrationSettings.discordWebhookUrl,
     },
   });
@@ -200,24 +196,6 @@ const AdminSettings = () => {
   });
   
   // Test connection mutations
-  const { mutate: testPatreonConnection, isPending: isTestingPatreon } = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/settings/test-patreon", {});
-    },
-    onSuccess: () => {
-      toast({
-        title: "Patreon Connection Successful",
-        description: "Your Patreon integration is working correctly",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Patreon Connection Failed",
-        description: "Could not connect to Patreon. Please check your integration settings.",
-        variant: "destructive",
-      });
-    },
-  });
   
   const { mutate: testDiscordWebhook, isPending: isTestingDiscord } = useMutation({
     mutationFn: async () => {
@@ -284,10 +262,6 @@ const AdminSettings = () => {
   useEffect(() => {
     if (!integrationSettingsLoading) {
       integrationForm.reset({
-        patreonClientId: integrationSettings.patreonClientId,
-        patreonClientSecret: integrationSettings.patreonClientSecret,
-        patreonWebhookSecret: integrationSettings.patreonWebhookSecret || "",
-        patreonCreatorAccessToken: integrationSettings.patreonCreatorAccessToken,
         discordWebhookUrl: integrationSettings.discordWebhookUrl,
       });
     }
@@ -426,87 +400,7 @@ const AdminSettings = () => {
               <CardContent>
                 <Form {...integrationForm}>
                   <form onSubmit={integrationForm.handleSubmit(onSubmitIntegration)} className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <img src="https://c5.patreon.com/external/logo/downloads_logomark_color_on_white@2x.png" 
-                          alt="Patreon Logo" className="h-8 w-8 rounded bg-white p-1" />
-                        <h3 className="text-xl font-semibold text-white">Patreon Integration</h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={integrationForm.control}
-                          name="patreonClientId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Patreon Client ID</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Client ID..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={integrationForm.control}
-                          name="patreonClientSecret"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Patreon Client Secret</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="Client Secret..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={integrationForm.control}
-                          name="patreonCreatorAccessToken"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Patreon Creator Access Token</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Creator Access Token..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={integrationForm.control}
-                          name="patreonWebhookSecret"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Patreon Webhook Secret (Optional)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Webhook Secret..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <div className="flex justify-end">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          disabled={isTestingPatreon}
-                          onClick={() => testPatreonConnection()}
-                          className="mr-2"
-                        >
-                          <Activity className="mr-2 h-4 w-4" />
-                          {isTestingPatreon ? "Testing..." : "Test Connection"}
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
+
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 mb-4">
                         <img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a69f118df70ad7828d4_icon_clyde_blurple_RGB.png" 
