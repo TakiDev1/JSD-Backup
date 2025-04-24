@@ -30,10 +30,6 @@ const generalSettingsSchema = z.object({
 });
 
 const integrationSettingsSchema = z.object({
-  patreonClientId: z.string().min(1, "Patreon Client ID is required"),
-  patreonClientSecret: z.string().min(1, "Patreon Client Secret is required"),
-  patreonWebhookSecret: z.string().optional(),
-  patreonCreatorAccessToken: z.string().min(1, "Patreon Creator Access Token is required"),
   discordWebhookUrl: z.string().url("Must be a valid URL").or(z.string().length(0)),
 });
 
@@ -75,10 +71,6 @@ const AdminSettings = () => {
   
   // Get integration settings - only fetch if user is authenticated and admin
   const { data: integrationSettings = {
-    patreonClientId: "",
-    patreonClientSecret: "",
-    patreonWebhookSecret: "",
-    patreonCreatorAccessToken: "",
     discordWebhookUrl: "",
   }, isLoading: integrationSettingsLoading } = useQuery({
     queryKey: ['/api/admin/settings/integrations'],
@@ -112,8 +104,6 @@ const AdminSettings = () => {
       siteName: generalSettings.siteName,
       siteDescription: generalSettings.siteDescription,
       contactEmail: generalSettings.contactEmail,
-      maintenanceMode: generalSettings.maintenanceMode,
-      maintenanceMessage: generalSettings.maintenanceMessage,
     },
   });
   
@@ -287,8 +277,6 @@ const AdminSettings = () => {
         siteName: generalSettings.siteName,
         siteDescription: generalSettings.siteDescription,
         contactEmail: generalSettings.contactEmail,
-        maintenanceMode: generalSettings.maintenanceMode,
-        maintenanceMessage: generalSettings.maintenanceMessage,
       });
     }
   }, [generalSettings, generalSettingsLoading, generalForm]);
@@ -412,54 +400,6 @@ const AdminSettings = () => {
                     </div>
                     
                     <Separator />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <Alert className="bg-dark-lighter">
-                          <AlertTitle className="text-white">Maintenance Mode</AlertTitle>
-                          <AlertDescription>
-                            When enabled, only administrators will be able to access the site. Use this when performing major updates.
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-                      
-                      <FormField
-                        control={generalForm.control}
-                        name="maintenanceMode"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between space-x-2 space-y-0 rounded-md border p-4">
-                            <div>
-                              <FormLabel className="text-base flex items-center gap-2">
-                                <CloudOff className="h-4 w-4" /> Maintenance Mode
-                              </FormLabel>
-                              <FormDescription>
-                                Put the site in maintenance mode
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={generalForm.control}
-                        name="maintenanceMessage"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Maintenance Message</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Site is down for maintenance..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
                     
                     <div className="flex justify-end">
                       <Button 
@@ -710,11 +650,28 @@ const AdminSettings = () => {
                     
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 mb-4">
-                        <ShoppingCart className="h-6 w-6 text-primary" />
-                        <h3 className="text-xl font-semibold text-white">Subscription Options</h3>
+                        <ShoppingCart className="h-6 w-6" />
+                        <h3 className="text-xl font-semibold text-white">Subscription Settings</h3>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          control={paymentForm.control}
+                          name="defaultSubscriptionPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Default Subscription Price</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" step="0.01" placeholder="9.99" {...field} />
+                              </FormControl>
+                              <FormDescription>
+                                Monthly subscription price in your selected currency
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
                         <FormField
                           control={paymentForm.control}
                           name="enableSubscriptions"
@@ -732,30 +689,6 @@ const AdminSettings = () => {
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={paymentForm.control}
-                          name="defaultSubscriptionPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Default Subscription Price</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="0" 
-                                  step="0.01" 
-                                  placeholder="9.99" 
-                                  {...field} 
-                                  disabled={!paymentForm.getValues("enableSubscriptions")}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Monthly subscription price in your selected currency
-                              </FormDescription>
-                              <FormMessage />
                             </FormItem>
                           )}
                         />
