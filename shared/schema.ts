@@ -144,6 +144,7 @@ export const forumThreads = pgTable("forum_threads", {
   isPinned: boolean("is_pinned").default(false),
   isLocked: boolean("is_locked").default(false),
   viewCount: integer("view_count").default(0),
+  replyCount: integer("reply_count").default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -151,6 +152,7 @@ export const forumThreads = pgTable("forum_threads", {
 export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({
   id: true,
   viewCount: true,
+  replyCount: true,
   createdAt: true,
   updatedAt: true,
 });
