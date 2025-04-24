@@ -15,6 +15,9 @@ interface ModsQueryParams {
 }
 
 export function useModsList(params: ModsQueryParams = {}) {
+  // Check if we need to include showAll parameter for admin access
+  const { isAdmin } = useAuth();
+  
   const queryParams = new URLSearchParams();
   if (params.category) queryParams.append("category", params.category);
   if (params.search) queryParams.append("search", params.search);
@@ -22,6 +25,9 @@ export function useModsList(params: ModsQueryParams = {}) {
   if (params.subscription !== undefined) queryParams.append("subscription", params.subscription.toString());
   if (params.limit !== undefined) queryParams.append("limit", params.limit.toString());
   if (params.page !== undefined) queryParams.append("page", params.page.toString());
+  
+  // Only show all mods (including unpublished) for admins
+  if (isAdmin) queryParams.append("showAll", "true");
 
   const queryString = queryParams.toString();
   const endpoint = `${API.MODS.LIST}${queryString ? `?${queryString}` : ""}`;
@@ -88,10 +94,19 @@ export function useModLocker() {
 }
 
 export function useCategoryCounts() {
+  // Check if we need to include showAll parameter for admin access
+  const { isAdmin } = useAuth();
+  
+  const queryParams = new URLSearchParams();
+  if (isAdmin) queryParams.append("showAll", "true");
+  
+  const queryString = queryParams.toString();
+  const endpoint = `/api/mods/counts/by-category${queryString ? `?${queryString}` : ""}`;
+  
   return useQuery({
-    queryKey: ["/api/mods/counts/by-category"],
+    queryKey: [endpoint],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/mods/counts/by-category");
+      const response = await apiRequest("GET", endpoint);
       return response || [];
     },
     staleTime: 60000, // 1 minute
