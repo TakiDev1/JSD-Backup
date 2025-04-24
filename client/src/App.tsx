@@ -21,6 +21,7 @@ import Profile from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import MaintenancePage from "@/pages/maintenance";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/maintenance" component={MaintenancePage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/users" component={AdminUsers} />

@@ -36,23 +36,15 @@ export async function logout() {
   }
 }
 
-// Login with Discord
+// Login with Discord - redirects to maintenance page
 export async function loginWithDiscord() {
   try {
-    // Check if Discord authentication is available
-    const response = await fetch("/api/auth/discord-status");
-    const data = await response.json();
-    
-    if (data.available) {
-      window.location.href = "/api/auth/discord";
-    } else {
-      // Display message that Discord authentication is not configured
-      alert("Discord authentication is not currently available. Please use admin login instead or contact the site administrator.");
-      return false;
-    }
+    // Redirect to maintenance page for Discord login
+    window.location.href = "/maintenance";
+    return true;
   } catch (error) {
-    console.error("Error checking Discord auth status:", error);
-    alert("Discord authentication is not currently available. Please use admin login instead or contact the site administrator.");
+    console.error("Error redirecting to maintenance page:", error);
+    window.location.href = "/maintenance";
     return false;
   }
 }
