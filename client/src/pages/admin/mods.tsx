@@ -168,6 +168,50 @@ const AdminMods = () => {
     },
   });
   
+  // Publish mod mutation
+  const { mutate: publishMod, isPending: isPublishing } = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/mods/${id}/publish`, {});
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mods/counts/by-category'] });
+      toast({
+        title: "Mod Published",
+        description: "The mod has been published and is now visible to users",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to publish mod. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Unpublish mod mutation
+  const { mutate: unpublishMod, isPending: isUnpublishing } = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/mods/${id}/unpublish`, {});
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mods/counts/by-category'] });
+      toast({
+        title: "Mod Unpublished",
+        description: "The mod has been unpublished and is no longer visible to users",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to unpublish mod. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Edit mod handler
   const handleEditMod = (mod: any) => {
     setCurrentMod(mod);
@@ -191,6 +235,16 @@ const AdminMods = () => {
   const handleDeleteMod = (mod: any) => {
     setCurrentMod(mod);
     setIsDeleteDialogOpen(true);
+  };
+  
+  // Publish mod handler
+  const handlePublishMod = (mod: any) => {
+    publishMod(mod.id);
+  };
+  
+  // Unpublish mod handler
+  const handleUnpublishMod = (mod: any) => {
+    unpublishMod(mod.id);
   };
   
   // Form submit handler
@@ -634,6 +688,22 @@ const AdminMods = () => {
                                   <Eye className="mr-2 h-4 w-4" /> View
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {mod.isPublished ? (
+                                <DropdownMenuItem 
+                                  onClick={() => handleUnpublishMod(mod)}
+                                  className="text-amber-500 focus:text-amber-500"
+                                >
+                                  <Eye className="mr-2 h-4 w-4" /> Unpublish
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem 
+                                  onClick={() => handlePublishMod(mod)}
+                                  className="text-green-500 focus:text-green-500"
+                                >
+                                  <Eye className="mr-2 h-4 w-4" /> Publish
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteMod(mod)}
