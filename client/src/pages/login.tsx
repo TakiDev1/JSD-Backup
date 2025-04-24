@@ -36,6 +36,7 @@ export default function LoginPage() {
       try {
         const response = await fetch("/api/auth/discord-status");
         const data = await response.json();
+        console.log("Discord auth status:", data);
         setDiscordAuthAvailable(data.available);
       } catch (error) {
         console.error("Error checking Discord auth status:", error);
@@ -63,17 +64,35 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const { username, password } = values;
-      // TODO: Implement regular user login when needed
-      // For now, just show toast about unavailable feature
-      toast({
-        title: "Feature not available",
-        description: "Regular login is not yet implemented. Please use Discord login.",
-        variant: "destructive",
+      
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed");
+      }
+      
+      const userData = await response.json();
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${userData.username}!`,
+      });
+      
+      // Force refresh auth state
+      refreshUser();
+      
+      // Navigate to home page
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error.message || "An error occurred during login. Please try again.",
+        description: error.message || "Invalid username or password. Please try again.",
         variant: "destructive",
       });
     } finally {
