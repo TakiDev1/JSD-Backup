@@ -12,9 +12,8 @@ import { z } from "zod";
 import {
   insertModSchema,
   insertModVersionSchema,
-  insertReviewSchema,
-  insertForumThreadSchema,
-  insertForumReplySchema
+  insertReviewSchema
+  // Forum schemas removed as requested
 } from "@shared/schema";
 import passport from "passport";
 
@@ -244,16 +243,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mods routes
   app.get("/api/mods", async (req, res) => {
     try {
-      const { category, search, featured, subscription, limit, page } = req.query;
+      const { category, search, featured, subscription, limit, page, showAll } = req.query;
       const pageSize = limit ? parseInt(limit as string) : 12;
       const currentPage = page ? parseInt(page as string) : 1;
       const offset = (currentPage - 1) * pageSize;
+      
+      // For admin panel, we can show all mods including unpublished ones
+      // For public access, we only show published mods
+      const showUnpublished = showAll === "true";
       
       const mods = await storage.getMods({
         category: category as string,
         searchTerm: search as string,
         featured: featured === "true",
         subscriptionOnly: subscription === "true",
+        onlyPublished: !showUnpublished,
         limit: pageSize,
         offset
       });
@@ -262,7 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: category as string,
         searchTerm: search as string,
         featured: featured === "true",
-        subscriptionOnly: subscription === "true"
+        subscriptionOnly: subscription === "true",
+        onlyPublished: !showUnpublished
       });
       
       res.json({
@@ -363,6 +368,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Publish/unpublish mod routes
+  app.post("/api/mods/:id/publish", auth.isAdmin, async (req, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      const mod = await storage.updateMod(modId, { isPublished: true });
+      
+      if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Publish Mod",
+        details: `Published mod ID: ${modId}, Title: ${mod.title}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(mod);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/mods/:id/unpublish", auth.isAdmin, async (req, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      const mod = await storage.updateMod(modId, { isPublished: false });
+      
+      if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Unpublish Mod",
+        details: `Unpublished mod ID: ${modId}, Title: ${mod.title}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(mod);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -726,124 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forum routes
-  app.get("/api/forum/categories", async (req, res) => {
-    try {
-      const categories = await storage.getForumCategories();
-      res.json(categories);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  app.get("/api/forum/categories/:id/threads", async (req, res) => {
-    try {
-      const categoryId = parseInt(req.params.id);
-      const threads = await storage.getForumThreads(categoryId);
-      res.json(threads);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  app.get("/api/forum/threads/:id", async (req, res) => {
-    try {
-      const threadId = parseInt(req.params.id);
-      const thread = await storage.getForumThread(threadId);
-      
-      if (!thread) {
-        return res.status(404).json({ message: "Thread not found" });
-      }
-      
-      const replies = await storage.getForumReplies(threadId);
-      
-      res.json({ thread, replies });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  app.post("/api/forum/categories/:id/threads", auth.isAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as any;
-      const userId = user.id;
-      const categoryId = parseInt(req.params.id);
-      
-      // Check if this is the announcements category (ID 1) and if the user is not JSD or Von
-      if (categoryId === 1 && !user.isAdmin) {
-        // Check if the user is JSD or Von (assuming usernames are 'JSD' and 'Von')
-        const isAuthorized = user.username === 'JSD' || user.username === 'Von';
-        
-        if (!isAuthorized) {
-          return res.status(403).json({ 
-            message: "Only JSD and Von can post announcements" 
-          });
-        }
-      }
-      
-      const threadData = {
-        categoryId,
-        userId,
-        title: req.body.title,
-        content: req.body.content
-      };
-      
-      const validatedData = insertForumThreadSchema.parse(threadData);
-      const thread = await storage.createForumThread(validatedData);
-      
-      res.status(201).json(thread);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  app.post("/api/forum/threads/:id/replies", auth.isAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as any;
-      const userId = user.id;
-      const threadId = parseInt(req.params.id);
-      
-      // Check if thread exists
-      const thread = await storage.getForumThread(threadId);
-      
-      if (!thread) {
-        return res.status(404).json({ message: "Thread not found" });
-      }
-      
-      // Check if thread is locked
-      if (thread.isLocked) {
-        return res.status(403).json({ message: "Thread is locked" });
-      }
-      
-      // If this is a thread in the Announcements category, check if the user is authorized
-      if (thread.categoryId === 1) {
-        // We want to allow all users to reply to announcements, so no restriction here
-        // But if we wanted to restrict replies to admins only, we would uncomment this:
-        /*
-        // Check if the user is JSD or Von (assuming usernames are 'JSD' and 'Von') or is admin
-        const isAuthorized = user.username === 'JSD' || user.username === 'Von' || user.isAdmin;
-        
-        if (!isAuthorized) {
-          return res.status(403).json({ 
-            message: "Only JSD and Von can reply to announcements" 
-          });
-        }
-        */
-      }
-      
-      const replyData = {
-        threadId,
-        userId,
-        content: req.body.content
-      };
-      
-      const validatedData = insertForumReplySchema.parse(replyData);
-      const reply = await storage.createForumReply(validatedData);
-      
-      res.status(201).json(reply);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // Forum routes have been removed as requested
 
   // Admin routes
   app.get("/api/admin/stats", auth.isAdmin, async (req, res) => {
