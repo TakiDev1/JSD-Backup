@@ -5,10 +5,12 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { db } from "./db";
+import * as schema from "@shared/schema";
 import { mods } from "@shared/schema";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { z } from "zod";
+import { eq, sql, asc, desc } from "drizzle-orm";
 import {
   insertModSchema,
   insertModVersionSchema,
@@ -240,107 +242,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // SIMPLIFIED MODS ROUTES - All mods with admin & public filtering
+  // Simple mod listing endpoint - with direct db access and published/unpublished handling
   app.get("/api/mods", async (req, res) => {
     try {
-      const { 
-        category, 
-        search, 
-        featured, 
-        subscription, 
-        limit = "12", 
-        page = "1",
-        sortBy = "createdAt",
-        sortOrder = "desc",
-      } = req.query;
-      
-      const pageSize = parseInt(limit as string);
-      const currentPage = parseInt(page as string);
+      const { category, search, featured, subscription, limit, page, showAll } = req.query;
+      const pageSize = limit ? parseInt(limit as string) : 12;
+      const currentPage = page ? parseInt(page as string) : 1;
       const offset = (currentPage - 1) * pageSize;
       
-      // For admin users show all mods, for everyone else only show published
-      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
+      // For admin panel we show all mods, for public we only show published
+      const showUnpublished = showAll === "true";
       
-      // Query database directly with SQL for better performance and reliability
-      let query = db.select().from(mods);
+      // This will go directly to storage interface as in original code
+      const mods = await storage.getMods({
+        category: category as string,
+        searchTerm: search as string,
+        featured: featured === "true",
+        subscriptionOnly: subscription === "true",
+        onlyPublished: !showUnpublished,
+        limit: pageSize,
+        offset
+      });
       
-      // Apply filters
-      if (category) {
-        query = query.where(eq(mods.category, category as string));
-      }
+      const total = await storage.getModsCount({
+        category: category as string,
+        searchTerm: search as string,
+        featured: featured === "true",
+        subscriptionOnly: subscription === "true",
+        onlyPublished: !showUnpublished
+      });
       
-      if (search) {
-        query = query.where(
-          sql`${mods.title} ILIKE ${'%' + search + '%'} OR ${mods.description} ILIKE ${'%' + search + '%'}`
-        );
-      }
-      
-      if (featured === "true") {
-        query = query.where(eq(mods.isFeatured, true));
-      }
-      
-      if (subscription === "true") {
-        query = query.where(eq(mods.isSubscriptionOnly, true));
-      }
-      
-      // Only admins can see unpublished mods
-      if (!isAdmin) {
-        query = query.where(eq(mods.isPublished, true));
-      }
-      
-      // Count total first
-      const countQuery = db.select({ count: sql`COUNT(*)` }).from(mods);
-      
-      // Apply same filters to count query
-      if (category) {
-        countQuery.where(eq(mods.category, category as string));
-      }
-      
-      if (search) {
-        countQuery.where(
-          sql`${mods.title} ILIKE ${'%' + search + '%'} OR ${mods.description} ILIKE ${'%' + search + '%'}`
-        );
-      }
-      
-      if (featured === "true") {
-        countQuery.where(eq(mods.isFeatured, true));
-      }
-      
-      if (subscription === "true") {
-        countQuery.where(eq(mods.isSubscriptionOnly, true));
-      }
-      
-      if (!isAdmin) {
-        countQuery.where(eq(mods.isPublished, true));
-      }
-      
-      // Execute the count query
-      const [totalResult] = await countQuery;
-      const total = Number(totalResult.count);
-      
-      // Apply sorting to main query
-      const column = sortBy === 'title' ? mods.title :
-                    sortBy === 'price' ? mods.price :
-                    sortBy === 'category' ? mods.category :
-                    sortBy === 'version' ? mods.version :
-                    sortBy === 'downloadCount' ? mods.downloadCount :
-                    mods.createdAt;
-                    
-      if (sortOrder === 'asc') {
-        query = query.orderBy(asc(column));
-      } else {
-        query = query.orderBy(desc(column));
-      }
-      
-      // Apply pagination to main query
-      query = query.limit(pageSize).offset(offset);
-      
-      // Execute the main query
-      const results = await query;
-      
-      // Return result
       res.json({
-        mods: results,
+        mods,
         pagination: {
           total,
           pageSize,
@@ -354,41 +287,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // SIMPLIFIED categories with direct SQL counts
+  // Get mod counts by category - using reliable storage interface
   app.get("/api/mods/counts/by-category", async (req, res) => {
     try {
-      // Check if this is an admin request
-      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
+      // Check if this is an admin request, which should show all mods including unpublished ones
+      const showAll = req.query.showAll === "true";
       
-      // Get categories directly from database - more efficient than hardcoding
-      let query = db
-        .select({ id: mods.category, count: sql`COUNT(*)` })
-        .from(mods)
-        .groupBy(mods.category);
+      // Use predefined categories to ensure we always have a consistent list
+      const allCategories = [
+        "vehicles", "sports", "drift", "offroad", "racing", "muscle",
+        "maps", "parts", "configs", "handling", "sounds", "graphics", "utilities"
+      ];
       
-      // Only show published mods for non-admin users
-      if (!isAdmin) {
-        query = query.where(eq(mods.isPublished, true));
-      }
+      const counts = await Promise.all(
+        allCategories.map(async (category) => {
+          const count = await storage.getModsCount({ 
+            category,
+            // Only show published mods to regular users
+            onlyPublished: !showAll
+          });
+          return {
+            id: category,
+            count
+          };
+        })
+      );
       
-      const categoryCounts = await query;
-      
-      // Fallback to default categories if none found
-      if (categoryCounts.length === 0) {
-        const defaults = [
-          { id: "vehicles", count: 0 },
-          { id: "sports", count: 0 },
-          { id: "drift", count: 0 },
-          { id: "offroad", count: 0 },
-          { id: "racing", count: 0 },
-          { id: "muscle", count: 0 },
-          { id: "maps", count: 0 },
-          { id: "parts", count: 0 }
-        ];
-        res.json(defaults);
-      } else {
-        res.json(categoryCounts);
-      }
+      res.json(counts);
     } catch (error: any) {
       console.error("Error fetching category counts:", error);
       res.status(500).json({ message: error.message });
@@ -467,7 +392,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Publish/unpublish mod routes
+  // IMPROVED: Single toggle endpoint for publish/unpublish
+  app.post("/api/mods/:id/toggle-publish", auth.isAdmin, async (req, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      
+      // Get current mod to determine publish state
+      const existingMod = await storage.getMod(modId);
+      
+      if (!existingMod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      // Toggle the published state
+      const newPublishState = !existingMod.isPublished;
+      
+      // Update mod
+      const mod = await storage.updateMod(modId, { isPublished: newPublishState });
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: newPublishState ? "Publish Mod" : "Unpublish Mod",
+        details: `${newPublishState ? "Published" : "Unpublished"} mod ID: ${modId}, Title: ${mod.title}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(mod);
+    } catch (error: any) {
+      console.error("Error toggling publish state:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Keep legacy endpoints for backwards compatibility
   app.post("/api/mods/:id/publish", auth.isAdmin, async (req, res) => {
     try {
       const modId = parseInt(req.params.id);

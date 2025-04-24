@@ -11,6 +11,7 @@ export const API = {
     VERSIONS: (id: number) => `/api/mods/${id}/versions`,
     REVIEWS: (id: number) => `/api/mods/${id}/reviews`,
     DOWNLOAD: (id: number) => `/api/mods/${id}/download`,
+    TOGGLE_PUBLISH: (id: number) => `/api/mods/${id}/toggle-publish`,
   },
   CART: {
     LIST: "/api/cart",
