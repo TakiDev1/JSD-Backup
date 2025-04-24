@@ -35,6 +35,11 @@ export const API = {
 // Mod categories
 export const MOD_CATEGORIES = [
   { value: "vehicles", label: "Vehicles", id: "vehicles", name: "Vehicles", count: 0 },
+  { value: "sports", label: "Sports Cars", id: "sports", name: "Sports Cars", count: 0 },
+  { value: "drift", label: "Drift Cars", id: "drift", name: "Drift Cars", count: 0 },
+  { value: "offroad", label: "Off-Road Vehicles", id: "offroad", name: "Off-Road Vehicles", count: 0 },
+  { value: "racing", label: "Racing Cars", id: "racing", name: "Racing Cars", count: 0 },
+  { value: "muscle", label: "Muscle Cars", id: "muscle", name: "Muscle Cars", count: 0 },
   { value: "maps", label: "Maps & Environments", id: "maps", name: "Maps & Environments", count: 0 },
   { value: "parts", label: "Parts & Components", id: "parts", name: "Parts & Components", count: 0 },
   { value: "configs", label: "Configurations", id: "configs", name: "Configurations", count: 0 },
