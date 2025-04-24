@@ -84,11 +84,7 @@ const Footer = () => {
                   My Mod Locker
                 </Link>
               </li>
-              <li>
-                <Link href="/forum" className="text-neutral hover:text-primary transition-colors">
-                  Forum
-                </Link>
-              </li>
+
               <li>
                 <Link href="/about" className="text-neutral hover:text-primary transition-colors">
                   About JSD
