@@ -1,67 +1,60 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { API } from "@/lib/constants";
 import { apiRequest } from "@/lib/queryClient";
 
+// Forum categories
 export function useForumCategories() {
   return useQuery({
-    queryKey: [API.FORUM.CATEGORIES],
-    queryFn: async () => {
-      const response = await apiRequest("GET", API.FORUM.CATEGORIES);
-      // Ensure we always return an array
-      return Array.isArray(response) ? response : [];
-    },
+    queryKey: ["/api/forum/categories"],
   });
 }
 
+// Forum threads for a category
 export function useForumThreads(categoryId?: number) {
   return useQuery({
-    queryKey: [API.FORUM.THREADS, categoryId],
-    queryFn: async () => {
-      if (!categoryId) return [];
-      const response = await apiRequest("GET", API.FORUM.THREADS(categoryId));
-      return Array.isArray(response) ? response : [];
-    },
+    queryKey: ["/api/forum/categories", categoryId, "threads"],
     enabled: !!categoryId,
   });
 }
 
+// Forum thread details with replies
 export function useForumThread(threadId?: number) {
   return useQuery({
-    queryKey: [API.FORUM.THREAD, threadId],
-    queryFn: async () => {
-      if (!threadId) return { thread: null, replies: [] };
-      const response = await apiRequest("GET", API.FORUM.THREAD(threadId));
-      return {
-        thread: response?.thread || null,
-        replies: Array.isArray(response?.replies) ? response.replies : [],
-      };
-    },
+    queryKey: ["/api/forum/threads", threadId],
     enabled: !!threadId,
   });
 }
 
+// Create a new thread
 export function useCreateThread() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async ({ categoryId, title, content }: any) => {
-      return apiRequest("POST", API.FORUM.THREADS(categoryId), { title, content });
+    mutationFn: async ({ categoryId, title, content }: { categoryId: number; title: string; content: string }) => {
+      const res = await apiRequest("POST", `/api/forum/categories/${categoryId}/threads`, {
+        title,
+        content,
+      });
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API.FORUM.THREADS] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/categories", variables.categoryId, "threads"] });
     },
   });
 }
 
+// Create a reply to a thread
 export function useCreateReply() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async ({ threadId, content }: any) => {
-      return apiRequest("POST", API.FORUM.REPLIES(threadId), { content });
+    mutationFn: async ({ threadId, content }: { threadId: number; content: string }) => {
+      const res = await apiRequest("POST", `/api/forum/threads/${threadId}/replies`, {
+        content,
+      });
+      return res.json();
     },
-    onSuccess: (_, { threadId }) => {
-      queryClient.invalidateQueries({ queryKey: [API.FORUM.THREAD, threadId] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/forum/threads", variables.threadId] });
     },
   });
 }
