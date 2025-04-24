@@ -1,23 +1,21 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MessageSquare, Eye, Pin, Lock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { useAuth } from "@/hooks/use-auth";
+import React from 'react';
+import { useLocation } from 'wouter';
+import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { MessageSquare, Eye, Pin, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Thread {
   id: number;
   title: string;
   content: string;
   userId: number;
+  viewCount: number;
+  replyCount: number;
   isPinned: boolean;
   isLocked: boolean;
-  viewCount: number;
-  replyCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,66 +26,9 @@ interface PostListProps {
   error?: any;
 }
 
-const PostList = ({ threads, isLoading, error }: PostListProps) => {
+const PostList: React.FC<PostListProps> = ({ threads }) => {
   const [, navigate] = useLocation();
   const { getUserAvatar } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, index) => (
-          <Card key={index} className="bg-dark-card">
-            <CardContent className="pt-6">
-              <div className="flex justify-between">
-                <div className="flex-1">
-                  <Skeleton className="h-6 w-3/4 mb-4" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-                <div className="ml-4 flex flex-col items-end justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Skeleton className="h-6 w-20" />
-                    <Skeleton className="h-6 w-20" />
-                  </div>
-                  <Skeleton className="h-4 w-32 mt-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="bg-dark-card">
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-neutral-light">Error loading threads. Please try again.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => window.location.reload()}
-            >
-              Retry
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!threads || threads.length === 0) {
-    return (
-      <Card className="bg-dark-card">
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <p className="text-neutral-light">No threads found</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-4">
