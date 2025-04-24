@@ -4,6 +4,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
+import { db } from "./db";
+import { mods } from "@shared/schema";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { z } from "zod";
@@ -280,13 +282,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get mod counts by category
   app.get("/api/mods/counts/by-category", async (req, res) => {
     try {
-      const categories = [
-        "vehicles", "maps", "parts", "configs", 
-        "handling", "sounds", "graphics", "utilities"
+      // Use all known categories including our newly added ones
+      const allCategories = [
+        "vehicles", "sports", "drift", "offroad", "racing", "muscle",
+        "maps", "parts", "configs", "handling", "sounds", "graphics", "utilities"
       ];
       
       const counts = await Promise.all(
-        categories.map(async (category) => {
+        allCategories.map(async (category) => {
           const count = await storage.getModsCount({ category });
           return {
             id: category,
