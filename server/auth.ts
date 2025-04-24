@@ -118,25 +118,39 @@ export function setupAuth(app: Express) {
         },
         async (req, accessToken, refreshToken, profile, done) => {
           try {
+            console.log("Discord auth - profile:", { 
+              id: profile.id,
+              username: profile.username,
+              email: profile.email
+            });
+            
             // Check if user exists
             let user = await storage.getUserByDiscordId(profile.id);
             
             if (user) {
-              // Update existing user
+              // Check if this Discord account should be an admin
+              const shouldBeAdmin = ['jsd', 'von', 'developer'].includes(profile.username.toLowerCase());
+              
+              // Update existing user and grant admin access if needed
               user = await storage.updateUser(user.id, {
                 discordUsername: profile.username,
                 discordAvatar: profile.avatar,
                 email: profile.email,
+                isAdmin: shouldBeAdmin ? true : user.isAdmin, // Don't remove existing admin privileges
                 lastLogin: new Date()
               });
             } else {
-              // Create new user
+              // Check if this is an admin Discord account
+              const isAdmin = ['jsd', 'von', 'developer'].includes(profile.username.toLowerCase());
+              
+              // Create new user with admin status if appropriate
               user = await storage.createUser({
                 username: profile.username,
                 discordId: profile.id,
                 discordUsername: profile.username,
                 discordAvatar: profile.avatar,
                 email: profile.email,
+                isAdmin: isAdmin, // Grant admin access to specific Discord users
                 lastLogin: new Date()
               });
             }
