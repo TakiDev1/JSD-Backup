@@ -457,7 +457,7 @@ const ForumPage = () => {
                         </Badge>
                       </div>
                       <div className="text-neutral text-sm mt-2">
-                        Updated {formatDistanceToNow(new Date(thread.updatedAt), { addSuffix: true })}
+                        Updated {thread.updatedAt ? formatDistanceToNow(new Date(thread.updatedAt), { addSuffix: true }) : 'recently'}
                       </div>
                     </div>
                   </div>
