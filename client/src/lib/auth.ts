@@ -36,15 +36,23 @@ export async function logout() {
   }
 }
 
-// Login with Discord - redirects to maintenance page
+// Login with Discord
 export async function loginWithDiscord() {
   try {
-    // Redirect to maintenance page for Discord login
-    window.location.href = "/maintenance";
+    // Check if Discord auth is available
+    const statusRes = await fetch("/api/auth/discord-status");
+    const statusData = await statusRes.json();
+    
+    if (!statusData.available) {
+      console.error("Discord auth is not available");
+      return false;
+    }
+    
+    // Redirect to Discord OAuth
+    window.location.href = "/api/auth/discord";
     return true;
   } catch (error) {
-    console.error("Error redirecting to maintenance page:", error);
-    window.location.href = "/maintenance";
+    console.error("Error during Discord login:", error);
     return false;
   }
 }
