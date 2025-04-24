@@ -77,6 +77,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
   
+  // Regular user login route
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Verify password - only if the user has a password set
+      if (user.password) {
+        const passwordValid = await comparePasswords(password, user.password);
+        
+        if (!passwordValid) {
+          return res.status(401).json({ message: "Invalid username or password" });
+        }
+      } else {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Login the user
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login error" });
+        }
+        
+        // Don't send sensitive information to the client
+        const safeUser = { ...user };
+        delete (safeUser as any).password;
+        
+        // Update last login time
+        storage.updateUser(user.id, { lastLogin: new Date() })
+          .catch(err => console.error("Failed to update last login time:", err));
+        
+        return res.status(200).json(safeUser);
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "An error occurred during login" });
+    }
+  });
+  
   app.get("/api/auth/user", (req, res) => {
     if (req.isAuthenticated()) {
       const user = { ...req.user };
@@ -151,6 +200,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // User registration route
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+      
+      // Create the user
+      const user = await storage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+        isAdmin: false,
+        createdAt: new Date(),
+      });
+      
+      // Login the user
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login error" });
+        }
+        
+        // Don't send sensitive information to the client
+        const safeUser = { ...user };
+        delete (safeUser as any).password;
+        
+        return res.status(201).json(safeUser);
+      });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "An error occurred during registration" });
     }
   });
   
