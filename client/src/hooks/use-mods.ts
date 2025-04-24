@@ -92,8 +92,7 @@ export function useCategoryCounts() {
     queryKey: ["/api/mods/counts/by-category"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/mods/counts/by-category");
-      const data = await response.json();
-      return data || [];
+      return response || [];
     },
     staleTime: 60000, // 1 minute
   });
