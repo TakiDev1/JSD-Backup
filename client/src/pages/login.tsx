@@ -188,8 +188,12 @@ export default function LoginPage() {
         
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-muted-foreground text-center w-full">
-            Don't have an account? Please use Discord login to register automatically.
+            Don't have an account?
           </div>
+          
+          <Button variant="link" onClick={() => navigate("/register")} className="w-full">
+            Create an account
+          </Button>
           
           <Button variant="link" onClick={() => navigate("/admin-login")} className="w-full">
             Admin Login

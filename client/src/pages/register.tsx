@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +38,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
 
   // Check if Discord auth is available
-  useState(() => {
+  useEffect(() => {
     async function checkDiscordAuth() {
       try {
         const response = await fetch("/api/auth/discord-status");
@@ -52,7 +52,7 @@ export default function RegisterPage() {
     }
     
     checkDiscordAuth();
-  });
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

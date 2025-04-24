@@ -125,13 +125,23 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button 
-  onClick={login} 
-  className="hidden md:flex bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium transition-colors"
-  size="lg"
->
-  <i className="fab fa-discord mr-2"></i> Login with Discord
-</Button>
+            <div className="flex gap-2">
+              <Link href="/login">
+                <Button 
+                  className="hidden md:flex bg-primary hover:bg-primary-light text-white font-medium transition-colors"
+                  size="sm"
+                >
+                  <User className="mr-1 h-4 w-4" /> Login
+                </Button>
+              </Link>
+              <Button 
+                onClick={login} 
+                className="hidden md:flex bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium transition-colors"
+                size="sm"
+              >
+                <i className="fab fa-discord mr-1"></i> Discord
+              </Button>
+            </div>
           )}
 
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -193,9 +203,16 @@ const Navbar = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button onClick={login} className="w-full bg-primary hover:bg-primary-light text-white">
-                      <i className="fab fa-discord mr-2"></i> Login with Discord
-                    </Button>
+                    <div className="flex flex-col gap-3">
+                      <Link href="/login" className="w-full">
+                        <Button className="w-full bg-primary hover:bg-primary-light text-white">
+                          <User className="mr-2 h-4 w-4" /> Login
+                        </Button>
+                      </Link>
+                      <Button onClick={login} className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white">
+                        <i className="fab fa-discord mr-2"></i> Login with Discord
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
