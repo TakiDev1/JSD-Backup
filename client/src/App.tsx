@@ -25,6 +25,7 @@ import MaintenancePage from "@/pages/maintenance";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
+import AdminSettings from "@/pages/admin/settings";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -78,6 +79,7 @@ function Router() {
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/users" component={AdminUsers} />
+      <AdminRoute path="/admin/settings" component={AdminSettings} />
       <Route component={NotFound} />
     </Switch>
   );
