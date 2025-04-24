@@ -928,6 +928,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get general settings
+  app.get("/api/admin/settings/general", auth.isAdmin, async (req, res) => {
+    try {
+      const generalSettings = {
+        siteName: await storage.getSiteSetting("siteName") || "JSD Mods",
+        siteDescription: await storage.getSiteSetting("siteDescription") || "Premium BeamNG Drive mods",
+        contactEmail: await storage.getSiteSetting("contactEmail") || "contact@jsdmods.com",
+        maintenanceMode: await storage.getSiteSetting("maintenanceMode") === "true",
+        maintenanceMessage: await storage.getSiteSetting("maintenanceMessage") || "Site is currently undergoing maintenance. Please check back soon.",
+      };
+      res.json(generalSettings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get integration settings
+  app.get("/api/admin/settings/integrations", auth.isAdmin, async (req, res) => {
+    try {
+      const integrationSettings = {
+        patreonClientId: await storage.getSiteSetting("patreonClientId") || "",
+        patreonClientSecret: await storage.getSiteSetting("patreonClientSecret") || "",
+        patreonWebhookSecret: await storage.getSiteSetting("patreonWebhookSecret") || "",
+        patreonCreatorAccessToken: await storage.getSiteSetting("patreonCreatorAccessToken") || "",
+        discordWebhookUrl: await storage.getSiteSetting("discordWebhookUrl") || "",
+      };
+      res.json(integrationSettings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get payment settings
+  app.get("/api/admin/settings/payments", auth.isAdmin, async (req, res) => {
+    try {
+      const paymentSettings = {
+        currency: await storage.getSiteSetting("currency") || "USD",
+        defaultSubscriptionPrice: await storage.getSiteSetting("defaultSubscriptionPrice") || "9.99",
+        enableStripe: await storage.getSiteSetting("enableStripe") === "true",
+        enableSubscriptions: await storage.getSiteSetting("enableSubscriptions") === "true",
+        taxRate: await storage.getSiteSetting("taxRate") || "0",
+      };
+      res.json(paymentSettings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Update general settings
+  app.post("/api/admin/settings/general", auth.isAdmin, async (req, res) => {
+    try {
+      const { siteName, siteDescription, contactEmail, maintenanceMode, maintenanceMessage } = req.body;
+      
+      // Update settings one by one
+      await storage.setSiteSetting("siteName", siteName);
+      await storage.setSiteSetting("siteDescription", siteDescription);
+      await storage.setSiteSetting("contactEmail", contactEmail);
+      await storage.setSiteSetting("maintenanceMode", maintenanceMode.toString());
+      await storage.setSiteSetting("maintenanceMessage", maintenanceMessage);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update General Settings",
+        details: `Updated general site settings`,
+        ipAddress: req.ip
+      });
+      
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Update integration settings
+  app.post("/api/admin/settings/integrations", auth.isAdmin, async (req, res) => {
+    try {
+      const { patreonClientId, patreonClientSecret, patreonWebhookSecret, patreonCreatorAccessToken, discordWebhookUrl } = req.body;
+      
+      // Update settings one by one
+      await storage.setSiteSetting("patreonClientId", patreonClientId);
+      await storage.setSiteSetting("patreonClientSecret", patreonClientSecret);
+      await storage.setSiteSetting("patreonWebhookSecret", patreonWebhookSecret);
+      await storage.setSiteSetting("patreonCreatorAccessToken", patreonCreatorAccessToken);
+      await storage.setSiteSetting("discordWebhookUrl", discordWebhookUrl);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Integration Settings",
+        details: `Updated integration settings`,
+        ipAddress: req.ip
+      });
+      
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Update payment settings
+  app.post("/api/admin/settings/payments", auth.isAdmin, async (req, res) => {
+    try {
+      const { currency, defaultSubscriptionPrice, enableStripe, enableSubscriptions, taxRate } = req.body;
+      
+      // Update settings one by one
+      await storage.setSiteSetting("currency", currency);
+      await storage.setSiteSetting("defaultSubscriptionPrice", defaultSubscriptionPrice);
+      await storage.setSiteSetting("enableStripe", enableStripe.toString());
+      await storage.setSiteSetting("enableSubscriptions", enableSubscriptions.toString());
+      await storage.setSiteSetting("taxRate", taxRate);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Payment Settings",
+        details: `Updated payment settings`,
+        ipAddress: req.ip
+      });
+      
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Individual site setting update for backward compatibility
   app.post("/api/admin/settings", auth.isAdmin, async (req, res) => {
     try {
       const { key, value } = req.body;
