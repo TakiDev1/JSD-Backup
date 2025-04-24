@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedDatabase } from "./seed";
+import { pool } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Check connection to database 
+  try {
+    const client = await pool.connect();
+    console.log("Database connection established.");
+    client.release();
+    
+    // Seed database with initial data
+    await seedDatabase();
+  } catch (error) {
+    console.error("Error connecting to database:", error);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
