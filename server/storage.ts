@@ -36,8 +36,8 @@ export interface IStorage {
   
   // Mod operations
   getMod(id: number): Promise<schema.Mod | undefined>;
-  getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]>;
-  getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean }): Promise<number>;
+  getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]>;
+  getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean }): Promise<number>;
   createMod(mod: schema.InsertMod): Promise<schema.Mod>;
   updateMod(id: number, mod: Partial<schema.InsertMod>): Promise<schema.Mod | undefined>;
   deleteMod(id: number): Promise<boolean>;
@@ -193,7 +193,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
+  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
     let query = db.select().from(mods);
     
     if (params) {
@@ -215,6 +215,11 @@ export class DatabaseStorage implements IStorage {
         query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
+      // Add filter for isPublished
+      if (params.onlyPublished) {
+        query = query.where(eq(mods.isPublished, true));
+      }
+      
       if (params.limit) {
         query = query.limit(params.limit);
       }
@@ -227,7 +232,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean }): Promise<number> {
+  async getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean }): Promise<number> {
     let query = db.select({ count: count() }).from(mods);
     
     if (params) {
@@ -247,6 +252,11 @@ export class DatabaseStorage implements IStorage {
       
       if (params.subscriptionOnly !== undefined) {
         query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
+      }
+      
+      // Add filter for isPublished
+      if (params.onlyPublished) {
+        query = query.where(eq(mods.isPublished, true));
       }
     }
     

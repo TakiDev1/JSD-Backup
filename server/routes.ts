@@ -293,9 +293,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "maps", "parts", "configs", "handling", "sounds", "graphics", "utilities"
       ];
       
+      // Check if this is an admin request, which should show all mods including unpublished ones
+      const showAll = req.query.showAll === "true";
+      
       const counts = await Promise.all(
         allCategories.map(async (category) => {
-          const count = await storage.getModsCount({ category });
+          const count = await storage.getModsCount({ 
+            category,
+            // Only show published mods to regular users
+            onlyPublished: !showAll
+          });
           return {
             id: category,
             count
@@ -314,6 +321,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mod = await storage.getMod(parseInt(req.params.id));
       
       if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      // Check if the mod is published or if the user is an admin
+      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
+      
+      // If mod is not published and user is not admin, return 404
+      if (!mod.isPublished && !isAdmin) {
         return res.status(404).json({ message: "Mod not found" });
       }
       
