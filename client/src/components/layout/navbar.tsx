@@ -36,7 +36,7 @@ const Navbar = () => {
   const navLinks = [
     { path: "/", label: "Home" },
     { path: "/mods", label: "Mods" },
-    { path: "/forum", label: "Forum" },
+    // Forum removed as requested
     { path: "/mod-locker", label: "Mod Locker", authRequired: true },
   ];
 

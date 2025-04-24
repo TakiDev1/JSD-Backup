@@ -16,7 +16,6 @@ import ModDetails from "@/pages/mod-details";
 import ModLocker from "@/pages/mod-locker";
 import Checkout from "@/pages/checkout";
 import Subscribe from "@/pages/subscribe";
-import Forum from "@/pages/forum";
 import Profile from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
 import Login from "@/pages/login";
@@ -68,9 +67,7 @@ function Router() {
       <Route path="/mod-locker" component={ModLocker} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/subscribe" component={Subscribe} />
-      <Route path="/forum" component={Forum} />
-      <Route path="/forum/:categoryId" component={Forum} />
-      <Route path="/forum/thread/:id" component={Forum} />
+      {/* Forum routes removed as requested */}
       <Route path="/profile" component={Profile} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
