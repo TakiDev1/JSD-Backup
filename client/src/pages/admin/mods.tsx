@@ -93,7 +93,7 @@ const AdminMods = () => {
         price: parseFloat(values.price),
         tags: values.tags ? values.tags.split(",").map(tag => tag.trim()) : [],
       };
-      return apiRequest("POST", "/api/admin/mods", formattedValues);
+      return apiRequest("POST", "/api/mods", formattedValues);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
@@ -122,7 +122,7 @@ const AdminMods = () => {
         price: parseFloat(modData.price),
         tags: modData.tags ? modData.tags.split(",").map(tag => tag.trim()) : [],
       };
-      return apiRequest("PATCH", `/api/admin/mods/${id}`, formattedValues);
+      return apiRequest("PATCH", `/api/mods/${id}`, formattedValues);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
@@ -144,7 +144,7 @@ const AdminMods = () => {
   // Delete mod mutation
   const { mutate: deleteMod, isPending: isDeleting } = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/admin/mods/${id}`, {});
+      return apiRequest("DELETE", `/api/mods/${id}`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/mods'] });
