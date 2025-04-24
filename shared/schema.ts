@@ -1,5 +1,6 @@
-import { pgTable, text, serial, integer, doublePrecision, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, doublePrecision, boolean, timestamp, json, primaryKey, date, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User schema
@@ -198,6 +199,162 @@ export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLog)
   timestamp: true,
 });
 
+// Define table relationships
+export const usersRelations = relations(users, ({ many }) => ({
+  purchases: many(purchases),
+  reviews: many(reviews),
+  forumThreads: many(forumThreads),
+  forumReplies: many(forumReplies),
+  cartItems: many(cartItems),
+  adminLogs: many(adminActivityLog),
+}));
+
+export const modsRelations = relations(mods, ({ many }) => ({
+  versions: many(modVersions),
+  purchases: many(purchases),
+  reviews: many(reviews),
+  cartItems: many(cartItems),
+}));
+
+export const modVersionsRelations = relations(modVersions, ({ one }) => ({
+  mod: one(mods, {
+    fields: [modVersions.modId],
+    references: [mods.id],
+  }),
+}));
+
+export const purchasesRelations = relations(purchases, ({ one }) => ({
+  user: one(users, {
+    fields: [purchases.userId],
+    references: [users.id],
+  }),
+  mod: one(mods, {
+    fields: [purchases.modId],
+    references: [mods.id],
+  }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
+  mod: one(mods, {
+    fields: [reviews.modId],
+    references: [mods.id],
+  }),
+}));
+
+export const forumCategoriesRelations = relations(forumCategories, ({ many }) => ({
+  threads: many(forumThreads),
+}));
+
+export const forumThreadsRelations = relations(forumThreads, ({ one, many }) => ({
+  category: one(forumCategories, {
+    fields: [forumThreads.categoryId],
+    references: [forumCategories.id],
+  }),
+  user: one(users, {
+    fields: [forumThreads.userId],
+    references: [users.id],
+  }),
+  replies: many(forumReplies),
+}));
+
+export const forumRepliesRelations = relations(forumReplies, ({ one }) => ({
+  thread: one(forumThreads, {
+    fields: [forumReplies.threadId],
+    references: [forumThreads.id],
+  }),
+  user: one(users, {
+    fields: [forumReplies.userId],
+    references: [users.id],
+  }),
+}));
+
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  user: one(users, {
+    fields: [cartItems.userId],
+    references: [users.id],
+  }),
+  mod: one(mods, {
+    fields: [cartItems.modId],
+    references: [mods.id],
+  }),
+}));
+
+export const adminActivityLogRelations = relations(adminActivityLog, ({ one }) => ({
+  user: one(users, {
+    fields: [adminActivityLog.userId],
+    references: [users.id],
+  }),
+}));
+
+// Add modImages table for additional mod images
+export const modImages = pgTable("mod_images", {
+  id: serial("id").primaryKey(),
+  modId: integer("mod_id").notNull(),
+  imageUrl: text("image_url").notNull(),
+  sortOrder: integer("sort_order").default(0),
+  caption: text("caption"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertModImagesSchema = createInsertSchema(modImages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const modImagesRelations = relations(modImages, ({ one }) => ({
+  mod: one(mods, {
+    fields: [modImages.modId],
+    references: [mods.id],
+  }),
+}));
+
+// Add notification table for user notifications
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").default("info"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+// Add mod requirements for compatibility information
+export const modRequirements = pgTable("mod_requirements", {
+  id: serial("id").primaryKey(),
+  modId: integer("mod_id").notNull(),
+  requirement: text("requirement").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertModRequirementsSchema = createInsertSchema(modRequirements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const modRequirementsRelations = relations(modRequirements, ({ one }) => ({
+  mod: one(mods, {
+    fields: [modRequirements.modId],
+    references: [mods.id],
+  }),
+}));
+
 // Define type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -231,3 +388,12 @@ export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 
 export type AdminActivityLog = typeof adminActivityLog.$inferSelect;
 export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;
+
+export type ModImage = typeof modImages.$inferSelect;
+export type InsertModImage = z.infer<typeof insertModImagesSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type ModRequirement = typeof modRequirements.$inferSelect;
+export type InsertModRequirement = z.infer<typeof insertModRequirementsSchema>;

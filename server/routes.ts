@@ -154,8 +154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
-      if (!(user.isAdmin || user.is_admin)) {
-        console.log("User is not an admin. isAdmin:", user.isAdmin, "is_admin:", user.is_admin);
+      if (!user.isAdmin) {
+        console.log("User is not an admin. isAdmin:", user.isAdmin);
         return res.status(401).json({ message: "Invalid admin credentials" });
       }
       
@@ -191,9 +191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userWithoutPassword = { ...user };
         delete userWithoutPassword.password;
         
-        // Add both isAdmin and is_admin properties for compatibility
+        // Make sure isAdmin is set
         userWithoutPassword.isAdmin = true;
-        userWithoutPassword.is_admin = true;
         
         // Return the user object directly as this will be the authenticated user session
         res.json({ success: true, user: userWithoutPassword });
