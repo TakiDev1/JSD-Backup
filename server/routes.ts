@@ -256,7 +256,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchTerm: search as string,
         featured: featured === "true",
         subscriptionOnly: subscription === "true",
-        onlyPublished: false, // Always show all mods regardless of publish status
         limit: pageSize,
         offset
       });
@@ -265,8 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: category as string,
         searchTerm: search as string,
         featured: featured === "true",
-        subscriptionOnly: subscription === "true",
-        onlyPublished: false // Always show all mods regardless of publish status
+        subscriptionOnly: subscription === "true"
       });
       
       res.json({
@@ -378,85 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // IMPROVED: Single toggle endpoint for publish/unpublish
-  app.post("/api/mods/:id/toggle-publish", auth.isAdmin, async (req, res) => {
-    try {
-      const modId = parseInt(req.params.id);
-      
-      // Get current mod to determine publish state
-      const existingMod = await storage.getMod(modId);
-      
-      if (!existingMod) {
-        return res.status(404).json({ message: "Mod not found" });
-      }
-      
-      // Toggle the published state
-      const newPublishState = !existingMod.isPublished;
-      
-      // Update mod
-      const mod = await storage.updateMod(modId, { isPublished: newPublishState });
-      
-      // Log admin activity
-      await storage.logAdminActivity({
-        userId: (req.user as any).id,
-        action: newPublishState ? "Publish Mod" : "Unpublish Mod",
-        details: `${newPublishState ? "Published" : "Unpublished"} mod ID: ${modId}, Title: ${mod?.title || 'Unknown'}`,
-        ipAddress: req.ip
-      });
-      
-      res.json(mod);
-    } catch (error: any) {
-      console.error("Error toggling publish state:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  // Keep legacy endpoints for backwards compatibility
-  app.post("/api/mods/:id/publish", auth.isAdmin, async (req, res) => {
-    try {
-      const modId = parseInt(req.params.id);
-      const mod = await storage.updateMod(modId, { isPublished: true });
-      
-      if (!mod) {
-        return res.status(404).json({ message: "Mod not found" });
-      }
-      
-      // Log admin activity
-      await storage.logAdminActivity({
-        userId: (req.user as any).id,
-        action: "Publish Mod",
-        details: `Published mod ID: ${modId}, Title: ${mod.title}`,
-        ipAddress: req.ip
-      });
-      
-      res.json(mod);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  app.post("/api/mods/:id/unpublish", auth.isAdmin, async (req, res) => {
-    try {
-      const modId = parseInt(req.params.id);
-      const mod = await storage.updateMod(modId, { isPublished: false });
-      
-      if (!mod) {
-        return res.status(404).json({ message: "Mod not found" });
-      }
-      
-      // Log admin activity
-      await storage.logAdminActivity({
-        userId: (req.user as any).id,
-        action: "Unpublish Mod",
-        details: `Unpublished mod ID: ${modId}, Title: ${mod.title}`,
-        ipAddress: req.ip
-      });
-      
-      res.json(mod);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
+  // Removed all publish/unpublish endpoints since we now show all mods directly
 
   // Mod versions routes
   app.get("/api/mods/:id/versions", async (req, res) => {

@@ -54,7 +54,7 @@ export const mods = pgTable("mods", {
   tags: json("tags").$type<string[]>().default([]),
   features: json("features").$type<string[]>().default([]),
   isFeatured: boolean("is_featured").default(false),
-  isPublished: boolean("is_published").default(false), // Added isPublished field
+  // Removed isPublished field as it's no longer needed
   downloadCount: integer("download_count").default(0),
   averageRating: doublePrecision("average_rating").default(0),
   isSubscriptionOnly: boolean("is_subscription_only").default(false),

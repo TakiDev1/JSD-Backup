@@ -193,7 +193,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
+  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
     let query = db.select().from(mods);
     
     if (params) {
@@ -215,10 +215,7 @@ export class DatabaseStorage implements IStorage {
         query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
-      // Add filter for isPublished
-      if (params.onlyPublished) {
-        query = query.where(eq(mods.isPublished, true));
-      }
+      // Removed filter for isPublished since we show all mods now
       
       if (params.limit) {
         query = query.limit(params.limit);
@@ -232,7 +229,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean }): Promise<number> {
+  async getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean }): Promise<number> {
     let query = db.select({ count: count() }).from(mods);
     
     if (params) {
@@ -254,10 +251,7 @@ export class DatabaseStorage implements IStorage {
         query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
-      // Add filter for isPublished
-      if (params.onlyPublished) {
-        query = query.where(eq(mods.isPublished, true));
-      }
+      // Removed filter for isPublished
     }
     
     const result = await query;
