@@ -33,7 +33,7 @@ export const API = {
   },
 };
 
-// Mod categories
+// Mod categories (focused on cars as requested by JSD)
 export const MOD_CATEGORIES = [
   { value: "vehicles", label: "Vehicles", id: "vehicles", name: "Vehicles", count: 0 },
   { value: "sports", label: "Sports Cars", id: "sports", name: "Sports Cars", count: 0 },
@@ -41,13 +41,12 @@ export const MOD_CATEGORIES = [
   { value: "offroad", label: "Off-Road Vehicles", id: "offroad", name: "Off-Road Vehicles", count: 0 },
   { value: "racing", label: "Racing Cars", id: "racing", name: "Racing Cars", count: 0 },
   { value: "muscle", label: "Muscle Cars", id: "muscle", name: "Muscle Cars", count: 0 },
-  { value: "maps", label: "Maps & Environments", id: "maps", name: "Maps & Environments", count: 0 },
-  { value: "parts", label: "Parts & Components", id: "parts", name: "Parts & Components", count: 0 },
-  { value: "configs", label: "Configurations", id: "configs", name: "Configurations", count: 0 },
-  { value: "handling", label: "Handling & Physics", id: "handling", name: "Handling & Physics", count: 0 },
+  { value: "jdm", label: "JDM Cars", id: "jdm", name: "JDM Cars", count: 0 },
+  { value: "supercars", label: "Supercars", id: "supercars", name: "Supercars", count: 0 },
+  { value: "custom", label: "Custom Builds", id: "custom", name: "Custom Builds", count: 0 },
+  { value: "plushies", label: "Plushies", id: "plushies", name: "Plushies", count: 0 },
+  { value: "accessories", label: "Accessories", id: "accessories", name: "Accessories & Merch", count: 0 },
   { value: "sounds", label: "Sound Mods", id: "sounds", name: "Sound Mods", count: 0 },
-  { value: "graphics", label: "Graphics & Visuals", id: "graphics", name: "Graphics & Visuals", count: 0 },
-  { value: "utilities", label: "Utilities & Tools", id: "utilities", name: "Utilities & Tools", count: 0 },
 ];
 
 // Site statistics (for home page) - these will be replaced by dynamic data from the admin panel

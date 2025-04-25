@@ -21,7 +21,7 @@ import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { ModVersion, Review } from "@shared/schema";
 
-// Function to render description with embedded images
+// Function to render description with embedded images (including GIFs)
 const renderDescriptionWithImages = (description: string) => {
   if (!description) return null;
   
@@ -51,13 +51,16 @@ const renderDescriptionWithImages = (description: string) => {
       const alt = altMatch[1];
       const url = urlMatch[1];
       
+      // Check if it's a GIF (case insensitive)
+      const isGif = url.toLowerCase().endsWith('.gif');
+      
       // Add the image
       result.push(
         <div key={`img-${index}`} className="my-4">
           <img 
             src={url} 
             alt={alt} 
-            className="rounded-lg max-w-full max-h-[600px] mx-auto"
+            className={`rounded-lg max-w-full mx-auto ${isGif ? 'max-h-[800px]' : 'max-h-[600px]'}`}
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
             }}

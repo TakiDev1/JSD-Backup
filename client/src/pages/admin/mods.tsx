@@ -439,7 +439,7 @@ const AdminMods = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            You can include images using this syntax: ![image description](image URL)
+                            You can include images and GIFs using this syntax: ![image description](image URL). Supports JPG, PNG, and GIF formats.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

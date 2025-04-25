@@ -287,8 +287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Use predefined categories to ensure we always have a consistent list
       const allCategories = [
-        "vehicles", "sports", "drift", "offroad", "racing", "muscle",
-        "maps", "parts", "configs", "handling", "sounds", "graphics", "utilities"
+        "vehicles", "sports", "drift", "offroad", "racing", "muscle", 
+        "jdm", "supercars", "custom", "plushies", "accessories", "sounds"
       ];
       
       const counts = await Promise.all(
