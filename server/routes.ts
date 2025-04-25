@@ -510,83 +510,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Cart routes
+  // Cart routes - completely rewritten for reliability
   app.get("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const cartItems = await storage.getCartItems(userId);
       
-      // Get mod details for each cart item
-      const cart = await Promise.all(
-        cartItems.map(async (item) => {
-          const mod = await storage.getMod(item.modId);
-          return {
-            ...item,
-            mod
-          };
-        })
-      );
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Get cart items directly from the database
+      const cartItemsResult = await db.query.cartItems.findMany({
+        where: eq(schema.cartItems.userId, userId),
+        with: {
+          mod: true
+        }
+      });
+      
+      // Format response
+      const cart = cartItemsResult.map(item => {
+        return {
+          id: item.id,
+          userId: item.userId,
+          modId: item.modId,
+          addedAt: item.addedAt,
+          mod: item.mod
+        };
+      });
       
       res.json(cart);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      console.error("Cart fetch error:", error);
+      res.status(500).json({ message: "Failed to retrieve cart items", error: error.message });
     }
   });
   
   app.post("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const modId = req.body.modId;
       
-      const mod = await storage.getMod(modId);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { modId } = req.body;
+      
+      if (!modId || typeof modId !== 'number') {
+        return res.status(400).json({ message: "Invalid mod ID provided" });
+      }
+      
+      // Check if mod exists
+      const mod = await db.query.mods.findFirst({
+        where: eq(schema.mods.id, modId)
+      });
       
       if (!mod) {
         return res.status(404).json({ message: "Mod not found" });
       }
       
+      // Check if already in cart
+      const existingCartItem = await db.query.cartItems.findFirst({
+        where: (cartItems) => {
+          return sql`${cartItems.userId} = ${userId} AND ${cartItems.modId} = ${modId}`;
+        }
+      });
+      
+      if (existingCartItem) {
+        return res.status(200).json({
+          message: "Item already in cart",
+          cartItem: existingCartItem
+        });
+      }
+      
       // Check if already purchased
-      const purchase = await storage.getModPurchase(userId, modId);
+      const purchase = await db.query.purchases.findFirst({
+        where: (purchases) => {
+          return sql`${purchases.userId} = ${userId} AND ${purchases.modId} = ${modId}`;
+        }
+      });
       
       if (purchase) {
         return res.status(400).json({ message: "You already own this mod" });
       }
       
-      const cartItem = await storage.addToCart({ userId, modId });
-      res.status(201).json(cartItem);
+      // Add to cart
+      const [cartItem] = await db.insert(schema.cartItems)
+        .values({
+          userId,
+          modId,
+          addedAt: new Date()
+        })
+        .returning();
+      
+      // Fetch the cart item with mod details
+      const result = {
+        ...cartItem,
+        mod
+      };
+      
+      res.status(201).json(result);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      console.error("Add to cart error:", error);
+      res.status(500).json({ message: "Failed to add item to cart", error: error.message });
     }
   });
   
   app.delete("/api/cart/:modId", auth.isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const modId = parseInt(req.params.modId);
       
-      // Check if modId is valid
       if (isNaN(modId)) {
         return res.status(400).json({ message: "Invalid mod ID" });
       }
       
-      const success = await storage.removeFromCart(userId, modId);
+      // Check if item exists in cart
+      const cartItem = await db.query.cartItems.findFirst({
+        where: (cartItems) => {
+          return sql`${cartItems.userId} = ${userId} AND ${cartItems.modId} = ${modId}`;
+        }
+      });
       
-      if (!success) {
+      if (!cartItem) {
         return res.status(404).json({ message: "Item not found in cart" });
       }
       
-      res.json({ success });
+      // Remove from cart
+      await db.delete(schema.cartItems)
+        .where(sql`${schema.cartItems.userId} = ${userId} AND ${schema.cartItems.modId} = ${modId}`);
+      
+      res.status(200).json({ success: true, message: "Item removed from cart" });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      console.error("Remove from cart error:", error);
+      res.status(500).json({ message: "Failed to remove item from cart", error: error.message });
     }
   });
   
   app.delete("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const success = await storage.clearCart(userId);
-      res.json({ success });
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Clear cart
+      await db.delete(schema.cartItems)
+        .where(eq(schema.cartItems.userId, userId));
+      
+      res.status(200).json({ success: true, message: "Cart cleared successfully" });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      console.error("Clear cart error:", error);
+      res.status(500).json({ message: "Failed to clear cart", error: error.message });
     }
   });
 
