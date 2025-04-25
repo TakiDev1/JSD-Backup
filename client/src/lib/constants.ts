@@ -11,7 +11,7 @@ export const API = {
     VERSIONS: (id: number) => `/api/mods/${id}/versions`,
     REVIEWS: (id: number) => `/api/mods/${id}/reviews`,
     DOWNLOAD: (id: number) => `/api/mods/${id}/download`,
-    TOGGLE_PUBLISH: (id: number) => `/api/mods/${id}/toggle-publish`,
+    // Removed TOGGLE_PUBLISH endpoint as publishing functionality has been removed
   },
   CART: {
     LIST: "/api/cart",

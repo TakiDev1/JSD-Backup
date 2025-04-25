@@ -288,38 +288,5 @@ export function useDeleteMod() {
   });
 }
 
-export function useTogglePublishMod() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, currentState }: { id: number; currentState: boolean }) => {
-      const res = await apiRequest("POST", API.MODS.TOGGLE_PUBLISH(id), {});
-      return { data: res, currentState };
-    },
-    onSuccess: (result, { id }) => {
-      // Determine the action that was taken based on the previous state
-      const wasPublished = result.currentState;
-      const action = wasPublished ? "unpublished" : "published";
-      
-      // Invalidate all potentially affected queries
-      queryClient.invalidateQueries({ queryKey: [API.MODS.LIST] });
-      queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(id)] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mods/counts/by-category"] });
-      
-      toast({
-        title: `Mod ${action}`,
-        description: `The mod has been ${action} ${wasPublished ? "and is no longer" : "and is now"} publicly visible.`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to change the mod's publish status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-// Removed publish/unpublish functionality as all mods are now shown directly
+// Removed useTogglePublishMod function as publish/unpublish functionality has been removed
+// All mods are now shown directly without requiring a publish step
