@@ -30,11 +30,13 @@ export function useModsList(params: ModsQueryParams = {}) {
     queryKey: [endpoint],
     queryFn: async () => {
       const response = await apiRequest("GET", endpoint);
+      const data = await response.json();
+      
       // Ensure we have proper structure
-      if (!response) return { mods: [], pagination: { total: 0, pageSize: 10, page: 1 } };
+      if (!data) return { mods: [], pagination: { total: 0, pageSize: 10, page: 1 } };
       return {
-        mods: Array.isArray(response.mods) ? response.mods : [],
-        pagination: response.pagination || { total: 0, pageSize: 10, page: 1 }
+        mods: Array.isArray(data.mods) ? data.mods : [],
+        pagination: data.pagination || { total: 0, pageSize: 10, page: 1 }
       };
     },
     staleTime: 60000, // 1 minute
@@ -47,14 +49,14 @@ export function useModDetails(id: number | undefined) {
     queryFn: async () => {
       if (!id) return { mod: null, reviews: [] };
       const response = await apiRequest("GET", API.MODS.DETAILS(id));
+      const data = await response.json();
+      
       // Ensure we have proper structure
-      if (!response) return { mod: null, reviews: [] };
+      if (!data) return { mod: null, reviews: [] };
       return {
-        mod: response.mod || null,
-        reviews: Array.isArray(response.reviews) ? response.reviews : [],
-        latestVersion: Array.isArray(response.latestVersion) && response.latestVersion.length > 0 
-          ? response.latestVersion[0] 
-          : null
+        mod: data || null,
+        reviews: Array.isArray(data.reviews) ? data.reviews : [],
+        latestVersion: data.latestVersion || null
       };
     },
     enabled: !!id,
@@ -68,7 +70,8 @@ export function useModVersions(modId: number | undefined) {
     queryFn: async () => {
       if (!modId) return [];
       const response = await apiRequest("GET", API.MODS.VERSIONS(modId));
-      return Array.isArray(response) ? response : [];
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!modId,
     staleTime: 60000, // 1 minute
@@ -80,7 +83,11 @@ export function useModLocker() {
 
   return useQuery({
     queryKey: [API.MOD_LOCKER],
-    queryFn: () => apiRequest("GET", API.MOD_LOCKER),
+    queryFn: async () => {
+      const response = await apiRequest("GET", API.MOD_LOCKER);
+      const data = await response.json();
+      return data;
+    },
     enabled: isAuthenticated,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -94,7 +101,8 @@ export function useCategoryCounts() {
     queryKey: [endpoint],
     queryFn: async () => {
       const response = await apiRequest("GET", endpoint);
-      return response || [];
+      const data = await response.json();
+      return data || [];
     },
     staleTime: 60000, // 1 minute
   });
