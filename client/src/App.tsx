@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
-import MouseParticles from "@/components/shared/mouse-particles";
 import CartDrawer from "@/components/shared/cart-drawer";
 import AdminRoute from "@/components/protected/admin-route";
 import NotFound from "@/pages/not-found";
@@ -94,7 +93,6 @@ function App() {
                 <Router />
               </main>
               <Footer />
-              <MouseParticles />
             </div>
             <CartDrawer />
             <Toaster />

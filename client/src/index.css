@@ -46,7 +46,7 @@
   }
 
   html, body {
-    cursor: none; /* Hide default cursor */
+    /* Default cursor restored */
   }
 
   body {
@@ -64,11 +64,6 @@
     padding-bottom: 50px;
     min-height: calc(100vh - 80px);
     margin-top: 20px;
-  }
-  
-  /* Car cursor */
-  .custom-cursor {
-    cursor: none; /* Hide default cursor when using our custom one */
   }
 
   .custom-scrollbar::-webkit-scrollbar {
