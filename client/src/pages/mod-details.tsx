@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useParams, useLocation } from "wouter";
 import { useModDetails, useModVersions, useCreateReview, useUpdateReview } from "@/hooks/use-mods";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +20,63 @@ import { ShoppingCart, Star, Download, Calendar, Package, Clock, Tag, Heart, Sha
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { ModVersion, Review } from "@shared/schema";
+
+// Function to render description with embedded images
+const renderDescriptionWithImages = (description: string) => {
+  if (!description) return null;
+  
+  // Regular expression to match image syntax: ![alt text](image_url)
+  const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+  
+  // Split the description by image markers
+  const parts = description.split(imageRegex);
+  const matches = description.match(imageRegex) || [];
+  
+  // Build the result array
+  const result = [];
+  
+  // Add the first text part
+  if (parts[0]) {
+    result.push(<Fragment key="text-0">{parts[0]}</Fragment>);
+  }
+  
+  // Add image and text parts
+  let textIndex = 1;
+  matches.forEach((match, index) => {
+    // Extract alt text and URL from the match
+    const altMatch = match.match(/!\[(.*?)\]/);
+    const urlMatch = match.match(/\((.*?)\)/);
+    
+    if (altMatch && urlMatch) {
+      const alt = altMatch[1];
+      const url = urlMatch[1];
+      
+      // Add the image
+      result.push(
+        <div key={`img-${index}`} className="my-4">
+          <img 
+            src={url} 
+            alt={alt} 
+            className="rounded-lg max-w-full max-h-[600px] mx-auto"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
+            }}
+          />
+          {alt && <p className="text-center text-sm text-neutral mt-2">{alt}</p>}
+        </div>
+      );
+      
+      // Add the next text part if it exists
+      if (parts[textIndex]) {
+        result.push(<Fragment key={`text-${textIndex}`}>{parts[textIndex]}</Fragment>);
+      }
+      
+      textIndex += 2; // Skip to the next text part (after alt and url)
+    }
+  });
+  
+  return result;
+};
 
 // Review form schema
 const reviewFormSchema = z.object({
@@ -175,7 +232,7 @@ if (!mod) {
             <TabsContent value="overview" className="mt-6">
               <h2 className="text-2xl font-display font-bold text-white mb-4">Description</h2>
               <div className="text-neutral-light mb-8 whitespace-pre-wrap">
-                {mod.description}
+                {renderDescriptionWithImages(mod.description)}
               </div>
 
               <Button variant="outline" onClick={() => setIsARPreviewOpen(true)} className="mb-8">
@@ -186,7 +243,7 @@ if (!mod) {
                 <>
                   <h3 className="text-xl font-display font-bold text-white mb-4">Features</h3>
                   <ul className="list-disc list-inside text-neutral-light mb-8 ml-4">
-                    {mod.features.map((feature, index) => (
+                    {mod.features.map((feature: string, index: number) => (
                       <li key={index}>{feature}</li>
                     ))}
                   </ul>

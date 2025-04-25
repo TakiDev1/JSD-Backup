@@ -438,6 +438,9 @@ const AdminMods = () => {
                               {...field} 
                             />
                           </FormControl>
+                          <FormDescription>
+                            You can include images using this syntax: ![image description](image URL)
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
