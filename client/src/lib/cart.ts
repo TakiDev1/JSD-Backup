@@ -39,15 +39,21 @@ export async function getCart(): Promise<CartItem[]> {
  * @returns The cart item if successful, null otherwise
  */
 export async function addToCart(modId: number): Promise<CartItem | null> {
-  if (!modId || isNaN(modId)) {
+  // Ensure modId is a number
+  const numericModId = Number(modId);
+  
+  if (!numericModId || isNaN(numericModId)) {
     console.error("Invalid mod ID provided:", modId);
     return null;
   }
   
   try {
-    console.log(`Adding mod ${modId} to cart...`);
+    console.log(`Adding mod ${numericModId} to cart...`);
     
-    const res = await apiRequest("POST", "/api/cart", { modId });
+    // Explicitly log what we're sending to the server
+    console.log("Request payload:", { modId: numericModId });
+    
+    const res = await apiRequest("POST", "/api/cart", { modId: numericModId });
     
     if (!res.ok) {
       const errorData = await res.json();

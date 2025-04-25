@@ -547,15 +547,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
+      console.log("Cart API - Request body:", req.body);
+      
       const userId = (req.user as any).id;
       
       if (!userId) {
+        console.log("Cart API - Authentication required");
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      const { modId } = req.body;
+      let { modId } = req.body;
       
-      if (!modId || typeof modId !== 'number') {
+      // Ensure modId is a number
+      modId = Number(modId);
+      
+      console.log("Cart API - User ID:", userId, "Mod ID:", modId, "Type:", typeof modId);
+      
+      if (!modId || isNaN(modId)) {
+        console.log("Cart API - Invalid mod ID:", modId);
         return res.status(400).json({ message: "Invalid mod ID provided" });
       }
       
