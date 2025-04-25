@@ -7,6 +7,10 @@ import {
   mods,
   modVersions,
   purchases,
+  reviews,
+  forumCategories,
+  forumThreads,
+  forumReplies,
   cartItems,
   adminActivityLog
 } from "@shared/schema";
@@ -48,7 +52,20 @@ export interface IStorage {
   getModPurchase(userId: number, modId: number): Promise<schema.Purchase | undefined>;
   createPurchase(purchase: schema.InsertPurchase): Promise<schema.Purchase>;
   
-  // Review and Forum operations removed
+  // Review operations
+  getReviewsByMod(modId: number): Promise<schema.Review[]>;
+  getUserReview(userId: number, modId: number): Promise<schema.Review | undefined>;
+  createReview(review: schema.InsertReview): Promise<schema.Review>;
+  updateReview(id: number, review: Partial<schema.InsertReview>): Promise<schema.Review | undefined>;
+  updateModAverageRating(modId: number): Promise<number>;
+  
+  // Forum operations
+  getForumCategories(): Promise<schema.ForumCategory[]>;
+  getForumThreads(categoryId: number): Promise<schema.ForumThread[]>;
+  getForumThread(id: number): Promise<schema.ForumThread | undefined>;
+  getForumReplies(threadId: number): Promise<schema.ForumReply[]>;
+  createForumThread(thread: schema.InsertForumThread): Promise<schema.ForumThread>;
+  createForumReply(reply: schema.InsertForumReply): Promise<schema.ForumReply>;
   
   // Cart operations
   getCartItems(userId: number): Promise<schema.CartItem[]>;
@@ -300,9 +317,96 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  // Review operations removed
+  // Review operations
+  async getReviewsByMod(modId: number): Promise<schema.Review[]> {
+    return await db.select().from(reviews).where(eq(reviews.modId, modId));
+  }
 
-  // Forum operations removed
+  async getUserReview(userId: number, modId: number): Promise<schema.Review | undefined> {
+    const result = await db.select().from(reviews)
+      .where(and(eq(reviews.userId, userId), eq(reviews.modId, modId)));
+    return result[0];
+  }
+
+  async createReview(review: schema.InsertReview): Promise<schema.Review> {
+    const result = await db.insert(reviews).values(review).returning();
+    
+    // Update the average rating for the mod
+    await this.updateModAverageRating(review.modId);
+    
+    return result[0];
+  }
+
+  async updateReview(id: number, review: Partial<schema.InsertReview>): Promise<schema.Review | undefined> {
+    const result = await db.update(reviews).set(review).where(eq(reviews.id, id)).returning();
+    
+    if (result[0]) {
+      // Update the average rating for the mod
+      await this.updateModAverageRating(result[0].modId);
+    }
+    
+    return result[0];
+  }
+
+  async updateModAverageRating(modId: number): Promise<number> {
+    const avgRatingResult = await db.select({
+      avgRating: sql`AVG(${reviews.rating})`
+    }).from(reviews).where(eq(reviews.modId, modId));
+    
+    const avgRating = avgRatingResult[0]?.avgRating || 0;
+    
+    await db.update(mods)
+      .set({ averageRating: avgRating })
+      .where(eq(mods.id, modId));
+    
+    return avgRating;
+  }
+
+  // Forum operations
+  async getForumCategories(): Promise<schema.ForumCategory[]> {
+    return await db.select().from(forumCategories).orderBy(forumCategories.order);
+  }
+
+  async getForumThreads(categoryId: number): Promise<schema.ForumThread[]> {
+    return await db.select().from(forumThreads)
+      .where(eq(forumThreads.categoryId, categoryId))
+      .orderBy(sql`${forumThreads.isPinned} DESC, ${forumThreads.updatedAt} DESC`);
+  }
+
+  async getForumThread(id: number): Promise<schema.ForumThread | undefined> {
+    const result = await db.select().from(forumThreads).where(eq(forumThreads.id, id));
+    
+    if (result[0]) {
+      // Increment view count
+      await db.update(forumThreads)
+        .set({ viewCount: sql`${forumThreads.viewCount} + 1` })
+        .where(eq(forumThreads.id, id));
+    }
+    
+    return result[0];
+  }
+
+  async getForumReplies(threadId: number): Promise<schema.ForumReply[]> {
+    return await db.select().from(forumReplies)
+      .where(eq(forumReplies.threadId, threadId))
+      .orderBy(forumReplies.createdAt);
+  }
+
+  async createForumThread(thread: schema.InsertForumThread): Promise<schema.ForumThread> {
+    const result = await db.insert(forumThreads).values(thread).returning();
+    return result[0];
+  }
+
+  async createForumReply(reply: schema.InsertForumReply): Promise<schema.ForumReply> {
+    const result = await db.insert(forumReplies).values(reply).returning();
+    
+    // Update the thread's updated timestamp
+    await db.update(forumThreads)
+      .set({ updatedAt: new Date() })
+      .where(eq(forumThreads.id, reply.threadId));
+    
+    return result[0];
+  }
 
   // Cart operations
   async getCartItems(userId: number): Promise<schema.CartItem[]> {
@@ -385,8 +489,14 @@ export class DatabaseStorage implements IStorage {
       .where(gt(users.lastLogin, thirtyDaysAgo));
     const activeUsers = activeUsersResult[0]?.count || 0;
     
-    // Reviews functionality has been removed
-    const pendingReviews = 0;
+    // Get pending reviews (added in the last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const pendingReviewsResult = await db.select({ count: count() })
+      .from(reviews)
+      .where(gt(reviews.createdAt, sevenDaysAgo));
+    const pendingReviews = pendingReviewsResult[0]?.count || 0;
     
     return {
       users: totalUsers,
