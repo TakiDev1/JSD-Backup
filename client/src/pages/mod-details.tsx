@@ -94,7 +94,7 @@ const ModDetailsPage = () => {
   const id = parseInt(params.id);
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const { addItem, isModInCart } = useCart();
+  const { addItem, isModInCart, isPending } = useCart();
   const { toast } = useToast();
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [isARPreviewOpen, setIsARPreviewOpen] = useState(false);
@@ -164,68 +164,114 @@ if (!mod) {
   //   }
   // };
 
-  // Check if mod is in cart
-  const inCart = isModInCart(id);
+  // State to track if mod is in cart
+  const [inCart, setInCart] = useState(false);
+  
+  // Update cart status when needed
+  useEffect(() => {
+    if (id && !isNaN(id)) {
+      setInCart(isModInCart(id));
+    }
+  }, [id, isModInCart]);
 
+  // Function to create flying cart animation
+  const createFlyingAnimation = (button: HTMLElement) => {
+    try {
+      const cartButton = document.querySelector('.cart-button') as HTMLElement;
+      if (!button || !cartButton) return;
+      
+      const buttonRect = button.getBoundingClientRect();
+      const cartRect = cartButton.getBoundingClientRect();
+      
+      // Create flying element
+      const flyingItem = document.createElement('div');
+      flyingItem.className = 'flying-cart-item';
+      flyingItem.style.position = 'fixed';
+      flyingItem.style.zIndex = '9999';
+      flyingItem.style.width = '30px';
+      flyingItem.style.height = '30px';
+      flyingItem.style.borderRadius = '50%';
+      flyingItem.style.background = 'white';
+      flyingItem.style.boxShadow = '0 0 15px rgba(115, 0, 255, 0.8)';
+      flyingItem.style.left = `${buttonRect.left + buttonRect.width / 2}px`;
+      flyingItem.style.top = `${buttonRect.top + buttonRect.height / 2}px`;
+      flyingItem.style.pointerEvents = 'none';
+      
+      document.body.appendChild(flyingItem);
+      
+      // Animate
+      const animation = flyingItem.animate([
+        { 
+          left: `${buttonRect.left + buttonRect.width / 2}px`,
+          top: `${buttonRect.top + buttonRect.height / 2}px`,
+          opacity: 1,
+          transform: 'scale(1)'
+        },
+        { 
+          left: `${cartRect.left + cartRect.width / 2}px`,
+          top: `${cartRect.top + cartRect.height / 2}px`,
+          opacity: 0,
+          transform: 'scale(0.5)'
+        }
+      ], {
+        duration: 800,
+        easing: 'cubic-bezier(0.215, 0.610, 0.355, 1.000)'
+      });
+      
+      animation.onfinish = () => {
+        if (document.body.contains(flyingItem)) {
+          document.body.removeChild(flyingItem);
+        }
+      };
+    } catch (error) {
+      console.error("Animation error:", error);
+    }
+  };
+  
   // Handle add to cart
   const handleAddToCart = async (e?: React.MouseEvent) => {
+    // Prevent action if already in cart or processing
+    if (inCart || isPending) return;
+    
+    // Redirect to login if not authenticated
     if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to add items to your cart",
+        variant: "destructive"
+      });
       navigate("/login");
       return;
     }
     
     try {
-      await addItem(id);
+      // Optimistically update UI
+      setInCart(true);
       
-      // Create flying item animation
+      // Create flying animation if event is provided
       if (e) {
         const button = e.currentTarget as HTMLElement;
-        const cartButton = document.querySelector('.cart-button') as HTMLElement;
-        
-        if (button && cartButton) {
-          const buttonRect = button.getBoundingClientRect();
-          const cartRect = cartButton.getBoundingClientRect();
-          
-          // Create flying element
-          const flyingItem = document.createElement('div');
-          flyingItem.className = 'flying-cart-item';
-          flyingItem.style.position = 'fixed';
-          flyingItem.style.zIndex = '9999';
-          flyingItem.style.width = '30px';
-          flyingItem.style.height = '30px';
-          flyingItem.style.borderRadius = '50%';
-          flyingItem.style.background = 'white';
-          flyingItem.style.boxShadow = '0 0 15px rgba(115, 0, 255, 0.8)';
-          flyingItem.style.left = `${buttonRect.left + buttonRect.width / 2}px`;
-          flyingItem.style.top = `${buttonRect.top + buttonRect.height / 2}px`;
-          flyingItem.style.pointerEvents = 'none';
-          
-          document.body.appendChild(flyingItem);
-          
-          // Animate
-          flyingItem.animate([
-            { 
-              left: `${buttonRect.left + buttonRect.width / 2}px`,
-              top: `${buttonRect.top + buttonRect.height / 2}px`,
-              opacity: 1,
-              transform: 'scale(1)'
-            },
-            { 
-              left: `${cartRect.left + cartRect.width / 2}px`,
-              top: `${cartRect.top + cartRect.height / 2}px`,
-              opacity: 0,
-              transform: 'scale(0.5)'
-            }
-          ], {
-            duration: 800,
-            easing: 'cubic-bezier(0.215, 0.610, 0.355, 1.000)'
-          }).onfinish = () => {
-            document.body.removeChild(flyingItem);
-          };
-        }
+        createFlyingAnimation(button);
       }
+      
+      // Add to cart
+      await addItem(id);
+      
+      toast({
+        title: "Added to cart",
+        description: `${mod.title} has been added to your cart.`
+      });
     } catch (error) {
       console.error("Error adding to cart:", error);
+      
+      // Reset UI state on error
+      setInCart(isModInCart(id));
+      
+      toast({
+        title: "Error",
+        description: "Failed to add this mod to your cart. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
