@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTogglePublishMod, usePublishMod, useUnpublishMod } from "@/hooks/use-mods";
+// Removed publish-related imports
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -171,10 +171,7 @@ const AdminMods = () => {
     },
   });
   
-  // Use our custom hooks from use-mods.ts for publish/unpublish
-  const { mutate: togglePublish, isPending: isTogglingPublish } = useTogglePublishMod();
-  const { mutate: publishMod, isPending: isPublishing } = usePublishMod();
-  const { mutate: unpublishMod, isPending: isUnpublishing } = useUnpublishMod();
+  // Removed publish/unpublish hooks
   
   // Edit mod handler
   const handleEditMod = (mod: any) => {

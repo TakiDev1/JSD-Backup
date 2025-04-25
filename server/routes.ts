@@ -294,9 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const counts = await Promise.all(
         allCategories.map(async (category) => {
           const count = await storage.getModsCount({ 
-            category,
-            // Always show all mods regardless of publish status
-            onlyPublished: false
+            category
           });
           return {
             id: category,
