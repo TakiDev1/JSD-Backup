@@ -13,9 +13,7 @@ import { z } from "zod";
 import { eq, sql, asc, desc } from "drizzle-orm";
 import {
   insertModSchema,
-  insertModVersionSchema,
-  insertReviewSchema
-  // Forum schemas removed as requested
+  insertModVersionSchema
 } from "@shared/schema";
 import passport from "passport";
 
@@ -321,13 +319,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get latest version
       const latestVersion = await storage.getLatestModVersion(mod.id);
       
-      // Get reviews
-      const reviews = await storage.getReviewsByMod(mod.id);
+      // Reviews system removed
       
       res.json({
         ...mod,
         latestVersion,
-        reviews
+        reviews: [] // Empty array for backward compatibility
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -453,62 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reviews routes
-  app.post("/api/mods/:id/reviews", auth.isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any).id;
-      const modId = parseInt(req.params.id);
-      
-      // Check if user has already reviewed this mod
-      const existingReview = await storage.getUserReview(userId, modId);
-      
-      if (existingReview) {
-        return res.status(400).json({ message: "You have already reviewed this mod" });
-      }
-      
-      // Validate review data
-      const reviewData = {
-        userId,
-        modId,
-        rating: req.body.rating,
-        comment: req.body.comment
-      };
-      
-      const validatedData = insertReviewSchema.parse(reviewData);
-      const review = await storage.createReview(validatedData);
-      
-      res.status(201).json(review);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  app.put("/api/reviews/:id", auth.isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any).id;
-      const reviewId = parseInt(req.params.id);
-      
-      // Get the review
-      const review = await storage.getUserReview(userId, req.body.modId);
-      
-      if (!review || review.id !== reviewId) {
-        return res.status(404).json({ message: "Review not found or not yours" });
-      }
-      
-      // Update the review
-      const reviewData = {
-        rating: req.body.rating,
-        comment: req.body.comment
-      };
-      
-      const validatedData = insertReviewSchema.partial().parse(reviewData);
-      const updatedReview = await storage.updateReview(reviewId, validatedData);
-      
-      res.json(updatedReview);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // Reviews system removed
 
   // Cart routes - completely rewritten for reliability
   app.get("/api/cart", auth.isAuthenticated, async (req, res) => {

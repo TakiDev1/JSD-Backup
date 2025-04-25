@@ -106,73 +106,7 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
   purchaseDate: true,
 });
 
-// Reviews schema
-export const reviews = pgTable("reviews", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  modId: integer("mod_id").notNull(),
-  rating: integer("rating").notNull(),
-  comment: text("comment"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertReviewSchema = createInsertSchema(reviews).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Forum categories schema
-export const forumCategories = pgTable("forum_categories", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  order: integer("order").default(0),
-});
-
-export const insertForumCategorySchema = createInsertSchema(forumCategories).omit({
-  id: true,
-});
-
-// Forum threads schema
-export const forumThreads = pgTable("forum_threads", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").notNull(),
-  userId: integer("user_id").notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  isPinned: boolean("is_pinned").default(false),
-  isLocked: boolean("is_locked").default(false),
-  viewCount: integer("view_count").default(0),
-  replyCount: integer("reply_count").default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertForumThreadSchema = createInsertSchema(forumThreads).omit({
-  id: true,
-  viewCount: true,
-  replyCount: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Forum replies schema
-export const forumReplies = pgTable("forum_replies", {
-  id: serial("id").primaryKey(),
-  threadId: integer("thread_id").notNull(),
-  userId: integer("user_id").notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertForumReplySchema = createInsertSchema(forumReplies).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Note: Reviews, forum categories, forum threads, and forum replies have been removed
 
 // Cart items schema
 export const cartItems = pgTable("cart_items", {
@@ -205,9 +139,6 @@ export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLog)
 // Define table relationships
 export const usersRelations = relations(users, ({ many }) => ({
   purchases: many(purchases),
-  reviews: many(reviews),
-  forumThreads: many(forumThreads),
-  forumReplies: many(forumReplies),
   cartItems: many(cartItems),
   adminLogs: many(adminActivityLog),
 }));
@@ -215,7 +146,6 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const modsRelations = relations(mods, ({ many }) => ({
   versions: many(modVersions),
   purchases: many(purchases),
-  reviews: many(reviews),
   cartItems: many(cartItems),
 }));
 
@@ -234,44 +164,6 @@ export const purchasesRelations = relations(purchases, ({ one }) => ({
   mod: one(mods, {
     fields: [purchases.modId],
     references: [mods.id],
-  }),
-}));
-
-export const reviewsRelations = relations(reviews, ({ one }) => ({
-  user: one(users, {
-    fields: [reviews.userId],
-    references: [users.id],
-  }),
-  mod: one(mods, {
-    fields: [reviews.modId],
-    references: [mods.id],
-  }),
-}));
-
-export const forumCategoriesRelations = relations(forumCategories, ({ many }) => ({
-  threads: many(forumThreads),
-}));
-
-export const forumThreadsRelations = relations(forumThreads, ({ one, many }) => ({
-  category: one(forumCategories, {
-    fields: [forumThreads.categoryId],
-    references: [forumCategories.id],
-  }),
-  user: one(users, {
-    fields: [forumThreads.userId],
-    references: [users.id],
-  }),
-  replies: many(forumReplies),
-}));
-
-export const forumRepliesRelations = relations(forumReplies, ({ one }) => ({
-  thread: one(forumThreads, {
-    fields: [forumReplies.threadId],
-    references: [forumThreads.id],
-  }),
-  user: one(users, {
-    fields: [forumReplies.userId],
-    references: [users.id],
   }),
 }));
 
@@ -373,18 +265,6 @@ export type InsertModVersion = z.infer<typeof insertModVersionSchema>;
 
 export type Purchase = typeof purchases.$inferSelect;
 export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
-
-export type Review = typeof reviews.$inferSelect;
-export type InsertReview = z.infer<typeof insertReviewSchema>;
-
-export type ForumCategory = typeof forumCategories.$inferSelect;
-export type InsertForumCategory = z.infer<typeof insertForumCategorySchema>;
-
-export type ForumThread = typeof forumThreads.$inferSelect;
-export type InsertForumThread = z.infer<typeof insertForumThreadSchema>;
-
-export type ForumReply = typeof forumReplies.$inferSelect;
-export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
 
 export type CartItem = typeof cartItems.$inferSelect;
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;

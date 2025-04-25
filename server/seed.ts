@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, forumCategories, siteSettings } from "@shared/schema";
+import { users, siteSettings } from "@shared/schema";
 import { hashPassword } from "./auth";
 import { eq } from "drizzle-orm";
 
@@ -45,48 +45,7 @@ export async function seedAdminUsers() {
   }
 }
 
-export async function seedForumCategories() {
-  console.log("Checking for forum categories...");
-  
-  const defaultCategories = [
-    {
-      name: "Announcements",
-      description: "Official announcements from the JSD team",
-      order: 1
-    },
-    {
-      name: "General Discussion",
-      description: "Talk about anything related to BeamNG mods",
-      order: 2
-    },
-    {
-      name: "Mod Support",
-      description: "Get help with installing and using mods",
-      order: 3
-    },
-    {
-      name: "Modding Tutorials",
-      description: "Tutorials and guides for creating your own mods",
-      order: 4
-    },
-    {
-      name: "Showcase",
-      description: "Show off your mods and creations",
-      order: 5
-    }
-  ];
-  
-  const existingCategories = await db.select().from(forumCategories);
-  
-  if (existingCategories.length === 0) {
-    console.log("Creating default forum categories");
-    for (const category of defaultCategories) {
-      await db.insert(forumCategories).values(category);
-    }
-  } else {
-    console.log("Forum categories already exist");
-  }
-}
+// Forum categories removed
 
 export async function seedSiteSettings() {
   console.log("Checking for site settings...");
@@ -128,7 +87,7 @@ export async function seedSiteSettings() {
 export async function seedDatabase() {
   try {
     await seedAdminUsers();
-    await seedForumCategories();
+    // Forum categories removed
     await seedSiteSettings();
     console.log("Database seeding completed");
   } catch (error) {
