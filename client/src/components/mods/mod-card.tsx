@@ -109,27 +109,42 @@ const ModCard = ({ mod }: ModCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
+    console.log("=== ADD TO CART BUTTON CLICKED ===");
+    console.log("Mod info:", mod);
+    console.log("Mod ID:", mod.id, "Type:", typeof mod.id);
+    
     // Prevent double-clicks
-    if (inCart) return;
+    if (inCart) {
+      console.log("Item already in cart, not adding again");
+      return;
+    }
     
     try {
-      console.log("Adding mod to cart:", mod.id);
+      console.log("Starting add to cart process for mod ID:", mod.id);
       
       // Get the button that was clicked for animation
       const button = e.currentTarget as HTMLElement;
       
       // Optimistically update UI state
       setInCart(true);
+      console.log("UI state updated (optimistically)");
       
       // Start animation
+      console.log("Starting animation");
       createFlyingAnimation(button);
       
       // Add to cart
-      await addItem(mod.id);
+      console.log("Calling addItem with mod ID:", mod.id);
+      const result = await addItem(mod.id);
+      console.log("Add to cart result:", result);
+      
+      // Verify the cart state after operation
+      console.log("Is mod in cart after operation:", isModInCart(mod.id));
     } catch (error) {
       console.error("Error adding to cart:", error);
       
       // If there was an error, reset the inCart state
+      console.log("Resetting inCart state due to error");
       setInCart(isModInCart(mod.id));
     }
   };

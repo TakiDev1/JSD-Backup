@@ -55,18 +55,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Add item to cart
   const addItemMutation = useMutation({
     mutationFn: async (modId: number) => {
-      console.log("Adding to cart, modId:", modId);
+      console.log("[use-cart] Adding to cart, modId:", modId, "Type:", typeof modId);
       
       if (!isAuthenticated) {
+        console.error("[use-cart] Not authenticated");
         throw new Error("You must be logged in to add items to your cart");
       }
       
-      if (isModInCart(modId)) {
-        console.log("Item already in cart");
+      // Convert modId to number explicitly
+      const numericModId = Number(modId);
+      console.log("[use-cart] Converted modId to number:", numericModId);
+      
+      if (isModInCart(numericModId)) {
+        console.log("[use-cart] Item already in cart");
         return null;
       }
       
-      return await addToCart(modId);
+      console.log("[use-cart] Calling addToCart with modId:", numericModId);
+      return await addToCart(numericModId);
     },
     onMutate: () => {
       setIsPending(true);
@@ -177,9 +183,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     isPending,
     addItem: async (modId: number) => {
       try {
-        await addItemMutation.mutateAsync(modId);
+        console.log("[use-cart] addItem called with modId:", modId);
+        const result = await addItemMutation.mutateAsync(modId);
+        console.log("[use-cart] addItem result:", result);
+        return result;
       } catch (error) {
+        console.error("[use-cart] addItem error:", error);
         // Error is handled in the mutation callbacks
+        throw error; // Re-throw for component-level handling
       }
     },
     removeItem: async (modId: number) => {
