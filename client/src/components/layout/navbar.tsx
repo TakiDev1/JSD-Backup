@@ -77,7 +77,11 @@ const Navbar = () => {
           </Button>
           
           <Link href="/checkout">
-            <Button variant="ghost" size="icon" className="relative glow-effect bg-dark-card rounded-full text-neutral hover:text-white transition-colors">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="cart-button relative glow-effect bg-dark-card rounded-full text-neutral hover:text-white transition-colors"
+            >
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
                 <motion.span 

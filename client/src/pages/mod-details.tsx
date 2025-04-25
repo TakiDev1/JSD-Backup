@@ -168,12 +168,65 @@ if (!mod) {
   const inCart = isModInCart(id);
 
   // Handle add to cart
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (e?: React.MouseEvent) => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    await addItem(id);
+    
+    try {
+      await addItem(id);
+      
+      // Create flying item animation
+      if (e) {
+        const button = e.currentTarget as HTMLElement;
+        const cartButton = document.querySelector('.cart-button') as HTMLElement;
+        
+        if (button && cartButton) {
+          const buttonRect = button.getBoundingClientRect();
+          const cartRect = cartButton.getBoundingClientRect();
+          
+          // Create flying element
+          const flyingItem = document.createElement('div');
+          flyingItem.className = 'flying-cart-item';
+          flyingItem.style.position = 'fixed';
+          flyingItem.style.zIndex = '9999';
+          flyingItem.style.width = '30px';
+          flyingItem.style.height = '30px';
+          flyingItem.style.borderRadius = '50%';
+          flyingItem.style.background = 'white';
+          flyingItem.style.boxShadow = '0 0 15px rgba(115, 0, 255, 0.8)';
+          flyingItem.style.left = `${buttonRect.left + buttonRect.width / 2}px`;
+          flyingItem.style.top = `${buttonRect.top + buttonRect.height / 2}px`;
+          flyingItem.style.pointerEvents = 'none';
+          
+          document.body.appendChild(flyingItem);
+          
+          // Animate
+          flyingItem.animate([
+            { 
+              left: `${buttonRect.left + buttonRect.width / 2}px`,
+              top: `${buttonRect.top + buttonRect.height / 2}px`,
+              opacity: 1,
+              transform: 'scale(1)'
+            },
+            { 
+              left: `${cartRect.left + cartRect.width / 2}px`,
+              top: `${cartRect.top + cartRect.height / 2}px`,
+              opacity: 0,
+              transform: 'scale(0.5)'
+            }
+          ], {
+            duration: 800,
+            easing: 'cubic-bezier(0.215, 0.610, 0.355, 1.000)'
+          }).onfinish = () => {
+            document.body.removeChild(flyingItem);
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
   };
 
   // Handle download
@@ -365,7 +418,7 @@ if (!mod) {
               ) : (
                 <Button
                   className="w-full bg-primary hover:bg-primary-light text-white"
-                  onClick={handleAddToCart}
+                  onClick={(e) => handleAddToCart(e)}
                   disabled={inCart}
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
