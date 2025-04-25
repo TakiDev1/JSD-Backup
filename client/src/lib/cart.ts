@@ -23,10 +23,17 @@ export async function getCart(): Promise<CartItem[]> {
 // Add item to cart
 export async function addToCart(modId: number): Promise<CartItem | null> {
   try {
+    console.log("Adding to cart, modId:", modId);
     const res = await apiRequest("POST", "/api/cart", { modId });
-    return await res.json();
+    const data = await res.json();
+    console.log("Cart response:", data);
+    return data;
   } catch (error) {
     console.error("Error adding to cart:", error);
+    // If there's an error response, try to log it
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+    }
     return null;
   }
 }

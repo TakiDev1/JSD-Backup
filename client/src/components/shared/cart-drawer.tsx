@@ -51,7 +51,7 @@ const CartDrawer = () => {
       <Button
         variant="outline"
         size="icon"
-        className="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-primary hover:bg-primary-light text-white shadow-lg z-50"
+        className="cart-button fixed bottom-8 right-8 h-14 w-14 rounded-full bg-primary hover:bg-primary-light text-white shadow-lg z-50"
         onClick={() => setIsOpen(true)}
       >
         <ShoppingCart className="h-6 w-6" />
@@ -105,12 +105,11 @@ const CartDrawer = () => {
                     >
                       <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 mr-4">
                         <img
-                          src={item.mod?.thumbnail}
+                          src={item.mod?.previewImageUrl || "/images/mod-placeholder.jpg"}
                           alt={item.mod?.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1567818735868-e71b99932e29?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+                            (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
                           }}
                         />
                       </div>
