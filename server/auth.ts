@@ -167,9 +167,16 @@ export function setupAuth(app: Express) {
   // Authentication middleware
   return {
     isAuthenticated: (req: any, res: any, next: any) => {
+      console.log("Authentication check - Path:", req.path, "Method:", req.method);
+      console.log("Authentication check - User:", req.user ? { id: req.user.id, username: req.user.username } : "Not authenticated");
+      console.log("Authentication check - isAuthenticated():", req.isAuthenticated());
+      
       if (req.isAuthenticated()) {
+        console.log("Authentication check - PASSED");
         return next();
       }
+      
+      console.log("Authentication check - FAILED");
       res.status(401).json({ message: 'Unauthorized' });
     },
     

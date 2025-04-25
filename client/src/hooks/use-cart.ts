@@ -10,7 +10,7 @@ interface CartContextType {
   isLoading: boolean;
   cartTotal: number;
   cartCount: number;
-  addItem: (modId: number) => Promise<void>;
+  addItem: (modId: number) => Promise<CartItem | null>;
   removeItem: (modId: number) => Promise<void>;
   clearCart: () => Promise<void>;
   isModInCart: (modId: number) => boolean;
@@ -22,10 +22,10 @@ const CartContext = createContext<CartContextType>({
   isLoading: false,
   cartTotal: 0,
   cartCount: 0,
-  addItem: async () => {},
-  removeItem: async () => {},
+  addItem: async (_modId: number) => null,
+  removeItem: async (_modId: number) => {},
   clearCart: async () => {},
-  isModInCart: () => false,
+  isModInCart: (_modId: number) => false,
   isPending: false,
 });
 
