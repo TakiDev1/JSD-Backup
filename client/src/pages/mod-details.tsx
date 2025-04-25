@@ -8,15 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Rating from "@/components/shared/rating";
-import ARPreview from "@/components/mods/ar-preview";
-import { ShoppingCart, Star, Download, Calendar, Package, Clock, Tag, Heart, Share2, Eye } from "lucide-react";
+import { ShoppingCart, Star, Download, Calendar, Package, Clock, Tag, Heart, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { ModVersion } from "@shared/schema";
@@ -90,8 +84,7 @@ const ModDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
   const { addItem, isModInCart, isPending } = useCart();
   const { toast } = useToast();
-  // Review dialog removed
-  const [isARPreviewOpen, setIsARPreviewOpen] = useState(false);
+  // Review dialog and AR preview removed
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch mod details and versions
@@ -331,9 +324,7 @@ if (!mod) {
                 {renderDescriptionWithImages(mod.description)}
               </div>
 
-              <Button variant="outline" onClick={() => setIsARPreviewOpen(true)} className="mb-8">
-                <Eye className="mr-2 h-4 w-4" /> View AR Preview
-              </Button>
+              {/* AR preview feature has been removed */}
 
               {mod.features && Array.isArray(mod.features) && mod.features.length > 0 ? (
                 <>
@@ -511,20 +502,8 @@ if (!mod) {
           </div>
         </div>
       </div>
-
-      {/* AR Preview Dialog */}
-      <Dialog open={isARPreviewOpen} onOpenChange={setIsARPreviewOpen}>
-        <DialogContent className="max-w-4xl bg-dark-card">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display font-bold">
-              AR Preview: {mod.title}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="relative h-[60vh]">
-            <ARPreview modId={id} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      
+      {/* AR preview feature removed */}
     </div>
   );
 };
