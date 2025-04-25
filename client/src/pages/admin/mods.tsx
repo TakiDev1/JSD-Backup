@@ -37,7 +37,7 @@ const modSchema = z.object({
   version: z.string().min(1, "Version is required"),
   isFeatured: z.boolean().default(false),
   isSubscriptionOnly: z.boolean().default(false),
-  isPublished: z.boolean().default(false),
+  // Removed isPublished as all mods are now shown directly
   releaseNotes: z.string().optional(),
   tags: z.string().optional(),
 });
@@ -73,7 +73,7 @@ const AdminMods = () => {
     },
   });
   
-  // Create mod form
+  // Create mod form with default values
   const form = useForm<ModFormValues>({
     resolver: zodResolver(modSchema),
     defaultValues: {
@@ -86,7 +86,6 @@ const AdminMods = () => {
       version: "1.0.0",
       isFeatured: false,
       isSubscriptionOnly: false,
-      isPublished: false,
       releaseNotes: "",
       tags: "",
     },
@@ -176,7 +175,9 @@ const AdminMods = () => {
   // Edit mod handler
   const handleEditMod = (mod: any) => {
     setCurrentMod(mod);
-    form.reset({
+    
+    // Reset form with mod data - isPublished removed as all mods are now shown directly
+    const formValues = {
       title: mod.title,
       description: mod.description,
       price: mod.price.toString(),
@@ -186,10 +187,11 @@ const AdminMods = () => {
       version: mod.version || "1.0.0",
       isFeatured: mod.isFeatured || false,
       isSubscriptionOnly: mod.isSubscriptionOnly || false,
-      isPublished: mod.isPublished || false,
       releaseNotes: mod.releaseNotes || "",
       tags: mod.tags ? mod.tags.join(", ") : "",
-    });
+    };
+    
+    form.reset(formValues);
     setIsEditDialogOpen(true);
   };
   
@@ -199,19 +201,7 @@ const AdminMods = () => {
     setIsDeleteDialogOpen(true);
   };
   
-  // Toggle publish status handler
-  const handleTogglePublish = (mod: any) => {
-    togglePublish({ id: mod.id, currentState: mod.isPublished });
-  };
-  
-  // Old handlers kept for backward compatibility
-  const handlePublishMod = (mod: any) => {
-    togglePublish({ id: mod.id, currentState: false });
-  };
-  
-  const handleUnpublishMod = (mod: any) => {
-    togglePublish({ id: mod.id, currentState: true });
-  };
+  // Removed publish/unpublish handlers
   
   // Form submit handler
   const onSubmit = (values: ModFormValues) => {
@@ -432,21 +422,7 @@ const AdminMods = () => {
                         )}
                       />
                       
-                      <FormField
-                        control={form.control}
-                        name="isPublished"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormLabel>Publish Immediately</FormLabel>
-                          </FormItem>
-                        )}
-                      />
+                      {/* Removed isPublished field as all mods are now shown directly */}
                     </div>
                     
                     <FormField
@@ -652,15 +628,10 @@ const AdminMods = () => {
                               </Badge>
                             )}
                             
-                            {mod.isPublished ? (
-                              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                                Published
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
-                                Unpublished
-                              </Badge>
-                            )}
+                            {/* All mods are now published by default */}
+                            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                              Active
+                            </Badge>
                           </div>
                         </TableCell>
                         <TableCell>{new Date(mod.createdAt).toLocaleDateString()}</TableCell>
@@ -681,21 +652,7 @@ const AdminMods = () => {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              {mod.isPublished ? (
-                                <DropdownMenuItem 
-                                  onClick={() => handleTogglePublish(mod)}
-                                  className="text-amber-500 focus:text-amber-500"
-                                >
-                                  <Eye className="mr-2 h-4 w-4" /> Unpublish
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem 
-                                  onClick={() => handleTogglePublish(mod)}
-                                  className="text-green-500 focus:text-green-500"
-                                >
-                                  <Eye className="mr-2 h-4 w-4" /> Publish
-                                </DropdownMenuItem>
-                              )}
+                              {/* Removed publish/unpublish dropdown items as all mods are now shown directly */}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteMod(mod)}
@@ -872,21 +829,7 @@ const AdminMods = () => {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="isPublished"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Published</FormLabel>
-                      </FormItem>
-                    )}
-                  />
+                  {/* Removed isPublished field as all mods are now shown directly */}
                 </div>
                 
                 <FormField
