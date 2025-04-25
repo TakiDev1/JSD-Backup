@@ -9,7 +9,7 @@ export const API = {
     LIST: "/api/mods",
     DETAILS: (id: number) => `/api/mods/${id}`,
     VERSIONS: (id: number) => `/api/mods/${id}/versions`,
-    REVIEWS: (id: number) => `/api/mods/${id}/reviews`,
+    // Reviews system has been removed
     DOWNLOAD: (id: number) => `/api/mods/${id}/download`,
     // Removed TOGGLE_PUBLISH endpoint as publishing functionality has been removed
   },
@@ -25,12 +25,7 @@ export const API = {
     COMPLETE: "/api/purchase/complete",
   },
   MOD_LOCKER: "/api/mod-locker",
-  FORUM: {
-    CATEGORIES: "/api/forum/categories",
-    THREADS: (categoryId: number) => `/api/forum/categories/${categoryId}/threads`,
-    THREAD: (id: number) => `/api/forum/threads/${id}`,
-    REPLIES: (threadId: number) => `/api/forum/threads/${threadId}/replies`,
-  },
+  // Forum system has been removed
 };
 
 // Mod categories (focused only on what JSD needs: cars, plushies, and rugs)

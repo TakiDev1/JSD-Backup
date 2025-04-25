@@ -1,6 +1,6 @@
 import { useState, useEffect, Fragment } from "react";
 import { useParams, useLocation } from "wouter";
-import { useModDetails, useModVersions, useCreateReview, useUpdateReview } from "@/hooks/use-mods";
+import { useModDetails, useModVersions } from "@/hooks/use-mods";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,7 @@ import ARPreview from "@/components/mods/ar-preview";
 import { ShoppingCart, Star, Download, Calendar, Package, Clock, Tag, Heart, Share2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
-import { ModVersion, Review } from "@shared/schema";
+import { ModVersion } from "@shared/schema";
 
 // Function to render description with embedded images (including GIFs)
 const renderDescriptionWithImages = (description: string) => {
@@ -81,13 +81,7 @@ const renderDescriptionWithImages = (description: string) => {
   return result;
 };
 
-// Review form schema
-const reviewFormSchema = z.object({
-  rating: z.number().min(1, "Rating is required").max(5),
-  comment: z.string().optional(),
-});
-
-type ReviewFormValues = z.infer<typeof reviewFormSchema>;
+// Reviews system has been removed
 
 const ModDetailsPage = () => {
   const params = useParams<{ id: string }>();
@@ -96,7 +90,7 @@ const ModDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
   const { addItem, isModInCart, isPending } = useCart();
   const { toast } = useToast();
-  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  // Review dialog removed
   const [isARPreviewOpen, setIsARPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 

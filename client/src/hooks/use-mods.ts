@@ -47,15 +47,14 @@ export function useModDetails(id: number | undefined) {
   return useQuery({
     queryKey: [API.MODS.DETAILS(id || 0)],
     queryFn: async () => {
-      if (!id) return { mod: null, reviews: [] };
+      if (!id) return { mod: null };
       const response = await apiRequest("GET", API.MODS.DETAILS(id));
       const data = await response.json();
       
       // Ensure we have proper structure
-      if (!data) return { mod: null, reviews: [] };
+      if (!data) return { mod: null };
       return {
         mod: data || null,
-        reviews: Array.isArray(data.reviews) ? data.reviews : [],
         latestVersion: data.latestVersion || null
       };
     },
@@ -130,82 +129,7 @@ export function useDownloadMod(modId: number) {
   });
 }
 
-export function useCreateReview() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      modId,
-      rating,
-      comment,
-    }: {
-      modId: number;
-      rating: number;
-      comment?: string;
-    }) => {
-      const res = await apiRequest("POST", API.MODS.REVIEWS(modId), {
-        rating,
-        comment,
-      });
-      return res.json();
-    },
-    onSuccess: (_, { modId }) => {
-      queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(modId)] });
-      toast({
-        title: "Review submitted",
-        description: "Your review has been submitted successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to submit your review. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useUpdateReview() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      reviewId,
-      modId,
-      rating,
-      comment,
-    }: {
-      reviewId: number;
-      modId: number;
-      rating: number;
-      comment?: string;
-    }) => {
-      const res = await apiRequest("PUT", `/api/reviews/${reviewId}`, {
-        modId,
-        rating,
-        comment,
-      });
-      return res.json();
-    },
-    onSuccess: (_, { modId }) => {
-      queryClient.invalidateQueries({ queryKey: [API.MODS.DETAILS(modId)] });
-      toast({
-        title: "Review updated",
-        description: "Your review has been updated successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update your review. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-}
+// Review system has been removed
 
 // Admin mutations
 export function useCreateMod() {
