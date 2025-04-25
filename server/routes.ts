@@ -242,16 +242,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Simple mod listing endpoint - with direct db access and published/unpublished handling
+  // Simple mod listing endpoint - always showing all mods regardless of publish status
   app.get("/api/mods", async (req, res) => {
     try {
-      const { category, search, featured, subscription, limit, page, showAll } = req.query;
+      const { category, search, featured, subscription, limit, page } = req.query;
       const pageSize = limit ? parseInt(limit as string) : 12;
       const currentPage = page ? parseInt(page as string) : 1;
       const offset = (currentPage - 1) * pageSize;
-      
-      // For admin panel we show all mods, for public we only show published
-      const showUnpublished = showAll === "true";
       
       // This will go directly to storage interface as in original code
       const mods = await storage.getMods({
@@ -259,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchTerm: search as string,
         featured: featured === "true",
         subscriptionOnly: subscription === "true",
-        onlyPublished: !showUnpublished,
+        onlyPublished: false, // Always show all mods regardless of publish status
         limit: pageSize,
         offset
       });
@@ -269,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchTerm: search as string,
         featured: featured === "true",
         subscriptionOnly: subscription === "true",
-        onlyPublished: !showUnpublished
+        onlyPublished: false // Always show all mods regardless of publish status
       });
       
       res.json({
@@ -287,12 +284,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get mod counts by category - using reliable storage interface
+  // Get mod counts by category - showing all mods
   app.get("/api/mods/counts/by-category", async (req, res) => {
     try {
-      // Check if this is an admin request, which should show all mods including unpublished ones
-      const showAll = req.query.showAll === "true";
-      
       // Use predefined categories to ensure we always have a consistent list
       const allCategories = [
         "vehicles", "sports", "drift", "offroad", "racing", "muscle",
@@ -303,8 +297,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allCategories.map(async (category) => {
           const count = await storage.getModsCount({ 
             category,
-            // Only show published mods to regular users
-            onlyPublished: !showAll
+            // Always show all mods regardless of publish status
+            onlyPublished: false
           });
           return {
             id: category,
@@ -325,14 +319,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mod = await storage.getMod(parseInt(req.params.id));
       
       if (!mod) {
-        return res.status(404).json({ message: "Mod not found" });
-      }
-      
-      // Check if the mod is published or if the user is an admin
-      const isAdmin = req.isAuthenticated() && (req.user as any)?.isAdmin;
-      
-      // If mod is not published and user is not admin, return 404
-      if (!mod.isPublished && !isAdmin) {
         return res.status(404).json({ message: "Mod not found" });
       }
       
@@ -414,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.logAdminActivity({
         userId: (req.user as any).id,
         action: newPublishState ? "Publish Mod" : "Unpublish Mod",
-        details: `${newPublishState ? "Published" : "Unpublished"} mod ID: ${modId}, Title: ${mod.title}`,
+        details: `${newPublishState ? "Published" : "Unpublished"} mod ID: ${modId}, Title: ${mod?.title || 'Unknown'}`,
         ipAddress: req.ip
       });
       
