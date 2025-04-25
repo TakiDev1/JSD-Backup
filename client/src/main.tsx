@@ -1,17 +1,8 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-
-// Apply custom cursor to body
-document.body.classList.add("custom-cursor");
-
-// Add custom styling for button focus states
 const style = document.createElement("style");
 style.textContent = `
-  .custom-cursor {
-    cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5.5 12L9 15.5L18.5 6' stroke='%237300ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), auto;
-  }
-  
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
   }
