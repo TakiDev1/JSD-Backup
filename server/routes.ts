@@ -563,6 +563,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       const modId = parseInt(req.params.modId);
       
+      // Check if modId is valid
+      if (isNaN(modId)) {
+        return res.status(400).json({ message: "Invalid mod ID" });
+      }
+      
       const success = await storage.removeFromCart(userId, modId);
       
       if (!success) {
@@ -705,7 +710,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       // If user has subscription, also include subscription-only mods
-      let subscriptionMods = [];
+      let subscriptionMods: Array<{
+        mod: schema.Mod,
+        latestVersion: schema.ModVersion | undefined,
+        subscription: boolean
+      }> = [];
       
       if (user?.stripeSubscriptionId) {
         const subMods = await storage.getMods({ subscriptionOnly: true });

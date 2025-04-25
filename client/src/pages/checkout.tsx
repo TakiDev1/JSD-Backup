@@ -323,9 +323,12 @@ const CheckoutPage = () => {
                     {cartItems.map((item: any) => (
                       <div key={item.id} className="flex items-center space-x-4">
                         <img 
-                          src={item.mod?.thumbnail} 
+                          src={item.mod?.previewImageUrl || "/images/mod-placeholder.jpg"} 
                           alt={item.mod?.title} 
                           className="w-16 h-16 object-cover rounded-md"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
+                          }}
                         />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-white font-medium truncate">{item.mod?.title}</h4>
