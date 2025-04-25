@@ -33,7 +33,7 @@ export const API = {
   },
 };
 
-// Mod categories (focused on cars as requested by JSD)
+// Mod categories (focused only on what JSD needs: cars, plushies, and rugs)
 export const MOD_CATEGORIES = [
   { value: "vehicles", label: "Vehicles", id: "vehicles", name: "Vehicles", count: 0 },
   { value: "sports", label: "Sports Cars", id: "sports", name: "Sports Cars", count: 0 },
@@ -45,8 +45,7 @@ export const MOD_CATEGORIES = [
   { value: "supercars", label: "Supercars", id: "supercars", name: "Supercars", count: 0 },
   { value: "custom", label: "Custom Builds", id: "custom", name: "Custom Builds", count: 0 },
   { value: "plushies", label: "Plushies", id: "plushies", name: "Plushies", count: 0 },
-  { value: "accessories", label: "Accessories", id: "accessories", name: "Accessories & Merch", count: 0 },
-  { value: "sounds", label: "Sound Mods", id: "sounds", name: "Sound Mods", count: 0 },
+  { value: "rugs", label: "Rugs", id: "rugs", name: "Rugs", count: 0 },
 ];
 
 // Site statistics (for home page) - these will be replaced by dynamic data from the admin panel
