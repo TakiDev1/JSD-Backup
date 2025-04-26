@@ -53,15 +53,29 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
     // Explicitly log what we're sending to the server
     console.log("Request payload:", { modId: numericModId });
     
-    const res = await apiRequest("POST", "/api/cart", { modId: numericModId });
+    console.log("Making API request to add to cart:", { modId: numericModId });
     
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Server error adding to cart:", errorData);
-      throw new Error(errorData.message || "Failed to add item to cart");
+    const res = await apiRequest("POST", "/api/cart", { modId: numericModId });
+    console.log("Cart API response status:", res.status, res.statusText);
+    
+    // Get response text for debugging
+    const responseText = await res.text();
+    console.log("Cart API raw response:", responseText);
+    
+    // Parse the text back to JSON (or default to empty object if parsing fails)
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+      console.log("Cart API parsed response:", data);
+    } catch (e) {
+      console.error("Failed to parse JSON response:", e);
+      data = {};
     }
     
-    const data = await res.json();
+    if (!res.ok) {
+      console.error("Server error adding to cart:", data);
+      throw new Error((data && data.message) || "Failed to add item to cart");
+    }
     console.log("Add to cart response:", data);
     
     // If item is already in cart, server returns a success message

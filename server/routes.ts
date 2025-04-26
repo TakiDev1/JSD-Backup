@@ -489,7 +489,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
+      console.log("==== CART API ====");
+      console.log("Cart API - Headers:", req.headers);
       console.log("Cart API - Request body:", req.body);
+      console.log("Cart API - Raw body:", req.body ? JSON.stringify(req.body) : 'undefined');
+      console.log("Cart API - Request user:", req.user);
       
       const userId = (req.user as any).id;
       
@@ -500,10 +504,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let { modId } = req.body;
       
+      console.log("Cart API - modId from body:", modId, "Type:", typeof modId);
+      
       // Ensure modId is a number
       modId = Number(modId);
       
-      console.log("Cart API - User ID:", userId, "Mod ID:", modId, "Type:", typeof modId);
+      console.log("Cart API - After conversion - User ID:", userId, "Mod ID:", modId, "Type:", typeof modId);
       
       if (!modId || isNaN(modId)) {
         console.log("Cart API - Invalid mod ID:", modId);
@@ -545,21 +551,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add to cart
-      const [cartItem] = await db.insert(schema.cartItems)
-        .values({
-          userId,
-          modId,
-          addedAt: new Date()
-        })
-        .returning();
+      console.log("Cart API - Attempting to insert cart item:", { userId, modId });
       
-      // Fetch the cart item with mod details
-      const result = {
-        ...cartItem,
-        mod
-      };
-      
-      res.status(201).json(result);
+      try {
+        const [cartItem] = await db.insert(schema.cartItems)
+          .values({
+            userId,
+            modId,
+            addedAt: new Date()
+          })
+          .returning();
+        
+        console.log("Cart API - Insert successful, returned cart item:", cartItem);
+        
+        // Fetch the cart item with mod details
+        const result = {
+          ...cartItem,
+          mod
+        };
+        
+        console.log("Cart API - Final response:", result);
+        
+        res.status(201).json(result);
+      } catch (dbError) {
+        console.error("Cart API - Database error during insert:", dbError);
+        throw dbError;
+      }
     } catch (error: any) {
       console.error("Add to cart error:", error);
       res.status(500).json({ message: "Failed to add item to cart", error: error.message });
