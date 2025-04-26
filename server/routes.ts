@@ -822,14 +822,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      // If user has subscription, also include subscription-only mods
+      // If user has premium status, also include subscription-only mods
       let subscriptionMods: Array<{
         mod: schema.Mod,
         latestVersion: schema.ModVersion | undefined,
         subscription: boolean
       }> = [];
       
-      if (user?.stripeSubscriptionId) {
+      const now = new Date();
+      const isPremiumActive = user?.isPremium && user?.premiumExpiresAt && new Date(user.premiumExpiresAt) > now;
+      
+      if (isPremiumActive) {
         const subMods = await storage.getMods({ subscriptionOnly: true });
         
         subscriptionMods = await Promise.all(
@@ -848,7 +851,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         purchasedMods,
         subscriptionMods,
-        hasSubscription: !!user?.stripeSubscriptionId
+        hasSubscription: isPremiumActive,
+        premiumExpiresAt: user?.premiumExpiresAt
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

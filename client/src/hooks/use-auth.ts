@@ -9,6 +9,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isPremium: boolean;
+  premiumExpiresAt: Date | null;
   login: () => void;
   logout: () => Promise<void>;
   getUserAvatar: (user: any) => string;
@@ -20,6 +22,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   isAuthenticated: false,
   isAdmin: false,
+  isPremium: false,
+  premiumExpiresAt: null,
   login: () => {},
   logout: async () => {},
   getUserAvatar: () => "",
@@ -85,11 +89,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  // Check if premium status is active
+  const now = new Date();
+  const premiumExpiresAt = user?.premiumExpiresAt ? new Date(user.premiumExpiresAt) : null;
+  const isPremium = user?.isPremium && premiumExpiresAt ? premiumExpiresAt > now : false;
+
   const value = {
     user,
     isLoading,
     isAuthenticated: !!user,
     isAdmin: isAdmin(user),
+    isPremium,
+    premiumExpiresAt,
     login: handleLogin,
     logout: handleLogout,
     getUserAvatar: getUserAvatar,
