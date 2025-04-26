@@ -164,12 +164,13 @@ const ModDetailsPage = () => {
     
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
+      console.log("User not authenticated, redirecting to auth page");
       toast({
         title: "Authentication required",
         description: "Please sign in to add items to your cart",
         variant: "destructive"
       });
-      navigate("/login");
+      navigate("/auth");
       return;
     }
     
@@ -217,7 +218,13 @@ const ModDetailsPage = () => {
   // Handle download
   const handleDownload = () => {
     if (!isAuthenticated) {
-      navigate("/login");
+      console.log("User not authenticated, redirecting to auth page");
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to download this mod",
+        variant: "destructive"
+      });
+      navigate("/auth");
       return;
     }
     window.location.href = `/api/mods/${id}/download`;
