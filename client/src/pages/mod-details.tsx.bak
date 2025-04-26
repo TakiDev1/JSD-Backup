@@ -75,6 +75,8 @@ const renderDescriptionWithImages = (description: string) => {
   return result;
 };
 
+// Reviews system has been removed
+
 const ModDetailsPage = () => {
   const params = useParams<{ id: string }>();
   const id = parseInt(params.id);
@@ -92,6 +94,62 @@ const ModDetailsPage = () => {
   // Ensure we have a mod object with proper fallbacks
   const mod = modDetails?.mod || null;
   const latestVersion = modDetails?.latestVersion || (Array.isArray(versions) && versions.length > 0 ? versions[0] : null);
+
+if (!mod) {
+  return (
+    <div className="container mx-auto px-4 py-24 min-h-screen">
+      <div className="text-center">
+        <h2 className="text-2xl font-display font-bold text-white mb-4">No Mods Available</h2>
+        <p className="text-neutral-light mb-8">Check back soon for new mods!</p>
+      </div>
+    </div>
+  );
+}
+
+  // Review form - Removed as reviews section is removed
+  // const form = useForm<ReviewFormValues>({
+  //   resolver: zodResolver(reviewFormSchema),
+  //   defaultValues: {
+  //     rating: userReview?.rating || 0,
+  //     comment: userReview?.comment || "",
+  //   },
+  // });
+
+  // Update form when user review changes - Removed as reviews section is removed
+  // useEffect(() => {
+  //   if (userReview) {
+  //     form.reset({
+  //       rating: userReview.rating,
+  //       comment: userReview.comment || "",
+  //     });
+  //   }
+  // }, [userReview, form]);
+
+  // Review mutations - Removed as reviews section is removed
+  // const createReviewMutation = useCreateReview();
+  // const updateReviewMutation = useUpdateReview();
+
+  // Handle form submission - Removed as reviews section is removed
+  // const onSubmit = (values: ReviewFormValues) => {
+  //   if (userReview) {
+  //     updateReviewMutation.mutate({
+  //       reviewId: userReview.id,
+  //       modId: id,
+  //       rating: values.rating,
+  //       comment: values.comment,
+  //     }, {
+  //       onSuccess: () => setIsReviewDialogOpen(false)
+  //     });
+  //   } else {
+  //     createReviewMutation.mutate({
+  //       modId: id,
+  //       rating: values.rating,
+  //       comment: values.comment,
+  //     }, {
+  //       onSuccess: () => setIsReviewDialogOpen(false)
+  //     });
+  //   }
+  // };
 
   // State to track if mod is in cart
   const [inCart, setInCart] = useState(false);
@@ -174,27 +232,17 @@ const ModDetailsPage = () => {
     }
     
     try {
-      console.log("=== ADD TO CART BUTTON CLICKED ===");
-      console.log("Mod info:", mod);
-      console.log("Mod ID:", id, "Type:", typeof id);
-      console.log("Starting add to cart process for mod ID:", id);
-      
       // Optimistically update UI
       setInCart(true);
-      console.log("UI state updated (optimistically)");
       
       // Create flying animation if event is provided
       if (e) {
         const button = e.currentTarget as HTMLElement;
-        console.log("Starting animation");
         createFlyingAnimation(button);
       }
       
       // Add to cart
-      console.log("Calling addItem with mod ID:", id);
-      const result = await addItem(id);
-      console.log("Add to cart result:", result);
-      console.log("Is mod in cart after operation:", isModInCart(id));
+      await addItem(id);
       
       toast({
         title: "Added to cart",
@@ -275,6 +323,8 @@ const ModDetailsPage = () => {
               <div className="text-neutral-light mb-8 whitespace-pre-wrap">
                 {renderDescriptionWithImages(mod.description)}
               </div>
+
+              {/* AR preview feature has been removed */}
 
               {mod.features && Array.isArray(mod.features) && mod.features.length > 0 ? (
                 <>
@@ -380,68 +430,80 @@ const ModDetailsPage = () => {
                       ${mod.discountPrice.toFixed(2)}
                     </span>
                   ) : mod.isSubscriptionOnly ? (
-                    <span className="text-secondary">Premium Only</span>
+                    <span className="text-secondary">Subscription Only</span>
                   ) : (
-                    `$${mod.price.toFixed(2)}`
+                    <span>${mod.price.toFixed(2)}</span>
                   )}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-3 mt-8">
-              {mod.isSubscriptionOnly && !user?.isPremium ? (
-                <Button 
-                  className="w-full bg-secondary hover:bg-secondary/90"
+            <div className="space-y-3">
+              {mod.isSubscriptionOnly ? (
+                <Button
+                  className="w-full bg-secondary hover:bg-secondary-dark text-white"
                   onClick={() => navigate("/subscribe")}
                 >
-                  <Clock className="mr-2 h-4 w-4" /> Subscribe For Access
-                </Button>
-              ) : user?.isPremium && mod.isSubscriptionOnly ? (
-                <Button 
-                  className="w-full"
-                  onClick={handleDownload}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download
-                </Button>
-              ) : user && user.purchases?.some((p: any) => p.modId === id) ? (
-                <Button 
-                  className="w-full"
-                  onClick={handleDownload}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download
+                  <Clock className="mr-2 h-4 w-4" /> Subscribe to Access
                 </Button>
               ) : (
-                <Button 
-                  className="w-full"
-                  onClick={handleAddToCart}
-                  disabled={inCart || isPending}
+                <Button
+                  className="w-full bg-primary hover:bg-primary-light text-white"
+                  onClick={(e) => handleAddToCart(e)}
+                  disabled={inCart}
                 >
-                  {inCart ? (
-                    <>
-                      <span className="mr-2">✓</span> In Cart
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-                    </>
-                  )}
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  {inCart ? "Added to Cart" : "Add to Cart"}
                 </Button>
               )}
 
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="flex-1" title="Share">
-                  <Share2 className="h-4 w-4" />
+              {user && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDownload}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Download Now
                 </Button>
-                {isAuthenticated && (
-                  <Button variant="outline" size="icon" className="flex-1" title="Favorite">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                )}
+              )}
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate("/login");
+                      return;
+                    }
+                    toast({
+                      title: "Feature coming soon",
+                      description: "Wishlist functionality will be available soon!",
+                    });
+                  }}
+                >
+                  <Heart className="mr-2 h-4 w-4" /> Wishlist
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast({
+                      title: "Link copied",
+                      description: "Mod link copied to clipboard!",
+                    });
+                  }}
+                >
+                  <Share2 className="mr-2 h-4 w-4" /> Share
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* AR preview feature removed */}
     </div>
   );
 };
