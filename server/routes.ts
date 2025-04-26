@@ -531,19 +531,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/cart", auth.isAuthenticated, async (req, res) => {
+  app.post("/api/cart", async (req, res) => {
     try {
-      console.log("==== CART API ====");
-      console.log("Cart API - Headers:", req.headers);
+      console.log("\n\n======== CART API - POST REQUEST ========");
+      console.log("Cart API - Path:", req.path);
+      console.log("Cart API - Method:", req.method);
+      console.log("Cart API - Headers:", JSON.stringify(req.headers, null, 2));
+      console.log("Cart API - Content-Type:", req.headers['content-type']);
+      console.log("Cart API - Is authenticated?", req.isAuthenticated());
+      console.log("Cart API - Session ID:", req.sessionID);
+      console.log("Cart API - Session data:", req.session);
       console.log("Cart API - Request body:", req.body);
-      console.log("Cart API - Raw body:", req.body ? JSON.stringify(req.body) : 'undefined');
-      console.log("Cart API - Request user:", req.user);
+      console.log("Cart API - User:", req.user);
       
-      const userId = (req.user as any).id;
+      // First, check authentication
+      if (!req.isAuthenticated()) {
+        console.log("Cart API - User not authenticated");
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Then get user ID
+      const userId = (req.user as any)?.id;
       
       if (!userId) {
-        console.log("Cart API - Authentication required");
-        return res.status(401).json({ message: "Authentication required" });
+        console.log("Cart API - User is authenticated but ID is missing");
+        return res.status(401).json({ message: "Authentication required - user ID not found" });
       }
       
       let { modId } = req.body;

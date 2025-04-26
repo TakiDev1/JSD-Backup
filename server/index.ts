@@ -5,6 +5,34 @@ import { seedDatabase } from "./seed";
 import { pool } from "./db";
 
 const app = express();
+
+// Debug middleware to log all incoming requests
+app.use((req, res, next) => {
+  console.log(`[DEBUG] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  
+  // Log raw body for debugging
+  let rawBody = '';
+  req.on('data', chunk => {
+    rawBody += chunk.toString();
+  });
+  
+  req.on('end', () => {
+    if (rawBody) {
+      console.log(`[DEBUG] Raw request body: ${rawBody}`);
+    }
+    
+    // Capture outgoing response
+    const originalSend = res.send;
+    res.send = function(body) {
+      console.log(`[DEBUG] Response for ${req.method} ${req.url}: ${body ? body.toString().substring(0, 200) : 'empty'}`);
+      return originalSend.call(this, body);
+    };
+  });
+  
+  next();
+});
+
+// Standard middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

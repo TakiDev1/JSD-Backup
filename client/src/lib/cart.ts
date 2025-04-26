@@ -58,34 +58,57 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
     const apiUrl = "/api/cart";
     console.log("[cart.ts] About to send request to URL:", apiUrl, "with method:", "POST");
     
-    // Use apiRequest for consistency
-    const result = await apiRequest("POST", apiUrl, payload);
-    console.log("[cart.ts] Cart API response status:", result.status);
+    // DIRECT FETCH: Try bypassing the apiRequest wrapper which might have issues
+    console.log("[cart.ts] Using direct fetch() instead of apiRequest()");
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
     
-    if (result.status === 401) {
+    console.log("[cart.ts] Cart API direct fetch response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+    
+    if (response.status === 401) {
       console.error("[cart.ts] Authentication error - User not authenticated");
       throw new Error("You must be logged in to add items to your cart");
     }
     
     // Get response as JSON first, falling back to text if JSON parsing fails
     let data;
+    let responseText = '';
     try {
-      data = await result.json();
-      console.log("[cart.ts] Cart API JSON response:", data);
-    } catch (jsonError) {
-      console.error("[cart.ts] JSON parse error:", jsonError);
+      // Clone first and get response as text for debugging
+      const responseClone = response.clone();
+      responseText = await responseClone.text();
+      console.log("[cart.ts] Cart API raw response text:", responseText);
       
-      // If the status is ok but JSON parsing failed, this is unexpected
-      if (result.ok) {
-        console.error("[cart.ts] Unexpected: Response status OK but invalid JSON");
-        throw new Error("Server returned an invalid response format");
+      // Try to parse as JSON if there's any content
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+          console.log("[cart.ts] Cart API JSON response:", data);
+        } catch (jsonError) {
+          console.error("[cart.ts] JSON parse error:", jsonError);
+          throw new Error("Invalid JSON response from server: " + responseText);
+        }
       } else {
-        // If not OK and JSON parsing failed, create a generic error
-        throw new Error(`Server error: ${result.status} ${result.statusText}`);
+        console.warn("[cart.ts] Empty response received");
+        data = null;
       }
+    } catch (textError) {
+      console.error("[cart.ts] Error reading response text:", textError);
+      data = null;
+      throw new Error(`Failed to read response: ${textError.message}`);
     }
     
-    if (!result.ok) {
+    if (!response.ok) {
       console.error("[cart.ts] Server error adding to cart:", data);
       throw new Error((data && data.message) || "Failed to add item to cart");
     }

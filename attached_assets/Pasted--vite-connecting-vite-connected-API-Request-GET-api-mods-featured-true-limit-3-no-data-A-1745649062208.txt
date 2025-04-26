@@ -1,0 +1,54 @@
+[vite] connecting...
+[vite] connected.
+API Request: GET /api/mods?featured=true&limit=3 no data
+API Request: GET /api/mods/counts/by-category no data
+Checking auth status...
+Auth status: Not authenticated
+API Response: GET /api/mods/counts/by-category - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+API Response: GET /api/mods?featured=true&limit=3 - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+Discord auth status: 
+Object {available: true}
+Checking auth status...
+Auth status: Authenticated as Developer
+Checking auth status...
+Auth status: Authenticated as Developer
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+API Request: GET /api/mods?limit=12&page=1 no data
+API Response: GET /api/mods?limit=12&page=1 - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+=== ADD TO CART BUTTON CLICKED ===
+Mod info: 
+Object {id: 25, title: "Test", description: "asdaqwecsdf", price: 1, discountPrice: null, …}
+Mod ID: 25 Type: number
+Starting add to cart process for mod ID: 25
+Starting animation
+Converted mod ID: 25 Type: number
+Calling addItem with mod ID: 25
+Add to cart result: null
+Is mod in cart after operation: false
+Operation returned null but item is not in cart - possible API issue
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+API Request: GET /api/admin/settings no data
+API Response: GET /api/admin/settings - Status: 200 
+Object {hasSetCookie: false, contentType: "application/json; charset=utf-8"}
