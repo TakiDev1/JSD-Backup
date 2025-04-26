@@ -35,6 +35,23 @@ const CartDrawer = () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+  
+  // Fetch cart items whenever drawer opens
+  useEffect(() => {
+    const refreshCartItems = async () => {
+      try {
+        if (isOpen && isAuthenticated) {
+          console.log("[cart-drawer] Drawer opened, refreshing cart items");
+          await refreshCart();
+          console.log("[cart-drawer] Cart refresh complete, items:", cartItems);
+        }
+      } catch (error) {
+        console.error("[cart-drawer] Error refreshing cart:", error);
+      }
+    };
+    
+    refreshCartItems();
+  }, [isOpen, isAuthenticated]);
 
   // Track when the cart is opened to avoid animations triggering during transitions
   useEffect(() => {

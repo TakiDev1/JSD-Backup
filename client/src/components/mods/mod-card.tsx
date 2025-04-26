@@ -13,7 +13,7 @@ interface ModCardProps {
 }
 
 const ModCard = ({ mod }: ModCardProps) => {
-  const { addItem, isModInCart } = useCart();
+  const { addItem, isModInCart, refreshCart } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
   const [inCart, setInCart] = useState(false);
 
