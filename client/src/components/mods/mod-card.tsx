@@ -13,7 +13,7 @@ interface ModCardProps {
 }
 
 const ModCard = ({ mod }: ModCardProps) => {
-  const { addItem, isModInCart, refreshCart } = useCart();
+  const { addItem, isModInCart, refreshCart, cartItems } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
   const [inCart, setInCart] = useState(false);
 
@@ -49,12 +49,14 @@ const ModCard = ({ mod }: ModCardProps) => {
     };
   }, []);
 
-  // Check if mod is in cart
+  // Check if mod is in cart and keep track of inCart state
   useEffect(() => {
     if (mod && mod.id) {
-      setInCart(isModInCart(mod.id));
+      const isInCart = isModInCart(mod.id);
+      console.log(`[mod-card] Checking if mod ${mod.id} is in cart:`, isInCart);
+      setInCart(isInCart);
     }
-  }, [isModInCart, mod]);
+  }, [isModInCart, mod, cartItems]);
 
   const createFlyingAnimation = (button: HTMLElement) => {
     const cartButton = document.querySelector('.cart-button') as HTMLElement;

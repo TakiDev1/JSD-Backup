@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { cartItems, cartTotal, removeItem, clearCart, isLoading, isPending } = useCart();
+  const { cartItems, cartTotal, removeItem, clearCart, isLoading, isPending, refreshCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [lastOpenTime, setLastOpenTime] = useState(0);
@@ -51,7 +51,7 @@ const CartDrawer = () => {
     };
     
     refreshCartItems();
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen, isAuthenticated, refreshCart, cartItems]);
 
   // Track when the cart is opened to avoid animations triggering during transitions
   useEffect(() => {
