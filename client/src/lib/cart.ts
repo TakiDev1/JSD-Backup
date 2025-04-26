@@ -52,13 +52,17 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
     
     // Create payload with explicit modId value
     const payload = { modId: numericModId };
-    console.log("[cart.ts] Request payload:", payload);
+    console.log("[cart.ts] Request payload:", payload, "Type:", typeof payload);
     
-    // Make the request with throwOnError set to false to handle errors manually
-    const res = await apiRequest("POST", "/api/cart", payload, false);
-    console.log("[cart.ts] Cart API response status:", res.status, res.statusText);
+    // Log URL before making request
+    const apiUrl = "/api/cart";
+    console.log("[cart.ts] About to send request to URL:", apiUrl, "with method:", "POST");
     
-    if (res.status === 401) {
+    // Use apiRequest for consistency
+    const result = await apiRequest("POST", apiUrl, payload);
+    console.log("[cart.ts] Cart API response status:", result.status);
+    
+    if (result.status === 401) {
       console.error("[cart.ts] Authentication error - User not authenticated");
       throw new Error("You must be logged in to add items to your cart");
     }
@@ -66,15 +70,22 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
     // Get response as JSON first, falling back to text if JSON parsing fails
     let data;
     try {
-      data = await res.json();
+      data = await result.json();
       console.log("[cart.ts] Cart API JSON response:", data);
-    } catch (e) {
-      const text = await res.text();
-      console.error("[cart.ts] Failed to parse JSON response, raw text:", text);
-      throw new Error("Invalid response from server");
+    } catch (jsonError) {
+      console.error("[cart.ts] JSON parse error:", jsonError);
+      
+      // If the status is ok but JSON parsing failed, this is unexpected
+      if (result.ok) {
+        console.error("[cart.ts] Unexpected: Response status OK but invalid JSON");
+        throw new Error("Server returned an invalid response format");
+      } else {
+        // If not OK and JSON parsing failed, create a generic error
+        throw new Error(`Server error: ${result.status} ${result.statusText}`);
+      }
     }
     
-    if (!res.ok) {
+    if (!result.ok) {
       console.error("[cart.ts] Server error adding to cart:", data);
       throw new Error((data && data.message) || "Failed to add item to cart");
     }

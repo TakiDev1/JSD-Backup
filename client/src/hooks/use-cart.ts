@@ -59,8 +59,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (!isAuthenticated) {
         console.error("[use-cart] Not authenticated");
-        // Instead of throwing, redirect to login
-        window.location.href = "/login";
+        
+        // Show toast before redirecting
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "Please log in to add items to your cart.",
+        });
+        
+        // Delay redirect to allow toast to be seen
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+        
         return null;
       }
       
@@ -80,12 +91,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       console.log("[use-cart] Calling addToCart with modId:", numericModId);
       
       try {
-        const result = await addToCart(numericModId);
+        // Set a timeout to catch hanging requests
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          setTimeout(() => reject(new Error("Request timed out. Server may be unavailable.")), 10000);
+        });
+        
+        // Race between the actual request and the timeout
+        const result = await Promise.race([
+          addToCart(numericModId),
+          timeoutPromise
+        ]) as CartItem | null;
+        
         console.log("[use-cart] Add to cart result:", result);
         
         // Verify success with explicit check since null is a valid response
         if (result === null) {
-          console.warn("[use-cart] Result was null but no error thrown");
+          console.warn("[use-cart] Result was null but no error thrown - this may indicate a server issue");
         }
         
         return result;
@@ -106,8 +127,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (data) {
         toast({
           title: "Added to cart",
-          description: "The mod has been added to your cart.",
+          description: `${data.mod?.title || 'Item'} successfully added to your cart.`,
         });
+      } else {
+        // Check if the item actually made it to the cart despite null result
+        setTimeout(() => {
+          getCart().then(updatedCart => {
+            console.log("[use-cart] Checking cart after null result:", updatedCart);
+          }).catch(e => console.error("[use-cart] Error checking cart after null result:", e));
+        }, 500);
       }
     },
     onError: (error: Error) => {
@@ -119,10 +147,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           description: "You already own this mod.",
           variant: "destructive",
         });
+      } else if (error.message.includes("timed out")) {
+        toast({
+          title: "Server issue",
+          description: "The server is taking too long to respond. Please try again later.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",
-          description: "Failed to add the mod to your cart. Please try again.",
+          description: error.message || "Failed to add the mod to your cart. Please try again.",
           variant: "destructive",
         });
       }
