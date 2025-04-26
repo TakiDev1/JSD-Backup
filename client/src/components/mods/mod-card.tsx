@@ -133,11 +133,49 @@ const ModCard = ({ mod }: ModCardProps) => {
       const numericModId = Number(mod.id);
       console.log("Converted mod ID:", numericModId, "Type:", typeof numericModId);
       
-      // Add to cart - don't update UI state yet since we're waiting for the result
+      // Try direct fetch (bypass the useCart hook for debugging)
+      try {
+        console.log("[mod-card] Doing direct fetch to debug cart API...");
+        const directResponse = await fetch("/api/cart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({ modId: numericModId })
+        });
+        
+        const text = await directResponse.text();
+        console.log("[mod-card] Direct API response status:", directResponse.status);
+        console.log("[mod-card] Direct API response text:", text);
+        
+        // Try to parse as JSON
+        try {
+          if (text) {
+            const json = JSON.parse(text);
+            console.log("[mod-card] Direct API response JSON:", json);
+          }
+        } catch (parseError) {
+          console.error("[mod-card] JSON parse error:", parseError);
+        }
+      } catch (directFetchError) {
+        console.error("[mod-card] Direct fetch error:", directFetchError);
+      }
+      
+      // Now use the regular addItem method
       console.log("Calling addItem with mod ID:", numericModId);
       
       const result = await addItem(numericModId);
       console.log("Add to cart result:", result);
+      
+      // Force refresh the cart
+      try {
+        console.log("[mod-card] Manually refreshing cart...");
+        await refreshCart();
+        console.log("[mod-card] Cart refresh completed");
+      } catch (refreshError) {
+        console.error("[mod-card] Cart refresh error:", refreshError);
+      }
       
       // Only update UI state after confirming the operation was successful
       const isInCart = isModInCart(numericModId);
@@ -147,6 +185,45 @@ const ModCard = ({ mod }: ModCardProps) => {
       // If result is null but we have no error, it likely means the item was already in cart
       if (result === null && !isInCart) {
         console.warn("Operation returned null but item is not in cart - possible API issue");
+        
+        // Try to get cart items manually to debug
+        try {
+          console.log("[mod-card] Fetching cart items directly for debugging");
+          const cartResponse = await fetch("/api/cart", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "include"
+          });
+          
+          const cartText = await cartResponse.text();
+          console.log("[mod-card] Direct cart GET status:", cartResponse.status);
+          console.log("[mod-card] Direct cart GET response:", cartText);
+          
+          // Try to parse as JSON
+          if (cartText) {
+            try {
+              const cartJson = JSON.parse(cartText);
+              console.log("[mod-card] Cart items:", cartJson);
+              console.log("[mod-card] Cart item count:", cartJson.length);
+              
+              // Check if mod is in returned cart data
+              const foundInCart = cartJson.some((item: any) => item.modId === numericModId);
+              console.log("[mod-card] Item found in direct cart fetch:", foundInCart);
+              
+              // Update UI if needed
+              if (foundInCart && !isInCart) {
+                console.log("[mod-card] Updating UI state - item IS in cart but not reflected in UI");
+                setInCart(true);
+              }
+            } catch (cartParseError) {
+              console.error("[mod-card] Cart JSON parse error:", cartParseError);
+            }
+          }
+        } catch (cartFetchError) {
+          console.error("[mod-card] Error fetching cart directly:", cartFetchError);
+        }
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
