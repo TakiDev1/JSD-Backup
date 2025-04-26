@@ -634,21 +634,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/get-or-create-subscription", auth.isAuthenticated, async (req, res) => {
+  app.post("/api/purchase-subscription", auth.isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
+      const { duration } = req.body;
       
-      if (!user.email) {
-        return res.status(400).json({ message: "User email required for subscription" });
+      if (!duration || !['1month', '3month', '6month', '12month'].includes(duration)) {
+        return res.status(400).json({ message: "Valid subscription duration required" });
       }
       
-      const subscription = await getOrCreateSubscription(
-        user.id,
-        user.email,
-        user.username
-      );
+      // Map durations to prices (in dollars)
+      const pricingMap: Record<string, number> = {
+        '1month': 5.99,
+        '3month': 14.99,
+        '6month': 24.99,
+        '12month': 39.99
+      };
       
-      res.json(subscription);
+      // Map durations to days
+      const daysMap: Record<string, number> = {
+        '1month': 30,
+        '3month': 90,
+        '6month': 180,
+        '12month': 365
+      };
+      
+      const price = pricingMap[duration];
+      
+      // Create a payment intent for the subscription purchase
+      const paymentIntent = await createPaymentIntent(price, { 
+        userId: user.id.toString(),
+        action: 'subscription_purchase',
+        duration 
+      });
+      
+      // Store subscription information in session to use after payment success
+      if (!req.session.pendingSubscriptionData) {
+        req.session.pendingSubscriptionData = {};
+      }
+      (req.session as any).pendingSubscriptionData = {
+        userId: user.id,
+        duration,
+        days: daysMap[duration],
+        price
+      };
+      
+      res.json({ 
+        clientSecret: paymentIntent.clientSecret,
+        price,
+        duration
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Activate subscription after successful payment
+  app.post("/api/activate-subscription", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "Payment intent ID required" });
+      }
+      
+      // Verify payment intent was successful
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== 'succeeded') {
+        return res.status(400).json({ message: "Payment not completed successfully" });
+      }
+      
+      // Get pending subscription from session
+      const pendingSubscription = (req.session as any).pendingSubscriptionData;
+      
+      if (!pendingSubscription || pendingSubscription.userId !== userId) {
+        return res.status(400).json({ message: "No valid pending subscription found" });
+      }
+      
+      // Calculate expiration date
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + (pendingSubscription.days * 24 * 60 * 60 * 1000));
+      
+      // Update user with premium status
+      await db.update(schema.users)
+        .set({
+          isPremium: true,
+          premiumExpiresAt: expiresAt
+        })
+        .where(eq(schema.users.id, userId));
+      
+      // Clear pending subscription from session
+      delete (req.session as any).pendingSubscriptionData;
+      
+      // Return user status
+      const user = await storage.getUser(userId);
+      res.json({ success: true, user });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

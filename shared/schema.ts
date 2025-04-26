@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   isAdmin: boolean("is_admin").default(false),
   isPremium: boolean("is_premium").default(false),
+  premiumExpiresAt: timestamp("premium_expires_at"),
   isBanned: boolean("is_banned").default(false),
   patreonId: text("patreon_id").unique(),
   patreonTier: text("patreon_tier"),
