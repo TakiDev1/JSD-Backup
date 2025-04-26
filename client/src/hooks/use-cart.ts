@@ -15,6 +15,7 @@ interface CartContextType {
   clearCart: () => Promise<void>;
   isModInCart: (modId: number) => boolean;
   isPending: boolean;
+  refreshCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType>({
@@ -27,6 +28,7 @@ const CartContext = createContext<CartContextType>({
   clearCart: async () => {},
   isModInCart: (_modId: number) => false,
   isPending: false,
+  refreshCart: async () => {},
 });
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -36,12 +38,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isPending, setIsPending] = useState(false);
 
   // Get cart items
-  const { data: cartItems = [], isLoading } = useQuery({
+  const { data: cartItems = [], isLoading, refetch: refetchCart } = useQuery({
     queryKey: ["/api/cart"],
-    queryFn: () => getCart(),
+    queryFn: async () => {
+      console.log("[use-cart] Executing cart fetch query function");
+      const items = await getCart();
+      console.log("[use-cart] Query function returned items:", items);
+      return items;
+    },
     enabled: isAuthenticated,
-    staleTime: 30000, // 30 seconds
+    staleTime: 5000, // Reduced to 5 seconds to check more frequently
     retry: 2,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const cartTotal = calculateCartTotal(cartItems);
@@ -232,6 +241,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Track if we've loaded the cart at least once
+  const [initialCartLoaded, setInitialCartLoaded] = useState(false);
+  
+  // Force-refresh the cart items when needed
+  useEffect(() => {
+    if (isAuthenticated && !initialCartLoaded) {
+      console.log("[use-cart] Initial cart load triggered");
+      refetchCart().then(() => {
+        setInitialCartLoaded(true);
+        console.log("[use-cart] Initial cart load completed");
+      });
+    }
+  }, [isAuthenticated, initialCartLoaded, refetchCart]);
+  
   // Context value
   const value = {
     cartItems,
@@ -244,6 +267,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.log("[use-cart] addItem called with modId:", modId);
         const result = await addItemMutation.mutateAsync(modId);
         console.log("[use-cart] addItem result:", result);
+        
+        // Force refresh cart after adding item
+        console.log("[use-cart] Force refreshing cart after add operation");
+        await refetchCart();
+        
         return result;
       } catch (error) {
         console.error("[use-cart] addItem error:", error);
@@ -254,6 +282,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeItem: async (modId: number) => {
       try {
         await removeItemMutation.mutateAsync(modId);
+        // Force refresh cart after removing item
+        await refetchCart();
       } catch (error) {
         // Error is handled in the mutation callbacks
       }
@@ -261,11 +291,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCart: async () => {
       try {
         await clearCartMutation.mutateAsync();
+        // Force refresh cart after clearing
+        await refetchCart();
       } catch (error) {
         // Error is handled in the mutation callbacks
       }
     },
     isModInCart,
+    refreshCart: async () => {
+      console.log("[use-cart] Manual cart refresh requested");
+      await refetchCart();
+    }
   };
 
   return React.createElement(CartContext.Provider, { value }, children);
