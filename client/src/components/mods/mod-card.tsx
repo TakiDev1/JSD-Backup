@@ -125,27 +125,36 @@ const ModCard = ({ mod }: ModCardProps) => {
       // Get the button that was clicked for animation
       const button = e.currentTarget as HTMLElement;
       
-      // Optimistically update UI state
-      setInCart(true);
-      console.log("UI state updated (optimistically)");
-      
-      // Start animation
+      // Start animation immediately for better UX
       console.log("Starting animation");
       createFlyingAnimation(button);
       
-      // Add to cart
-      console.log("Calling addItem with mod ID:", mod.id);
-      const result = await addItem(mod.id);
+      // Explicitly convert mod ID to number to avoid type issues
+      const numericModId = Number(mod.id);
+      console.log("Converted mod ID:", numericModId, "Type:", typeof numericModId);
+      
+      // Add to cart - don't update UI state yet since we're waiting for the result
+      console.log("Calling addItem with mod ID:", numericModId);
+      
+      const result = await addItem(numericModId);
       console.log("Add to cart result:", result);
       
-      // Verify the cart state after operation
-      console.log("Is mod in cart after operation:", isModInCart(mod.id));
+      // Only update UI state after confirming the operation was successful
+      const isInCart = isModInCart(numericModId);
+      console.log("Is mod in cart after operation:", isInCart);
+      setInCart(isInCart);
+      
+      // If result is null but we have no error, it likely means the item was already in cart
+      if (result === null && !isInCart) {
+        console.warn("Operation returned null but item is not in cart - possible API issue");
+      }
     } catch (error) {
       console.error("Error adding to cart:", error);
       
-      // If there was an error, reset the inCart state
-      console.log("Resetting inCart state due to error");
-      setInCart(isModInCart(mod.id));
+      // If there was an error, make sure UI state matches reality
+      const actualCartState = isModInCart(Number(mod.id));
+      console.log("Resetting inCart state due to error, actual state:", actualCartState);
+      setInCart(actualCartState);
     }
   };
 

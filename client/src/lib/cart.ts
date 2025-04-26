@@ -48,35 +48,38 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
   }
   
   try {
-    console.log(`Adding mod ${numericModId} to cart...`);
+    console.log(`[cart.ts] Adding mod ${numericModId} to cart...`);
     
-    // Explicitly log what we're sending to the server
-    console.log("Request payload:", { modId: numericModId });
+    // Create payload with explicit modId value
+    const payload = { modId: numericModId };
+    console.log("[cart.ts] Request payload:", payload);
     
-    console.log("Making API request to add to cart:", { modId: numericModId });
+    // Make the request with throwOnError set to false to handle errors manually
+    const res = await apiRequest("POST", "/api/cart", payload, false);
+    console.log("[cart.ts] Cart API response status:", res.status, res.statusText);
     
-    const res = await apiRequest("POST", "/api/cart", { modId: numericModId });
-    console.log("Cart API response status:", res.status, res.statusText);
+    if (res.status === 401) {
+      console.error("[cart.ts] Authentication error - User not authenticated");
+      throw new Error("You must be logged in to add items to your cart");
+    }
     
-    // Get response text for debugging
-    const responseText = await res.text();
-    console.log("Cart API raw response:", responseText);
-    
-    // Parse the text back to JSON (or default to empty object if parsing fails)
+    // Get response as JSON first, falling back to text if JSON parsing fails
     let data;
     try {
-      data = responseText ? JSON.parse(responseText) : {};
-      console.log("Cart API parsed response:", data);
+      data = await res.json();
+      console.log("[cart.ts] Cart API JSON response:", data);
     } catch (e) {
-      console.error("Failed to parse JSON response:", e);
-      data = {};
+      const text = await res.text();
+      console.error("[cart.ts] Failed to parse JSON response, raw text:", text);
+      throw new Error("Invalid response from server");
     }
     
     if (!res.ok) {
-      console.error("Server error adding to cart:", data);
+      console.error("[cart.ts] Server error adding to cart:", data);
       throw new Error((data && data.message) || "Failed to add item to cart");
     }
-    console.log("Add to cart response:", data);
+    
+    console.log("[cart.ts] Successfully added to cart:", data);
     
     // If item is already in cart, server returns a success message
     if (data.message === "Item already in cart" && data.cartItem) {

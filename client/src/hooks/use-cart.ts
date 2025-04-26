@@ -59,7 +59,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (!isAuthenticated) {
         console.error("[use-cart] Not authenticated");
-        throw new Error("You must be logged in to add items to your cart");
+        // Instead of throwing, redirect to login
+        window.location.href = "/login";
+        return null;
       }
       
       // Convert modId to number explicitly
@@ -68,18 +70,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (isModInCart(numericModId)) {
         console.log("[use-cart] Item already in cart");
+        toast({
+          title: "Already in cart",
+          description: "This mod is already in your cart.",
+        });
         return null;
       }
       
       console.log("[use-cart] Calling addToCart with modId:", numericModId);
-      return await addToCart(numericModId);
+      
+      try {
+        const result = await addToCart(numericModId);
+        console.log("[use-cart] Add to cart result:", result);
+        
+        // Verify success with explicit check since null is a valid response
+        if (result === null) {
+          console.warn("[use-cart] Result was null but no error thrown");
+        }
+        
+        return result;
+      } catch (error) {
+        console.error("[use-cart] Add to cart error:", error);
+        throw error;
+      }
     },
     onMutate: () => {
       setIsPending(true);
     },
     onSuccess: (data) => {
+      console.log("[use-cart] onSuccess with data:", data);
+      
+      // Always invalidate the cart queries to refresh the cart state
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      
       if (data) {
-        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
         toast({
           title: "Added to cart",
           description: "The mod has been added to your cart.",
@@ -87,7 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     },
     onError: (error: Error) => {
-      console.error("Add to cart error:", error);
+      console.error("[use-cart] onError:", error);
       
       if (error.message.includes("already own this mod")) {
         toast({
