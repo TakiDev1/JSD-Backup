@@ -41,16 +41,25 @@ const DISCORD_SCOPES = ['identify', 'email'];
 const SessionStore = MemoryStore(session);
 
 export function setupAuth(app: Express) {
-  // Setup session
+  // Setup session with enhanced security and debugging
+  const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(20).toString('hex');
+  console.log("Setting up session middleware with secret hash:", crypto.createHash('sha256').update(sessionSecret).digest('hex').substring(0, 8));
+  
   app.use(
     session({
-      cookie: { maxAge: 86400000 }, // 24 hours
+      cookie: { 
+        maxAge: 86400000, // 24 hours
+        secure: false,    // Allow non-HTTPS for development
+        httpOnly: true,   // Prevent client-side JS from reading
+        sameSite: 'lax'   // Improve CSRF protection
+      },
       store: new SessionStore({
         checkPeriod: 86400000 // prune expired entries every 24h
       }),
-      secret: process.env.SESSION_SECRET || crypto.randomBytes(20).toString('hex'),
-      resave: false,
-      saveUninitialized: false
+      secret: sessionSecret,
+      resave: true,      // Changed to true to ensure session is saved
+      saveUninitialized: true, // Changed to true to create session for all users
+      name: 'jsd_session' // Custom name for better security
     })
   );
 

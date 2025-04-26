@@ -70,6 +70,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       
+      console.log("Login attempt for username:", username);
+      console.log("Session before login:", req.sessionID);
+      
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
       }
@@ -78,6 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserByUsername(username);
       
       if (!user) {
+        console.log("Login failed: User not found");
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
@@ -95,8 +99,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Login the user
       req.login(user, (err) => {
         if (err) {
+          console.error("Login error during req.login:", err);
           return res.status(500).json({ message: "Login error" });
         }
+        
+        console.log("User authenticated in req.login:", req.isAuthenticated());
+        console.log("Session ID after login:", req.sessionID);
         
         // Don't send sensitive information to the client
         const safeUser = { ...user };
@@ -106,7 +114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.updateUser(user.id, { lastLogin: new Date() })
           .catch(err => console.error("Failed to update last login time:", err));
         
-        return res.status(200).json(safeUser);
+        // Force save the session to ensure it's stored properly
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Error saving session:", saveErr);
+          }
+          console.log("Session saved successfully, user authenticated:", req.isAuthenticated());
+          return res.status(200).json(safeUser);
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -115,12 +130,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/auth/user", (req, res) => {
+    console.log("Auth check - Session ID:", req.sessionID);
+    console.log("Auth check - isAuthenticated():", req.isAuthenticated());
+    console.log("Auth check - Session data:", req.session);
+    
     if (req.isAuthenticated()) {
       const user = { ...req.user };
+      console.log("Auth check - User authenticated:", { id: user.id, username: user.username });
+      
       // Don't send sensitive information to the client
       delete (user as any).password;
       res.json(user);
     } else {
+      console.log("Auth check - User not authenticated");
       res.status(401).json({ message: "Not authenticated" });
     }
   });
@@ -163,8 +185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Login the user
       req.login(user, (err) => {
         if (err) {
+          console.error("Admin login error during req.login:", err);
           return res.status(500).json({ message: "Login error" });
         }
+        
+        console.log("Admin user authenticated in req.login:", req.isAuthenticated());
+        console.log("Admin session ID after login:", req.sessionID);
         
         // Log this login
         storage.logAdminActivity({
@@ -172,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: "Admin Login",
           details: `Admin login for ${username}`,
           ipAddress: req.ip
-        });
+        }).catch(err => console.error("Failed to log admin activity:", err));
         
         // Don't send password back to client
         // Create a user object without password
@@ -182,8 +208,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Make sure isAdmin is set
         userWithoutPassword.isAdmin = true;
         
-        // Return the user object directly as this will be the authenticated user session
-        res.json({ success: true, user: userWithoutPassword });
+        // Force save the session to ensure it's stored properly
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Error saving admin session:", saveErr);
+          }
+          console.log("Admin session saved successfully, user authenticated:", req.isAuthenticated());
+          // Return the user object directly as this will be the authenticated user session
+          res.json({ success: true, user: userWithoutPassword });
+        });
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -219,14 +252,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Login the user
       req.login(user, (err) => {
         if (err) {
+          console.error("Registration login error during req.login:", err);
           return res.status(500).json({ message: "Login error" });
         }
+        
+        console.log("New user authenticated in req.login:", req.isAuthenticated());
+        console.log("New user session ID after registration:", req.sessionID);
         
         // Don't send sensitive information to the client
         const safeUser = { ...user };
         delete (safeUser as any).password;
         
-        return res.status(201).json(safeUser);
+        // Force save the session to ensure it's stored properly
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Error saving session after registration:", saveErr);
+          }
+          console.log("Session saved successfully after registration, user authenticated:", req.isAuthenticated());
+          return res.status(201).json(safeUser);
+        });
       });
     } catch (error: any) {
       console.error("Registration error:", error);
