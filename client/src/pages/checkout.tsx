@@ -185,15 +185,29 @@ const CheckoutPage = () => {
 
   // Redirect if not authenticated
   useEffect(() => {
+    // Only redirect once we've confirmed the user is not authenticated
     if (!isAuthenticated && !isLoading) {
-      navigate("/");
+      console.log("Checkout: User not authenticated, redirecting to auth page");
+      navigate("/auth");
     }
   }, [isAuthenticated, isLoading, navigate]);
 
   // Create PaymentIntent on page load
   useEffect(() => {
-    if (!isAuthenticated || cartItems.length === 0) return;
+    // First check if we're authenticated
+    if (!isAuthenticated) {
+      console.log("Checkout: User not authenticated, waiting for auth status");
+      return;
+    }
+    
+    // Then check if cart has items
+    if (cartItems.length === 0) {
+      console.log("Checkout: Cart is empty, skipping payment intent creation");
+      setIsLoading(false);
+      return;
+    }
 
+    console.log("Checkout: Creating payment intent for cart total:", cartTotal);
     setIsLoading(true);
     setError(null);
 
@@ -203,8 +217,10 @@ const CheckoutPage = () => {
           amount: cartTotal 
         });
         const data = await res.json();
+        console.log("Checkout: Payment intent created successfully");
         setClientSecret(data.clientSecret);
       } catch (err: any) {
+        console.error("Checkout: Error creating payment intent:", err);
         setError(err.message || "Failed to initialize payment. Please try again.");
       } finally {
         setIsLoading(false);

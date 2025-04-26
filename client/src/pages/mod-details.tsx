@@ -159,11 +159,16 @@ const ModDetailsPage = () => {
   
   // Handle add to cart
   const handleAddToCart = async (e?: React.MouseEvent) => {
-    // Prevent action if already in cart or processing
-    if (inCart || isPending) return;
+    console.log("Add to cart clicked, auth status:", isAuthenticated ? "Authenticated" : "Not authenticated");
     
-    // Redirect to login if not authenticated
-    if (!isAuthenticated) {
+    // Prevent action if already in cart or processing
+    if (inCart || isPending) {
+      console.log("Already in cart or request pending, ignoring click");
+      return;
+    }
+    
+    // Very first check - if not authenticated, stop immediately with no animations or UI changes
+    if (!isAuthenticated || !user) {
       console.log("User not authenticated, redirecting to auth page");
       toast({
         title: "Authentication required",
@@ -180,12 +185,12 @@ const ModDetailsPage = () => {
       console.log("Mod ID:", id, "Type:", typeof id);
       console.log("Starting add to cart process for mod ID:", id);
       
-      // Optimistically update UI
+      // Optimistically update UI - only if we're authenticated
       setInCart(true);
       console.log("UI state updated (optimistically)");
       
-      // Create flying animation if event is provided
-      if (e) {
+      // Create flying animation only if authenticated
+      if (e && isAuthenticated && user) {
         const button = e.currentTarget as HTMLElement;
         console.log("Starting animation");
         createFlyingAnimation(button);
