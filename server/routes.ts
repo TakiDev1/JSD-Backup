@@ -669,9 +669,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Store subscription information in session to use after payment success
-      if (!req.session.pendingSubscriptionData) {
-        req.session.pendingSubscriptionData = {};
-      }
       (req.session as any).pendingSubscriptionData = {
         userId: user.id,
         duration,
@@ -726,7 +723,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(schema.users.id, userId));
       
       // Clear pending subscription from session
-      delete (req.session as any).pendingSubscriptionData;
+      if ((req.session as any).pendingSubscriptionData) {
+        delete (req.session as any).pendingSubscriptionData;
+      }
       
       // Return user status
       const user = await storage.getUser(userId);

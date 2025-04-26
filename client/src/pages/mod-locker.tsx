@@ -21,7 +21,7 @@ interface LockerMod {
 
 const ModLockerPage = () => {
   const [, navigate] = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isPremium, premiumExpiresAt } = useAuth();
   const { data, isLoading, error } = useModLocker();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -58,10 +58,11 @@ const ModLockerPage = () => {
   const filteredSubscriptionMods = filterMods(subscriptionMods);
 
   // Get unique categories
-  const categories = [...new Set([
+  const categoriesArray = [
     ...purchasedMods.map(({ mod }) => mod.category),
     ...subscriptionMods.map(({ mod }) => mod.category)
-  ])];
+  ];
+  const categories = Array.from(new Set(categoriesArray));
 
   // Show mod details
   const showModDetails = (mod: LockerMod) => {
@@ -108,9 +109,16 @@ const ModLockerPage = () => {
           <h1 className="text-3xl md:text-4xl font-display font-bold text-white">
             My <span className="text-primary">Mod Locker</span>
           </h1>
-          <p className="text-neutral-light">
-            Manage and download your purchased mods
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-neutral-light">
+              Manage and download your purchased mods
+            </p>
+            {isPremium && (
+              <Badge className="bg-gradient-to-r from-primary to-secondary text-white">
+                Premium Member {premiumExpiresAt && `until ${new Date(premiumExpiresAt).toLocaleDateString()}`}
+              </Badge>
+            )}
+          </div>
         </div>
         
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
