@@ -67,6 +67,7 @@ function Router() {
       <Route path="/mod-locker" component={ModLocker} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/subscribe" component={Subscribe} />
+      <Route path="/debug-cart" component={DebugCart} />
       {/* Forum routes removed as requested */}
       <Route path="/profile" component={Profile} />
       <Route path="/login" component={Login} />

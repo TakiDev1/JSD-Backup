@@ -66,6 +66,24 @@ export function setupAuth(app: Express) {
   // Initialize Passport
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Authentication debugging middleware
+  app.use((req, res, next) => {
+    console.log("Auth check - Session ID:", req.sessionID);
+    console.log("Auth check - isAuthenticated():", req.isAuthenticated());
+    console.log("Auth check - Session data:", req.session);
+    
+    if (req.isAuthenticated()) {
+      console.log("Auth check - User authenticated:", { 
+        id: req.user?.id, 
+        username: req.user?.username 
+      });
+    } else {
+      console.log("Auth check - User not authenticated");
+    }
+    
+    next();
+  });
 
   // Serialize/deserialize user
   passport.serializeUser((user: any, done) => {

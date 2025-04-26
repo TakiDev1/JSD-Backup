@@ -98,7 +98,7 @@ export default function DebugCartPage() {
           <CardContent>
             {isAuthenticated ? (
               <div className="space-y-4">
-                <Badge variant="success" className="bg-green-600 hover:bg-green-700">
+                <Badge className="bg-green-600 hover:bg-green-700">
                   Authenticated
                 </Badge>
                 <div className="flex flex-col space-y-2">
