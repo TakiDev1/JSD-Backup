@@ -15,19 +15,57 @@ export interface CartItem {
  */
 export async function getCart(): Promise<CartItem[]> {
   try {
-    const res = await apiRequest("GET", "/api/cart");
-    const data = await res.json();
+    console.log("[cart.ts] Fetching cart items...");
+    
+    // DIRECT FETCH: Using direct fetch for increased reliability
+    const response = await fetch("/api/cart", {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
+    
+    console.log("[cart.ts] Cart GET response status:", response.status);
+    
+    if (response.status === 401) {
+      console.warn("[cart.ts] User not authenticated for cart fetch");
+      return [];
+    }
+    
+    if (!response.ok) {
+      console.error("[cart.ts] Error fetching cart:", response.status, response.statusText);
+      return [];
+    }
+    
+    // Get response text first for debugging
+    const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    console.log("[cart.ts] Cart GET raw response:", responseText);
+    
+    // Parse as JSON if not empty
+    let data = [];
+    if (responseText.trim()) {
+      try {
+        data = JSON.parse(responseText);
+        console.log("[cart.ts] Cart data parsed:", data);
+      } catch (e) {
+        console.error("[cart.ts] JSON parse error:", e);
+        return [];
+      }
+    }
     
     if (Array.isArray(data)) {
+      console.log("[cart.ts] Returning cart items, count:", data.length);
       return data;
     } else {
-      console.error("Invalid cart data format:", data);
+      console.error("[cart.ts] Invalid cart data format:", data);
       return [];
     }
   } catch (error) {
-    console.error("Error fetching cart:", error);
+    console.error("[cart.ts] Error fetching cart:", error);
     if (error instanceof Error) {
-      console.error("Error details:", error.message);
+      console.error("[cart.ts] Error details:", error.message);
     }
     return [];
   }
@@ -137,29 +175,60 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
  */
 export async function removeFromCart(modId: number): Promise<boolean> {
   if (!modId || isNaN(modId)) {
-    console.error("Invalid mod ID provided for removal:", modId);
+    console.error("[cart.ts] Invalid mod ID provided for removal:", modId);
     return false;
   }
   
   try {
-    console.log(`Removing mod ${modId} from cart...`);
+    console.log(`[cart.ts] Removing mod ${modId} from cart...`);
     
-    const res = await apiRequest("DELETE", `/api/cart/${modId}`);
+    // DIRECT FETCH: Using direct fetch for increased reliability
+    const response = await fetch(`/api/cart/${modId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
     
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Server error removing from cart:", errorData);
-      throw new Error(errorData.message || "Failed to remove item from cart");
+    console.log("[cart.ts] Cart DELETE response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+    
+    if (response.status === 401) {
+      console.error("[cart.ts] Authentication error - User not authenticated");
+      throw new Error("You must be logged in to remove items from your cart");
     }
     
-    const data = await res.json();
-    console.log("Remove from cart response:", data);
+    // Get response as text first for debugging
+    const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    console.log("[cart.ts] Cart DELETE raw response:", responseText);
+    
+    // Parse as JSON if not empty
+    let data = { success: false };
+    if (responseText.trim()) {
+      try {
+        data = JSON.parse(responseText);
+        console.log("[cart.ts] Cart DELETE parsed response:", data);
+      } catch (e) {
+        console.error("[cart.ts] JSON parse error:", e);
+        throw new Error("Invalid response format from server");
+      }
+    }
+    
+    if (!response.ok) {
+      console.error("[cart.ts] Error removing from cart:", response.status, response.statusText);
+      throw new Error((data && data.message) || "Failed to remove item from cart");
+    }
     
     return data.success === true;
   } catch (error) {
-    console.error("Error removing from cart:", error);
+    console.error("[cart.ts] Error removing from cart:", error);
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
+      console.error("[cart.ts] Error message:", error.message);
     }
     throw error; // Re-throw to allow consumers to handle errors
   }
@@ -171,24 +240,55 @@ export async function removeFromCart(modId: number): Promise<boolean> {
  */
 export async function clearCart(): Promise<boolean> {
   try {
-    console.log("Clearing cart...");
+    console.log("[cart.ts] Clearing cart...");
     
-    const res = await apiRequest("DELETE", "/api/cart");
+    // DIRECT FETCH: Using direct fetch for increased reliability
+    const response = await fetch("/api/cart", {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
+    });
     
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Server error clearing cart:", errorData);
-      throw new Error(errorData.message || "Failed to clear cart");
+    console.log("[cart.ts] Cart CLEAR response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+    
+    if (response.status === 401) {
+      console.error("[cart.ts] Authentication error - User not authenticated");
+      throw new Error("You must be logged in to clear your cart");
     }
     
-    const data = await res.json();
-    console.log("Clear cart response:", data);
+    // Get response as text first for debugging
+    const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    console.log("[cart.ts] Cart CLEAR raw response:", responseText);
+    
+    // Parse as JSON if not empty
+    let data = { success: false };
+    if (responseText.trim()) {
+      try {
+        data = JSON.parse(responseText);
+        console.log("[cart.ts] Cart CLEAR parsed response:", data);
+      } catch (e) {
+        console.error("[cart.ts] JSON parse error:", e);
+        throw new Error("Invalid response format from server");
+      }
+    }
+    
+    if (!response.ok) {
+      console.error("[cart.ts] Error clearing cart:", response.status, response.statusText);
+      throw new Error((data && data.message) || "Failed to clear your cart");
+    }
     
     return data.success === true;
   } catch (error) {
-    console.error("Error clearing cart:", error);
+    console.error("[cart.ts] Error clearing cart:", error);
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
+      console.error("[cart.ts] Error message:", error.message);
     }
     throw error; // Re-throw to allow consumers to handle errors
   }
