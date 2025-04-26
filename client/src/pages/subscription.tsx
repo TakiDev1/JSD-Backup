@@ -267,7 +267,7 @@ export default function SubscriptionPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={() => navigate("/mod-locker")}>View Your Mod Locker</Button>
+            <Button onClick={() => setLocation("/mod-locker")}>View Your Mod Locker</Button>
           </CardFooter>
         </Card>
       </div>

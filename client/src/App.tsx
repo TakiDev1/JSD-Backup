@@ -14,7 +14,7 @@ import Mods from "@/pages/mods";
 import ModDetails from "@/pages/mod-details";
 import ModLocker from "@/pages/mod-locker";
 import Checkout from "@/pages/checkout";
-import Subscribe from "@/pages/subscribe";
+import Subscribe from "@/pages/subscription";
 import Profile from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
 import Login from "@/pages/login";

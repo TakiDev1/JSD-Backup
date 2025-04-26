@@ -18,7 +18,7 @@ import jsdLogo from "@/assets/jsd_logo.png";
 
 const Navbar = () => {
   const [location] = useLocation();
-  const { user, isAuthenticated, isAdmin, login, logout, getUserAvatar } = useAuth();
+  const { user, isAuthenticated, isAdmin, isPremium, login, logout, getUserAvatar } = useAuth();
   const { cartCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -116,6 +116,11 @@ const Navbar = () => {
                 <DropdownMenuItem asChild>
                   <Link href="/mod-locker">Mod Locker</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/subscribe">
+                    {isPremium ? 'Subscription Status' : 'Get Subscription'}
+                  </Link>
+                </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link href="/admin">Admin Dashboard</Link>
@@ -161,6 +166,15 @@ const Navbar = () => {
                         </Link>
                       ) : null
                     ))}
+                    {isAuthenticated && (
+                      <Link 
+                        href="/subscribe"
+                        className="font-display font-medium text-lg text-white hover:text-primary-light transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {isPremium ? 'Subscription Status' : 'Get Subscription'}
+                      </Link>
+                    )}
                     {isAdmin && (
                       <Link 
                         href="/admin"
