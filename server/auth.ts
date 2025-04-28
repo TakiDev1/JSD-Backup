@@ -48,17 +48,19 @@ export function setupAuth(app: Express) {
   app.use(
     session({
       cookie: { 
-        maxAge: 86400000, // 24 hours
-        secure: false,    // Allow non-HTTPS for development
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for longer sessions
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,   // Prevent client-side JS from reading
         sameSite: 'lax'   // Improve CSRF protection
       },
       store: new SessionStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
+        checkPeriod: 86400000, // prune expired entries every 24h
+        stale: false // Don't return expired sessions
       }),
       secret: sessionSecret,
-      resave: true,      // Changed to true to ensure session is saved
-      saveUninitialized: true, // Changed to true to create session for all users
+      resave: true,      // Save session on each request
+      rolling: true,     // Reset expiration countdown on every response
+      saveUninitialized: true, // Create session for all users
       name: 'jsd_session' // Custom name for better security
     })
   );
