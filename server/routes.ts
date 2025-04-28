@@ -1295,6 +1295,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Subscription plans and benefits API routes
+  
+  // Get all subscription plans
+  app.get("/api/subscription/plans", async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get a specific subscription plan
+  app.get("/api/subscription/plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getSubscriptionPlan(parseInt(req.params.id));
+      if (!plan) {
+        return res.status(404).json({ message: "Subscription plan not found" });
+      }
+      res.json(plan);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Create a subscription plan (admin only)
+  app.post("/api/subscription/plans", auth.isAdmin, async (req, res) => {
+    try {
+      // Validate the request body
+      const validatedData = schema.insertSubscriptionPlanSchema.parse(req.body);
+      const plan = await storage.createSubscriptionPlan(validatedData);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Create Subscription Plan",
+        details: `Created subscription plan: ${plan.name}`,
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(plan);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Update a subscription plan (admin only)
+  app.put("/api/subscription/plans/:id", auth.isAdmin, async (req, res) => {
+    try {
+      // Validate the request body
+      const validatedData = schema.insertSubscriptionPlanSchema.partial().parse(req.body);
+      const plan = await storage.updateSubscriptionPlan(parseInt(req.params.id), validatedData);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Subscription plan not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Subscription Plan",
+        details: `Updated subscription plan: ${plan.name}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(plan);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Delete a subscription plan (admin only)
+  app.delete("/api/subscription/plans/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteSubscriptionPlan(parseInt(req.params.id));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Subscription plan not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Delete Subscription Plan",
+        details: `Deleted subscription plan ID: ${req.params.id}`,
+        ipAddress: req.ip
+      });
+      
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get all subscription benefits
+  app.get("/api/subscription/benefits", async (req, res) => {
+    try {
+      const benefits = await storage.getSubscriptionBenefits();
+      res.json(benefits);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get a specific subscription benefit
+  app.get("/api/subscription/benefits/:id", async (req, res) => {
+    try {
+      const benefit = await storage.getSubscriptionBenefit(parseInt(req.params.id));
+      if (!benefit) {
+        return res.status(404).json({ message: "Subscription benefit not found" });
+      }
+      res.json(benefit);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Create a subscription benefit (admin only)
+  app.post("/api/subscription/benefits", auth.isAdmin, async (req, res) => {
+    try {
+      // Validate the request body
+      const validatedData = schema.insertSubscriptionBenefitSchema.parse(req.body);
+      const benefit = await storage.createSubscriptionBenefit(validatedData);
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Create Subscription Benefit",
+        details: `Created subscription benefit: ${benefit.title}`,
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(benefit);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Update a subscription benefit (admin only)
+  app.put("/api/subscription/benefits/:id", auth.isAdmin, async (req, res) => {
+    try {
+      // Validate the request body
+      const validatedData = schema.insertSubscriptionBenefitSchema.partial().parse(req.body);
+      const benefit = await storage.updateSubscriptionBenefit(parseInt(req.params.id), validatedData);
+      
+      if (!benefit) {
+        return res.status(404).json({ message: "Subscription benefit not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Subscription Benefit",
+        details: `Updated subscription benefit: ${benefit.title}`,
+        ipAddress: req.ip
+      });
+      
+      res.json(benefit);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Delete a subscription benefit (admin only)
+  app.delete("/api/subscription/benefits/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteSubscriptionBenefit(parseInt(req.params.id));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Subscription benefit not found" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Delete Subscription Benefit",
+        details: `Deleted subscription benefit ID: ${req.params.id}`,
+        ipAddress: req.ip
+      });
+      
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   // Individual site setting update for backward compatibility
   app.post("/api/admin/settings", auth.isAdmin, async (req, res) => {
     try {

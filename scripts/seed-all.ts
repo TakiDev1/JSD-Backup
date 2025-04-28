@@ -1,4 +1,5 @@
 import { seedDatabase } from "../server/seed";
+import { seedSubscriptions } from "./seed-subscriptions";
 
 async function seedAll() {
   try {
@@ -10,9 +11,13 @@ async function seedAll() {
     console.log("Running forum content seeding...");
     await import("./seed-forum");
     
-    // Finally import and run reviews seeding
+    // Run reviews seeding
     console.log("Running reviews seeding...");
     await import("./seed-reviews");
+    
+    // Run subscription plans and benefits seeding
+    console.log("Running subscription data seeding...");
+    await seedSubscriptions();
     
     console.log("✅ All seeding completed successfully!");
   } catch (error) {
