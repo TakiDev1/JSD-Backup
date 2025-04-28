@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// Removed publish-related imports
+import { motion } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +21,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, MoreHorizontal, Edit, Trash, Star, Download, Eye, Car, Truck, Tag, DollarSign, FileText, ChevronUp, ChevronDown, Search, Filter, RefreshCw } from "lucide-react";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { 
+  Package, Plus, MoreHorizontal, Edit, Trash, Star, Download, Eye, Car, 
+  Truck, Tag, DollarSign, FileText, ChevronUp, ChevronDown, Search, Filter, 
+  RefreshCw, Image as ImageIcon, Upload, File, Lightbulb, CheckCircle, 
+  ListChecks, Settings, SlidersHorizontal, PenTool, PlusCircle, Sparkles
+} from "lucide-react";
 import { MOD_CATEGORIES } from "@/lib/constants";
 
 // Form schema for creating/editing a mod
@@ -32,14 +38,14 @@ const modSchema = z.object({
     message: "Price must be a valid number ≥ 0",
   }),
   category: z.string().min(1, "Please select a category"),
-  previewImageUrl: z.string().url("Must be a valid URL").or(z.string().length(0)),
+  previewImageUrl: z.string(), // Accept any string including empty for local uploads
   downloadUrl: z.string().url("Must be a valid URL").or(z.string().length(0)),
   version: z.string().min(1, "Version is required"),
   isFeatured: z.boolean().default(false),
   isSubscriptionOnly: z.boolean().default(false),
-  // Removed isPublished as all mods are now shown directly
   releaseNotes: z.string().optional(),
   tags: z.string().optional(),
+  features: z.string().optional(),
 });
 
 type ModFormValues = z.infer<typeof modSchema>;
@@ -282,9 +288,19 @@ const AdminMods = () => {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <PenTool className="h-4 w-4 text-primary" /> 
+                            Title
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter mod title" {...field} />
+                            <div className="relative">
+                              <Input 
+                                placeholder="Enter mod title" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field} 
+                              />
+                              <Tag className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -296,9 +312,22 @@ const AdminMods = () => {
                       name="price"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Price ($)</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-primary" /> 
+                            Price ($)
+                          </FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" step="0.01" placeholder="0.00" {...field} />
+                            <div className="relative">
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                step="0.01" 
+                                placeholder="0.00" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field} 
+                              />
+                              <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -310,13 +339,16 @@ const AdminMods = () => {
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Category</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <Car className="h-4 w-4 text-primary" /> 
+                            Category
+                          </FormLabel>
                           <Select 
                             onValueChange={field.onChange} 
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all">
                                 <SelectValue placeholder="Select a category" />
                               </SelectTrigger>
                             </FormControl>
@@ -328,6 +360,9 @@ const AdminMods = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormDescription>
+                            Choose the most appropriate category for your mod
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -338,10 +373,23 @@ const AdminMods = () => {
                       name="version"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Version</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <Settings className="h-4 w-4 text-primary" /> 
+                            Version
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="1.0.0" {...field} />
+                            <div className="relative">
+                              <Input 
+                                placeholder="1.0.0" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field} 
+                              />
+                              <Settings className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            Use semantic versioning (e.g., 1.0.0)
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -351,11 +399,21 @@ const AdminMods = () => {
                       control={form.control}
                       name="previewImageUrl"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Preview Image URL</FormLabel>
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4 text-primary" /> 
+                            Preview Image
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="https://example.com/image.jpg" {...field} />
+                            <ImageUpload 
+                              value={field.value} 
+                              onChange={field.onChange} 
+                              maxSize={5} 
+                            />
                           </FormControl>
+                          <FormDescription>
+                            Upload a high-quality preview image for your mod (Max 5MB)
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -366,10 +424,23 @@ const AdminMods = () => {
                       name="downloadUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Download URL</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <Download className="h-4 w-4 text-primary" /> 
+                            Download URL
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="https://example.com/mod.zip" {...field} />
+                            <div className="relative">
+                              <Input 
+                                placeholder="https://example.com/mod.zip" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field} 
+                              />
+                              <File className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            Direct download link for the mod file
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -380,16 +451,29 @@ const AdminMods = () => {
                       name="tags"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tags (comma separated)</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-primary" /> 
+                            Tags
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="car, truck, offroad" {...field} />
+                            <div className="relative">
+                              <Input 
+                                placeholder="car, truck, offroad" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field} 
+                              />
+                              <Tag className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            Comma-separated tags to help users find your mod
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     
-                    <div className="flex flex-wrap space-x-6 items-center md:col-span-2">
+                    <div className="flex flex-wrap gap-6 items-center p-4 bg-primary/5 rounded-lg border border-primary/20 md:col-span-2">
                       <FormField
                         control={form.control}
                         name="isFeatured"
@@ -399,9 +483,18 @@ const AdminMods = () => {
                               <Switch
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
+                                className="data-[state=checked]:bg-amber-500"
                               />
                             </FormControl>
-                            <FormLabel>Featured Mod</FormLabel>
+                            <div className="space-y-0.5">
+                              <FormLabel className="flex items-center gap-2">
+                                <Star className="h-4 w-4 text-amber-500" />
+                                Featured Mod
+                              </FormLabel>
+                              <FormDescription className="text-xs">
+                                Show this mod on the homepage featured section
+                              </FormDescription>
+                            </div>
                           </FormItem>
                         )}
                       />
@@ -415,14 +508,21 @@ const AdminMods = () => {
                               <Switch
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
+                                className="data-[state=checked]:bg-violet-500"
                               />
                             </FormControl>
-                            <FormLabel>Subscription Only</FormLabel>
+                            <div className="space-y-0.5">
+                              <FormLabel className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-violet-500" />
+                                Subscription Only
+                              </FormLabel>
+                              <FormDescription className="text-xs">
+                                Only available to premium subscribers
+                              </FormDescription>
+                            </div>
                           </FormItem>
                         )}
                       />
-                      
-                      {/* Removed isPublished field as all mods are now shown directly */}
                     </div>
                     
                     <FormField
@@ -430,11 +530,14 @@ const AdminMods = () => {
                       name="description"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Description</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            Description
+                          </FormLabel>
                           <FormControl>
                             <Textarea 
                               placeholder="Enter detailed description of the mod" 
-                              className="min-h-[120px]" 
+                              className="min-h-[120px] focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
                               {...field} 
                             />
                           </FormControl>
@@ -451,14 +554,20 @@ const AdminMods = () => {
                       name="releaseNotes"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Release Notes</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <ListChecks className="h-4 w-4 text-primary" />
+                            Release Notes
+                          </FormLabel>
                           <FormControl>
                             <Textarea 
                               placeholder="Enter release notes" 
-                              className="min-h-[80px]" 
+                              className="min-h-[80px] focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
                               {...field} 
                             />
                           </FormControl>
+                          <FormDescription>
+                            Describe what's new or changed in this version
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

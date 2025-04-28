@@ -1,4 +1,5 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
@@ -21,7 +22,9 @@ import passport from "passport";
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const dir = path.resolve(process.cwd(), "uploads");
+      // Use different folders for images and mod files
+      const folderType = file.fieldname === 'image' ? 'images' : 'mods';
+      const dir = path.resolve(process.cwd(), "uploads", folderType);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
@@ -32,8 +35,19 @@ const upload = multer({
       cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
     }
   }),
+  fileFilter: (req, file, cb) => {
+    // Validate file types based on fieldname
+    if (file.fieldname === 'image') {
+      // Only allow images
+      if (!file.mimetype.startsWith('image/')) {
+        return cb(new Error('Only image files are allowed!'));
+      }
+    }
+    // Accept the file
+    cb(null, true);
+  },
   limits: {
-    fileSize: 1024 * 1024 * 500 // 500MB
+    fileSize: 1024 * 1024 * 500 // 500MB max file size
   }
 });
 
@@ -414,6 +428,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Image upload endpoint for mods
+  app.post("/api/upload/image", auth.isAdmin, upload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image uploaded" });
+      }
+      
+      // Create the URL path for the uploaded image
+      const imageUrl = `/uploads/images/${req.file.filename}`;
+      
+      // Return the image URL
+      res.status(201).json({ 
+        success: true, 
+        imageUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname 
+      });
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Add static file serving for uploaded images
+  app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
   
   // Removed all publish/unpublish endpoints since we now show all mods directly
 
