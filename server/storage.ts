@@ -411,6 +411,56 @@ export class DatabaseStorage implements IStorage {
       pendingReviews
     };
   }
+  
+  // Subscription plans operations
+  async getSubscriptionPlans(): Promise<schema.SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).orderBy(subscriptionPlans.sortOrder);
+  }
+  
+  async getSubscriptionPlan(id: number): Promise<schema.SubscriptionPlan | undefined> {
+    const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return result[0];
+  }
+  
+  async createSubscriptionPlan(plan: schema.InsertSubscriptionPlan): Promise<schema.SubscriptionPlan> {
+    const result = await db.insert(subscriptionPlans).values(plan).returning();
+    return result[0];
+  }
+  
+  async updateSubscriptionPlan(id: number, plan: Partial<schema.InsertSubscriptionPlan>): Promise<schema.SubscriptionPlan | undefined> {
+    const result = await db.update(subscriptionPlans).set(plan).where(eq(subscriptionPlans.id, id)).returning();
+    return result[0];
+  }
+  
+  async deleteSubscriptionPlan(id: number): Promise<boolean> {
+    const result = await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Subscription benefits operations
+  async getSubscriptionBenefits(): Promise<schema.SubscriptionBenefit[]> {
+    return await db.select().from(subscriptionBenefits).orderBy(subscriptionBenefits.sortOrder);
+  }
+  
+  async getSubscriptionBenefit(id: number): Promise<schema.SubscriptionBenefit | undefined> {
+    const result = await db.select().from(subscriptionBenefits).where(eq(subscriptionBenefits.id, id));
+    return result[0];
+  }
+  
+  async createSubscriptionBenefit(benefit: schema.InsertSubscriptionBenefit): Promise<schema.SubscriptionBenefit> {
+    const result = await db.insert(subscriptionBenefits).values(benefit).returning();
+    return result[0];
+  }
+  
+  async updateSubscriptionBenefit(id: number, benefit: Partial<schema.InsertSubscriptionBenefit>): Promise<schema.SubscriptionBenefit | undefined> {
+    const result = await db.update(subscriptionBenefits).set(benefit).where(eq(subscriptionBenefits.id, id)).returning();
+    return result[0];
+  }
+  
+  async deleteSubscriptionBenefit(id: number): Promise<boolean> {
+    const result = await db.delete(subscriptionBenefits).where(eq(subscriptionBenefits.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
 }
 
 // Create storage instance
