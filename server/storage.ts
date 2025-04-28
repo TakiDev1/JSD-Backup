@@ -1,4 +1,4 @@
-import { and, count, eq, gt, like, sql, desc, asc } from "drizzle-orm";
+import { and, count, eq, gt, like, sql, desc, asc, isNull } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { 
@@ -8,7 +8,9 @@ import {
   modVersions,
   purchases,
   cartItems,
-  adminActivityLog
+  adminActivityLog,
+  subscriptionPlans,
+  subscriptionBenefits
 } from "@shared/schema";
 
 // Define interface for storage operations
@@ -67,6 +69,20 @@ export interface IStorage {
     activeUsers: number;
     pendingReviews: number;
   }>;
+  
+  // Subscription plans operations
+  getSubscriptionPlans(): Promise<schema.SubscriptionPlan[]>;
+  getSubscriptionPlan(id: number): Promise<schema.SubscriptionPlan | undefined>;
+  createSubscriptionPlan(plan: schema.InsertSubscriptionPlan): Promise<schema.SubscriptionPlan>;
+  updateSubscriptionPlan(id: number, plan: Partial<schema.InsertSubscriptionPlan>): Promise<schema.SubscriptionPlan | undefined>;
+  deleteSubscriptionPlan(id: number): Promise<boolean>;
+  
+  // Subscription benefits operations
+  getSubscriptionBenefits(): Promise<schema.SubscriptionBenefit[]>;
+  getSubscriptionBenefit(id: number): Promise<schema.SubscriptionBenefit | undefined>;
+  createSubscriptionBenefit(benefit: schema.InsertSubscriptionBenefit): Promise<schema.SubscriptionBenefit>;
+  updateSubscriptionBenefit(id: number, benefit: Partial<schema.InsertSubscriptionBenefit>): Promise<schema.SubscriptionBenefit | undefined>;
+  deleteSubscriptionBenefit(id: number): Promise<boolean>;
 }
 
 // Implement storage with PostgreSQL via drizzle

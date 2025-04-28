@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, doublePrecision, boolean, timestamp, json, primaryKey, date, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, doublePrecision, boolean, timestamp, json, primaryKey, date, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -251,6 +251,43 @@ export const modRequirementsRelations = relations(modRequirements, ({ one }) => 
   }),
 }));
 
+// Subscription Plans schema
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: doublePrecision("price").notNull(),
+  interval: text("interval").notNull().default("month"), // 'month' or 'year'
+  features: jsonb("features").$type<string[]>().default([]),
+  stripePriceId: text("stripe_price_id"),
+  isActive: boolean("is_active").default(true),
+  isFeatured: boolean("is_featured").default(false),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Subscription Plan Benefits schema
+export const subscriptionBenefits = pgTable("subscription_benefits", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // Lucide icon name
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertSubscriptionBenefitSchema = createInsertSchema(subscriptionBenefits).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Define type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -281,3 +318,9 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type ModRequirement = typeof modRequirements.$inferSelect;
 export type InsertModRequirement = z.infer<typeof insertModRequirementsSchema>;
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
+export type SubscriptionBenefit = typeof subscriptionBenefits.$inferSelect;
+export type InsertSubscriptionBenefit = z.infer<typeof insertSubscriptionBenefitSchema>;
