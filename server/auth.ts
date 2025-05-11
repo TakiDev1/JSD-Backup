@@ -2,11 +2,12 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as DiscordStrategy } from 'passport-discord';
 import session from 'express-session';
-import MemoryStore from 'memorystore';
 import { Express } from 'express';
 import crypto from 'crypto';
 import { promisify } from 'util';
 import { storage } from './storage';
+import connectPg from 'connect-pg-simple';
+import { pool } from './db';
 
 // Password hashing with scrypt
 const scryptAsync = promisify(crypto.scrypt);
@@ -37,8 +38,8 @@ export async function comparePasswords(supplied: string, stored: string): Promis
 // Discord OAuth scopes
 const DISCORD_SCOPES = ['identify', 'email'];
 
-// Memory store for sessions
-const SessionStore = MemoryStore(session);
+// PostgreSQL session store
+const PostgresStore = connectPg(session);
 
 export function setupAuth(app: Express) {
   // Setup session with enhanced security and debugging
@@ -53,9 +54,10 @@ export function setupAuth(app: Express) {
         httpOnly: true,   // Prevent client-side JS from reading
         sameSite: 'lax'   // Improve CSRF protection
       },
-      store: new SessionStore({
-        checkPeriod: 86400000, // prune expired entries every 24h
-        stale: false // Don't return expired sessions
+      store: new PostgresStore({
+        pool: pool,
+        createTableIfMissing: true,
+        tableName: 'session'
       }),
       secret: sessionSecret,
       resave: true,      // Save session on each request
