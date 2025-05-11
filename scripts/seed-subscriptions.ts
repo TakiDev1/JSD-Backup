@@ -134,17 +134,15 @@ async function seedSubscriptions() {
   }
 }
 
-// Run the seed if this file is executed directly
-if (require.main === module) {
-  seedSubscriptions()
-    .then(() => {
-      console.log("Subscription seeding completed successfully");
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error("Subscription seeding failed:", error);
-      process.exit(1);
-    });
-}
+// For ESM compatibility, always run the seed when this file is executed directly
+seedSubscriptions()
+  .then(() => {
+    console.log("Subscription seeding completed successfully");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Subscription seeding failed:", error);
+    process.exit(1);
+  });
 
 export { seedSubscriptions };
