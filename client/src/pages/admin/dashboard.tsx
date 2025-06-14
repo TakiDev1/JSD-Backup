@@ -26,34 +26,37 @@ const AdminDashboard = () => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   
   // Get site stats - only fetch if user is authenticated and admin
-  const { data: stats = { 
-    users: 0, 
-    mods: 0, 
-    purchases: 0, 
-    revenue: 0,
-    activeUsers: 0,
-    pendingReviews: 0
-  }, isLoading: statsLoading } = useQuery({
+  const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
-    queryFn: getQueryFn,
     enabled: !!user && isAdmin,
   });
+  
+  const stats = {
+    users: (statsData as any)?.users || 0,
+    mods: (statsData as any)?.mods || 0,
+    purchases: (statsData as any)?.purchases || 0,
+    revenue: (statsData as any)?.revenue || 0,
+    activeUsers: (statsData as any)?.activeUsers || 0,
+    pendingReviews: (statsData as any)?.pendingReviews || 0
+  };
   
   // Get site settings - only fetch if user is authenticated and admin
-  const { data: settings = { maintenanceMode: false }, isLoading: settingsLoading } = useQuery({
+  const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
-    queryFn: getQueryFn,
     enabled: !!user && isAdmin,
   });
+  
+  const settings = {
+    maintenanceMode: (settingsData as any)?.maintenanceMode || false
+  };
   
   // Recent activity - only fetch if user is authenticated and admin
-  const { data: activityData = { activity: [] }, isLoading: activityLoading } = useQuery({
+  const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
-    queryFn: getQueryFn,
     enabled: !!user && isAdmin,
   });
   
-  const recentActivity = activityData.activity || [];
+  const recentActivity = (activityData as any)?.activity || [];
   
   // Mutation to toggle maintenance mode
   const { mutate: toggleMaintenance, isPending: isTogglingMaintenance } = useMutation({
@@ -101,12 +104,8 @@ const AdminDashboard = () => {
   // For demo purposes, use state to simulate loading
   useState(() => {
     if (settingsLoading) return;
-    setMaintenanceMode(settings.maintenanceMode);
+    setMaintenanceMode(settings?.maintenanceMode || false);
   });
-  
-  async function getQueryFn() {
-    return {};
-  }
   
   if (!isAdmin) {
     return (
@@ -158,124 +157,23 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-  <Card className="bg-dark-card">
-    <CardHeader className="space-y-1">
-      <CardTitle className="text-2xl">{stats.users}</CardTitle>
-      <CardDescription>Total Users</CardDescription>
-    </CardHeader>
-  </Card>
-
-  <Card className="bg-dark-card">
-    <CardHeader className="space-y-1">
-      <CardTitle className="text-2xl">{stats.mods}</CardTitle>
-      <CardDescription>Total Mods</CardDescription>
-    </CardHeader>
-  </Card>
-
-  <Card className="bg-dark-card">
-    <CardHeader className="space-y-1">
-      <CardTitle className="text-2xl">{stats.purchases}</CardTitle>
-      <CardDescription>Total Sales</CardDescription>
-    </CardHeader>
-  </Card>
-
-  <Card className="bg-dark-card">
-    <CardHeader className="space-y-1">
-      <CardTitle className="text-2xl">${stats.revenue}</CardTitle>
-      <CardDescription>Total Revenue</CardDescription>
-    </CardHeader>
-  </Card>
-</div>
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-  <Card className="bg-dark-card">
-    <CardHeader>
-      <CardTitle>Quick Actions</CardTitle>
-      <CardDescription>Manage your site</CardDescription>
-    </CardHeader>
-    <CardContent className="grid grid-cols-2 gap-4">
-      <Button variant="outline" asChild className="h-24 flex flex-col gap-2">
-        <Link to="/admin/mods">
-          <Package className="h-8 w-8" />
-          <span>Manage Mods</span>
-        </Link>
-      </Button>
-      
-      <Button variant="outline" asChild className="h-24 flex flex-col gap-2">
-        <Link to="/admin/users">
-          <Users className="h-8 w-8" />
-          <span>Manage Users</span>
-        </Link>
-      </Button>
-      
-      <Button variant="outline" asChild className="h-24 flex flex-col gap-2">
-        <Link to="/admin/settings">
-          <Settings className="h-8 w-8" />
-          <span>Settings</span>
-        </Link>
-      </Button>
-      
-      <Button 
-        variant="outline" 
-        className="h-24 flex flex-col gap-2"
-        onClick={() => syncPatreon()}
-        disabled={isSyncingPatreon}
-      >
-        <RefreshCw className={cn("h-8 w-8", { "animate-spin": isSyncingPatreon })} />
-        <span>Sync Patreon</span>
-      </Button>
-    </CardContent>
-  </Card>
-
-  <Card className="bg-dark-card">
-    <CardHeader>
-      <CardTitle>System Health</CardTitle>
-      <CardDescription>Real-time system status</CardDescription>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span>Server Status</span>
-          <Badge variant="outline" className="bg-green-500/10 text-green-500">Online</Badge>
-        </div>
-        <Progress value={98} className="h-2" />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span>Database</span>
-          <Badge variant="outline" className="bg-green-500/10 text-green-500">Healthy</Badge>
-        </div>
-        <Progress value={95} className="h-2" />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span>API Response</span>
-          <Badge variant="outline" className="bg-green-500/10 text-green-500">Fast</Badge>
-        </div>
-        <Progress value={92} className="h-2" />
-      </div>
-    </CardContent>
-  </Card>
-</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-neutral-light text-sm font-medium">Total Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center">
-                  <div className="text-3xl font-bold text-white">{stats.users}</div>
-                  <div className="p-2 bg-purple-500/10 rounded-full">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
+        {/* Stats Cards with Icons - Bottom Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-neutral-light text-sm font-medium">Total Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <div className="text-3xl font-bold text-white">{stats.users}</div>
+                <div className="p-2 bg-purple-500/10 rounded-full">
+                  <Users className="w-6 h-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-neutral-light text-sm font-medium">Total Mods</CardTitle>
             </CardHeader>
