@@ -540,31 +540,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
+      console.log("[GET /api/cart] User ID:", userId);
       
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      // Get cart items directly from the database
-      const cartItemsResult = await db.query.cartItems.findMany({
-        where: eq(schema.cartItems.userId, userId),
-        with: {
-          mod: true
+      // Get cart items with mod details
+      const cartItemsResult = await db.select({
+        id: schema.cartItems.id,
+        userId: schema.cartItems.userId,
+        modId: schema.cartItems.modId,
+        addedAt: schema.cartItems.addedAt,
+        mod: {
+          id: schema.mods.id,
+          title: schema.mods.title,
+          description: schema.mods.description,
+          price: schema.mods.price,
+          discountPrice: schema.mods.discountPrice,
+          previewImageUrl: schema.mods.previewImageUrl,
+          category: schema.mods.category,
+          tags: schema.mods.tags,
+          featured: schema.mods.featured,
+          subscriptionOnly: schema.mods.subscriptionOnly,
+          published: schema.mods.published,
         }
-      });
+      })
+      .from(schema.cartItems)
+      .leftJoin(schema.mods, eq(schema.cartItems.modId, schema.mods.id))
+      .where(eq(schema.cartItems.userId, userId));
       
-      // Format response
-      const cart = cartItemsResult.map(item => {
-        return {
-          id: item.id,
-          userId: item.userId,
-          modId: item.modId,
-          addedAt: item.addedAt,
-          mod: item.mod
-        };
-      });
+      console.log("[GET /api/cart] Found items:", cartItemsResult.length);
       
-      res.json(cart);
+      res.json(cartItemsResult);
     } catch (error: any) {
       console.error("Cart fetch error:", error);
       res.status(500).json({ message: "Failed to retrieve cart items", error: error.message });
