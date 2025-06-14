@@ -174,6 +174,16 @@ const CheckoutPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Debug cart state
+  useEffect(() => {
+    console.log("[checkout] Cart debug info:", {
+      cartItems,
+      cartItemsCount: cartItems?.length || 0,
+      cartTotal,
+      isAuthenticated
+    });
+  }, [cartItems, cartTotal, isAuthenticated]);
+
   // Check for payment success in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

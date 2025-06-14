@@ -561,9 +561,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           previewImageUrl: schema.mods.previewImageUrl,
           category: schema.mods.category,
           tags: schema.mods.tags,
-          featured: schema.mods.featured,
-          subscriptionOnly: schema.mods.subscriptionOnly,
-          published: schema.mods.published,
+          features: schema.mods.features,
+          isSubscriptionOnly: schema.mods.isSubscriptionOnly,
         }
       })
       .from(schema.cartItems)
