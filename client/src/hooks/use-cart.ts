@@ -38,12 +38,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Get cart items
   const { data: cartItems = [], isLoading, refetch: refetchCart } = useQuery({
     queryKey: ["/api/cart"],
-    queryFn: getCart,
+    queryFn: async () => {
+      console.log("[cart] Fetching cart items, isAuthenticated:", isAuthenticated);
+      const result = await getCart();
+      console.log("[cart] Cart items received:", result);
+      return result;
+    },
     enabled: isAuthenticated,
-    staleTime: 5000,
+    staleTime: 1000, // Reduce stale time for more frequent updates
     retry: 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 5000, // Refetch every 5 seconds when active
   });
 
   const cartTotal = calculateCartTotal(cartItems);
@@ -51,7 +57,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Check if a mod is in the cart
   const isModInCart = (modId: number) => {
-    return cartItems.some(item => item.modId === modId);
+    const inCart = cartItems.some(item => item.modId === modId);
+    console.log(`[cart] isModInCart(${modId}):`, inCart, "cartItems:", cartItems);
+    return inCart;
   };
 
   // Add item to cart
