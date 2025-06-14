@@ -1,4 +1,3 @@
-import { apiRequest } from "./queryClient";
 import { Mod } from "@shared/schema";
 
 export interface CartItem {
@@ -11,13 +10,11 @@ export interface CartItem {
 
 /**
  * Fetches the current user's cart items from the server
- * @returns Array of cart items with mod details
  */
 export async function getCart(): Promise<CartItem[]> {
   try {
     console.log("[cart.ts] Fetching cart items...");
     
-    // DIRECT FETCH: Using direct fetch for increased reliability
     const response = await fetch("/api/cart", {
       method: 'GET',
       headers: {
@@ -38,25 +35,10 @@ export async function getCart(): Promise<CartItem[]> {
       return [];
     }
     
-    // Get response text first for debugging
-    const responseClone = response.clone();
-    const responseText = await responseClone.text();
-    console.log("[cart.ts] Cart GET raw response:", responseText);
-    
-    // Parse as JSON if not empty
-    let data = [];
-    if (responseText.trim()) {
-      try {
-        data = JSON.parse(responseText);
-        console.log("[cart.ts] Cart data parsed:", data);
-      } catch (e) {
-        console.error("[cart.ts] JSON parse error:", e);
-        return [];
-      }
-    }
+    const data = await response.json();
+    console.log("[cart.ts] Cart data received:", data);
     
     if (Array.isArray(data)) {
-      console.log("[cart.ts] Returning cart items, count:", data.length);
       return data;
     } else {
       console.error("[cart.ts] Invalid cart data format:", data);
@@ -64,20 +46,14 @@ export async function getCart(): Promise<CartItem[]> {
     }
   } catch (error) {
     console.error("[cart.ts] Error fetching cart:", error);
-    if (error instanceof Error) {
-      console.error("[cart.ts] Error details:", error.message);
-    }
     return [];
   }
 }
 
 /**
- * Adds a mod to the user's cart
- * @param modId The ID of the mod to add to cart
- * @returns The cart item if successful, null otherwise
+ * Adds a mod to the current user's cart
  */
 export async function addToCart(modId: number): Promise<CartItem | null> {
-  // Ensure modId is a number
   const numericModId = Number(modId);
   
   if (!numericModId || isNaN(numericModId)) {
@@ -88,101 +64,44 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
   try {
     console.log(`[cart.ts] Adding mod ${numericModId} to cart...`);
     
-    // Create payload with explicit modId value
-    const payload = { modId: numericModId };
-    console.log("[cart.ts] Request payload:", payload, "Type:", typeof payload);
-    
-    // Log URL before making request
-    const apiUrl = "/api/cart";
-    console.log("[cart.ts] About to send request to URL:", apiUrl, "with method:", "POST");
-    
-    // DIRECT FETCH: Try bypassing the apiRequest wrapper which might have issues
-    console.log("[cart.ts] Using direct fetch() instead of apiRequest()");
-    const response = await fetch(apiUrl, {
+    const response = await fetch("/api/cart", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ modId: numericModId })
     });
     
-    console.log("[cart.ts] Cart API direct fetch response:", {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
+    console.log("[cart.ts] Response status:", response.status);
     
     if (response.status === 401) {
-      console.error("[cart.ts] Authentication error - User not authenticated");
       throw new Error("You must be logged in to add items to your cart");
     }
     
-    // Get response as JSON first, falling back to text if JSON parsing fails
-    let data;
-    let responseText = '';
-    try {
-      // Clone first and get response as text for debugging
-      const responseClone = response.clone();
-      responseText = await responseClone.text();
-      console.log("[cart.ts] Cart API raw response text:", responseText);
-      
-      // Try to parse as JSON if there's any content
-      if (responseText.trim()) {
-        try {
-          data = JSON.parse(responseText);
-          console.log("[cart.ts] Cart API JSON response:", data);
-        } catch (jsonError) {
-          console.error("[cart.ts] JSON parse error:", jsonError);
-          throw new Error("Invalid JSON response from server: " + responseText);
-        }
-      } else {
-        console.warn("[cart.ts] Empty response received");
-        data = null;
-      }
-    } catch (textError) {
-      console.error("[cart.ts] Error reading response text:", textError);
-      data = null;
-      throw new Error(`Failed to read response: ${textError.message}`);
-    }
-    
     if (!response.ok) {
-      console.error("[cart.ts] Server error adding to cart:", data);
-      throw new Error((data && data.message) || "Failed to add item to cart");
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || "Failed to add item to cart";
+      throw new Error(errorMessage);
     }
     
+    const data = await response.json();
     console.log("[cart.ts] Successfully added to cart:", data);
-    
-    // If item is already in cart, server returns a success message
-    if (data.message === "Item already in cart" && data.cartItem) {
-      return data.cartItem;
-    }
     
     return data;
   } catch (error) {
     console.error("Error adding to cart:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-    }
-    throw error; // Re-throw to allow consumers to handle errors
+    throw error;
   }
 }
 
 /**
- * Removes a mod from the user's cart
- * @param modId The ID of the mod to remove from cart
- * @returns true if removal was successful, false otherwise
+ * Removes a mod from the current user's cart
  */
-export async function removeFromCart(modId: number): Promise<boolean> {
-  if (!modId || isNaN(modId)) {
-    console.error("[cart.ts] Invalid mod ID provided for removal:", modId);
-    return false;
-  }
-  
+export async function removeFromCart(modId: number): Promise<void> {
   try {
     console.log(`[cart.ts] Removing mod ${modId} from cart...`);
     
-    // DIRECT FETCH: Using direct fetch for increased reliability
     const response = await fetch(`/api/cart/${modId}`, {
       method: 'DELETE',
       headers: {
@@ -191,58 +110,26 @@ export async function removeFromCart(modId: number): Promise<boolean> {
       credentials: 'include'
     });
     
-    console.log("[cart.ts] Cart DELETE response:", {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
-    
-    if (response.status === 401) {
-      console.error("[cart.ts] Authentication error - User not authenticated");
-      throw new Error("You must be logged in to remove items from your cart");
-    }
-    
-    // Get response as text first for debugging
-    const responseClone = response.clone();
-    const responseText = await responseClone.text();
-    console.log("[cart.ts] Cart DELETE raw response:", responseText);
-    
-    // Parse as JSON if not empty
-    let data = { success: false };
-    if (responseText.trim()) {
-      try {
-        data = JSON.parse(responseText);
-        console.log("[cart.ts] Cart DELETE parsed response:", data);
-      } catch (e) {
-        console.error("[cart.ts] JSON parse error:", e);
-        throw new Error("Invalid response format from server");
-      }
-    }
-    
     if (!response.ok) {
-      console.error("[cart.ts] Error removing from cart:", response.status, response.statusText);
-      throw new Error((data && data.message) || "Failed to remove item from cart");
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || "Failed to remove item from cart";
+      throw new Error(errorMessage);
     }
     
-    return data.success === true;
+    console.log("[cart.ts] Successfully removed from cart");
   } catch (error) {
-    console.error("[cart.ts] Error removing from cart:", error);
-    if (error instanceof Error) {
-      console.error("[cart.ts] Error message:", error.message);
-    }
-    throw error; // Re-throw to allow consumers to handle errors
+    console.error("Error removing from cart:", error);
+    throw error;
   }
 }
 
 /**
- * Clears all items from the user's cart
- * @returns true if clear was successful, false otherwise
+ * Clears all items from the current user's cart
  */
-export async function clearCart(): Promise<boolean> {
+export async function clearCart(): Promise<void> {
   try {
     console.log("[cart.ts] Clearing cart...");
     
-    // DIRECT FETCH: Using direct fetch for increased reliability
     const response = await fetch("/api/cart", {
       method: 'DELETE',
       headers: {
@@ -251,105 +138,55 @@ export async function clearCart(): Promise<boolean> {
       credentials: 'include'
     });
     
-    console.log("[cart.ts] Cart CLEAR response:", {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
-    
-    if (response.status === 401) {
-      console.error("[cart.ts] Authentication error - User not authenticated");
-      throw new Error("You must be logged in to clear your cart");
-    }
-    
-    // Get response as text first for debugging
-    const responseClone = response.clone();
-    const responseText = await responseClone.text();
-    console.log("[cart.ts] Cart CLEAR raw response:", responseText);
-    
-    // Parse as JSON if not empty
-    let data = { success: false };
-    if (responseText.trim()) {
-      try {
-        data = JSON.parse(responseText);
-        console.log("[cart.ts] Cart CLEAR parsed response:", data);
-      } catch (e) {
-        console.error("[cart.ts] JSON parse error:", e);
-        throw new Error("Invalid response format from server");
-      }
-    }
-    
     if (!response.ok) {
-      console.error("[cart.ts] Error clearing cart:", response.status, response.statusText);
-      throw new Error((data && data.message) || "Failed to clear your cart");
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || "Failed to clear cart";
+      throw new Error(errorMessage);
     }
     
-    return data.success === true;
+    console.log("[cart.ts] Successfully cleared cart");
   } catch (error) {
-    console.error("[cart.ts] Error clearing cart:", error);
-    if (error instanceof Error) {
-      console.error("[cart.ts] Error message:", error.message);
-    }
-    throw error; // Re-throw to allow consumers to handle errors
+    console.error("Error clearing cart:", error);
+    throw error;
   }
 }
 
 /**
- * Calculates the total price of all items in the cart
- * @param cartItems Array of cart items
- * @returns The total price
+ * Calculates the total price of items in the cart
  */
 export function calculateCartTotal(cartItems: CartItem[]): number {
-  if (!Array.isArray(cartItems) || cartItems.length === 0) {
-    return 0;
-  }
-  
   return cartItems.reduce((total, item) => {
-    // Make sure we have mod data and a valid price
-    if (!item.mod) {
-      console.warn("Cart item has no mod data:", item);
-      return total;
-    }
-    
-    // Use discounted price if available, otherwise use regular price
-    const price = item.mod.discountPrice !== null ? 
-      item.mod.discountPrice : 
-      (item.mod.price || 0);
-      
-    return total + price;
+    if (!item.mod) return total;
+    const price = item.mod.discountPrice !== null ? item.mod.discountPrice : item.mod.price;
+    return total + (price || 0);
   }, 0);
 }
 
 /**
- * Completes a purchase after successful payment
- * @param transactionId The ID of the payment transaction
- * @returns The purchase data
+ * Completes the purchase process after successful payment
  */
-export async function completePurchase(transactionId: string) {
-  if (!transactionId) {
-    throw new Error("Transaction ID is required");
-  }
-  
+export async function completePurchase(transactionId: string): Promise<void> {
   try {
-    console.log("Completing purchase with transaction ID:", transactionId);
+    console.log("[cart.ts] Completing purchase with transaction ID:", transactionId);
     
-    const res = await apiRequest("POST", "/api/purchase/complete", { transactionId });
+    const response = await fetch("/api/purchase/complete", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ transactionId })
+    });
     
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Server error completing purchase:", errorData);
-      throw new Error(errorData.message || "Failed to complete purchase");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || "Failed to complete purchase";
+      throw new Error(errorMessage);
     }
     
-    const data = await res.json();
-    console.log("Purchase completion response:", data);
-    
-    return data;
+    console.log("[cart.ts] Purchase completed successfully");
   } catch (error) {
     console.error("Error completing purchase:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-    }
     throw error;
   }
 }

@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { getCart, addToCart, removeFromCart, clearCart, calculateCartTotal } from "@/lib/cart";
+import React, { createContext, useContext, ReactNode } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CartItem } from "@/lib/cart";
+import { getCart, addToCart, removeFromCart, clearCart, calculateCartTotal, CartItem } from "@/lib/cart";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -35,19 +34,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [isPending, setIsPending] = useState(false);
 
   // Get cart items
   const { data: cartItems = [], isLoading, refetch: refetchCart } = useQuery({
     queryKey: ["/api/cart"],
-    queryFn: async () => {
-      console.log("[use-cart] Executing cart fetch query function");
-      const items = await getCart();
-      console.log("[use-cart] Query function returned items:", items);
-      return items;
-    },
+    queryFn: getCart,
     enabled: isAuthenticated,
-    staleTime: 5000, // Reduced to 5 seconds to check more frequently
+    staleTime: 5000,
     retry: 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -64,32 +57,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Add item to cart
   const addItemMutation = useMutation({
     mutationFn: async (modId: number) => {
-      console.log("[use-cart] Adding to cart, modId:", modId, "Type:", typeof modId);
+      console.log("[use-cart] Adding to cart, modId:", modId);
       
       if (!isAuthenticated) {
-        console.error("[use-cart] Not authenticated");
-        
-        // Show toast before redirecting
         toast({
           variant: "destructive",
           title: "Authentication Required",
           description: "Please log in to add items to your cart.",
         });
-        
-        // Delay redirect to allow toast to be seen
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 1500);
-        
         return null;
       }
       
-      // Convert modId to number explicitly
       const numericModId = Number(modId);
-      console.log("[use-cart] Converted modId to number:", numericModId);
       
       if (isModInCart(numericModId)) {
-        console.log("[use-cart] Item already in cart");
         toast({
           title: "Already in cart",
           description: "This mod is already in your cart.",
@@ -97,193 +78,81 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return null;
       }
       
-      console.log("[use-cart] Calling addToCart with modId:", numericModId);
-      
-      try {
-        // Set a timeout to catch hanging requests
-        const timeoutPromise = new Promise<null>((_, reject) => {
-          setTimeout(() => reject(new Error("Request timed out. Server may be unavailable.")), 10000);
-        });
-        
-        // Race between the actual request and the timeout
-        const result = await Promise.race([
-          addToCart(numericModId),
-          timeoutPromise
-        ]) as CartItem | null;
-        
-        console.log("[use-cart] Add to cart result:", result);
-        
-        // Verify success with explicit check since null is a valid response
-        if (result === null) {
-          console.warn("[use-cart] Result was null but no error thrown - this may indicate a server issue");
-        }
-        
-        return result;
-      } catch (error) {
-        console.error("[use-cart] Add to cart error:", error);
-        throw error;
-      }
+      return await addToCart(numericModId);
     },
-    onMutate: () => {
-      setIsPending(true);
-    },
-    onSuccess: (data) => {
-      console.log("[use-cart] onSuccess with data:", data);
-      
-      // Always invalidate the cart queries to refresh the cart state
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      
-      if (data) {
+    onSuccess: (result) => {
+      if (result) {
         toast({
           title: "Added to cart",
-          description: `${data.mod?.title || 'Item'} successfully added to your cart.`,
+          description: "Mod has been added to your cart.",
         });
-      } else {
-        // Check if the item actually made it to the cart despite null result
-        setTimeout(() => {
-          getCart().then(updatedCart => {
-            console.log("[use-cart] Checking cart after null result:", updatedCart);
-          }).catch(e => console.error("[use-cart] Error checking cart after null result:", e));
-        }, 500);
+        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       }
     },
     onError: (error: Error) => {
-      console.error("[use-cart] onError:", error);
-      
-      if (error.message.includes("already own this mod")) {
-        toast({
-          title: "Already purchased",
-          description: "You already own this mod.",
-          variant: "destructive",
-        });
-      } else if (error.message.includes("timed out")) {
-        toast({
-          title: "Server issue",
-          description: "The server is taking too long to respond. Please try again later.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to add the mod to your cart. Please try again.",
-          variant: "destructive",
-        });
-      }
-    },
-    onSettled: () => {
-      setIsPending(false);
+      toast({
+        variant: "destructive",
+        title: "Failed to add to cart",
+        description: error.message,
+      });
     },
   });
 
-  // Remove from cart
+  // Remove item from cart
   const removeItemMutation = useMutation({
-    mutationFn: async (modId: number) => {
-      console.log("Removing from cart, modId:", modId);
-      
-      if (!isAuthenticated) {
-        throw new Error("You must be logged in to modify your cart");
-      }
-      
-      return await removeFromCart(modId);
-    },
-    onMutate: () => {
-      setIsPending(true);
-    },
+    mutationFn: removeFromCart,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       toast({
         title: "Removed from cart",
-        description: "The mod has been removed from your cart.",
+        description: "Mod has been removed from your cart.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: "Failed to remove the mod from your cart. Please try again.",
         variant: "destructive",
+        title: "Failed to remove from cart",
+        description: error.message,
       });
-    },
-    onSettled: () => {
-      setIsPending(false);
     },
   });
 
   // Clear cart
   const clearCartMutation = useMutation({
-    mutationFn: async () => {
-      console.log("Clearing cart");
-      
-      if (!isAuthenticated) {
-        throw new Error("You must be logged in to modify your cart");
-      }
-      
-      return await clearCart();
-    },
-    onMutate: () => {
-      setIsPending(true);
-    },
+    mutationFn: clearCart,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       toast({
         title: "Cart cleared",
-        description: "Your cart has been cleared.",
+        description: "All items have been removed from your cart.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: "Failed to clear your cart. Please try again.",
         variant: "destructive",
+        title: "Failed to clear cart",
+        description: error.message,
       });
-    },
-    onSettled: () => {
-      setIsPending(false);
     },
   });
 
-  // Track if we've loaded the cart at least once
-  const [initialCartLoaded, setInitialCartLoaded] = useState(false);
-  
-  // Force-refresh the cart items when needed
-  useEffect(() => {
-    if (isAuthenticated && !initialCartLoaded) {
-      console.log("[use-cart] Initial cart load triggered");
-      refetchCart().then(() => {
-        setInitialCartLoaded(true);
-        console.log("[use-cart] Initial cart load completed");
-      });
-    }
-  }, [isAuthenticated, initialCartLoaded, refetchCart]);
-  
-  // Context value
-  const value = {
+  const isPending = addItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending;
+
+  const value: CartContextType = {
     cartItems,
     isLoading,
     cartTotal,
     cartCount,
-    isPending,
     addItem: async (modId: number) => {
       try {
-        console.log("[use-cart] addItem called with modId:", modId);
-        const result = await addItemMutation.mutateAsync(modId);
-        console.log("[use-cart] addItem result:", result);
-        
-        // Force refresh cart after adding item
-        console.log("[use-cart] Force refreshing cart after add operation");
-        await refetchCart();
-        
-        return result;
+        return await addItemMutation.mutateAsync(modId);
       } catch (error) {
-        console.error("[use-cart] addItem error:", error);
-        // Error is handled in the mutation callbacks
-        throw error; // Re-throw for component-level handling
+        return null;
       }
     },
     removeItem: async (modId: number) => {
       try {
         await removeItemMutation.mutateAsync(modId);
-        // Force refresh cart after removing item
-        await refetchCart();
       } catch (error) {
         // Error is handled in the mutation callbacks
       }
@@ -291,13 +160,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCart: async () => {
       try {
         await clearCartMutation.mutateAsync();
-        // Force refresh cart after clearing
-        await refetchCart();
       } catch (error) {
         // Error is handled in the mutation callbacks
       }
     },
     isModInCart,
+    isPending,
     refreshCart: async () => {
       console.log("[use-cart] Manual cart refresh requested");
       await refetchCart();

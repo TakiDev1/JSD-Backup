@@ -571,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/cart", async (req, res) => {
+  app.post("/api/cart", auth.isAuthenticated, async (req, res) => {
     try {
       console.log("\n\n======== CART API - POST REQUEST ========");
       console.log("Cart API - Path:", req.path);
@@ -580,21 +580,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Cart API - Content-Type:", req.headers['content-type']);
       console.log("Cart API - Is authenticated?", req.isAuthenticated());
       console.log("Cart API - Session ID:", req.sessionID);
-      console.log("Cart API - Session data:", req.session);
       console.log("Cart API - Request body:", req.body);
       console.log("Cart API - User:", req.user);
       
-      // First, check authentication
-      if (!req.isAuthenticated()) {
-        console.log("Cart API - User not authenticated");
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      // Then get user ID
-      const userId = (req.user as any)?.id;
+      // Get user ID - authentication already verified by middleware
+      const userId = (req.user as any).id;
       
       if (!userId) {
-        console.log("Cart API - User is authenticated but ID is missing");
+        console.log("Cart API - User ID is missing");
         return res.status(401).json({ message: "Authentication required - user ID not found" });
       }
       
