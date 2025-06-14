@@ -98,8 +98,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           title: "Added to cart",
           description: "Mod has been added to your cart.",
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       }
+      // Always invalidate and refetch cart after add operation
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      refetchCart();
     },
     onError: (error: Error) => {
       toast({
@@ -154,9 +156,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthenticated) {
       console.log("[cart] Authentication detected, forcing cart refresh");
-      refetchCart();
+      // Clear cache and refetch to ensure fresh data
+      queryClient.removeQueries({ queryKey: ["/api/cart"] });
+      setTimeout(() => refetchCart(), 100);
     }
-  }, [isAuthenticated, refetchCart]);
+  }, [isAuthenticated, refetchCart, queryClient]);
 
   // Debug cart state changes
   useEffect(() => {
