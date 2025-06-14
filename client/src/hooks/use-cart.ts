@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,16 +40,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/cart"],
     queryFn: async () => {
       console.log("[cart] Fetching cart items, isAuthenticated:", isAuthenticated);
+      if (!isAuthenticated) {
+        console.log("[cart] Not authenticated, returning empty cart");
+        return [];
+      }
       const result = await getCart();
       console.log("[cart] Cart items received:", result);
       return result;
     },
-    enabled: isAuthenticated,
-    staleTime: 1000, // Reduce stale time for more frequent updates
+    enabled: !!isAuthenticated, // Use !! to ensure boolean
+    staleTime: 0, // Always fetch fresh data
     retry: 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Refetch every 5 seconds when active
+    refetchInterval: 3000, // Refetch every 3 seconds when active
   });
 
   const cartTotal = calculateCartTotal(cartItems);
@@ -145,6 +149,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const isPending = addItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending;
+
+  // Force cart refresh when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("[cart] Authentication detected, forcing cart refresh");
+      refetchCart();
+    }
+  }, [isAuthenticated, refetchCart]);
+
+  // Debug cart state changes
+  useEffect(() => {
+    console.log("[cart] Cart state changed:", {
+      itemCount: cartItems.length,
+      isAuthenticated,
+      isLoading,
+      items: cartItems
+    });
+  }, [cartItems, isAuthenticated, isLoading]);
 
   const value: CartContextType = {
     cartItems,
