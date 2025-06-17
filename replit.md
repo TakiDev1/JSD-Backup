@@ -102,6 +102,14 @@ JSD Mods Marketplace is a full-stack web application designed specifically for s
 
 ## Recent Changes
 
+### June 17, 2025
+- Completed mod update notification system using SendGrid email service
+- Added automatic email notifications when admins upload new mod versions
+- Created admin notification management interface at /admin/notifications
+- Implemented manual notification sending with mod selection and version tracking
+- Added notification link to admin dashboard quick actions for easy access
+- Email notifications include mod title, version, changelog, and download links
+
 ### June 14, 2025
 - Fixed duplicate content in admin dashboard - removed redundant stat cards, kept only bottom layout with colorful icons
 - Improved database-driven subscription system with PostgreSQL persistence
