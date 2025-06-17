@@ -6,7 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
-import CartDrawer from "@/components/shared/cart-drawer";
+import { CartDrawer } from "@/components/shared/cart-drawer-new";
+import { CartProvider } from "@/hooks/use-cart-clean";
 import AdminRoute from "@/components/protected/admin-route";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -88,17 +89,19 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" attribute="class">
         <AuthProvider>
-          <TooltipProvider>
-            <div className="min-h-screen flex flex-col bg-dark text-white font-body overflow-x-hidden">
-              <Navbar />
-              <main className="flex-1">
-                <Router />
-              </main>
-              <Footer />
-            </div>
-            <CartDrawer />
-            <Toaster />
-          </TooltipProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <div className="min-h-screen flex flex-col bg-dark text-white font-body overflow-x-hidden">
+                <Navbar />
+                <main className="flex-1">
+                  <Router />
+                </main>
+                <Footer />
+              </div>
+              <CartDrawer />
+              <Toaster />
+            </TooltipProvider>
+          </CartProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
