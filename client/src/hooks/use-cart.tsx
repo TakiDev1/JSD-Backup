@@ -22,50 +22,6 @@ export interface CartItem {
   };
 }
 
-const fetchCartItems = async (): Promise<CartItem[]> => {
-  const response = await fetch('/api/cart', { credentials: 'include' });
-  if (response.status === 401) return [];
-  if (!response.ok) throw new Error('Failed to fetch cart items');
-  return response.json();
-};
-
-const addItemToCart = async (modId: number): Promise<CartItem> => {
-  const response = await fetch('/api/cart', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ modId })
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to add item to cart');
-  }
-  return response.json();
-};
-
-const removeItemFromCart = async (modId: number): Promise<void> => {
-  const response = await fetch(`/api/cart/${modId}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  if (!response.ok) throw new Error('Failed to remove item from cart');
-};
-
-const clearEntireCart = async (): Promise<void> => {
-  const response = await fetch('/api/cart', {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  if (!response.ok) throw new Error('Failed to clear cart');
-};
-
-const calculateTotal = (items: CartItem[]): number => {
-  return items.reduce((total, item) => {
-    const price = item.mod.discountPrice ?? item.mod.price;
-    return total + price;
-  }, 0);
-};
-
 interface CartContextType {
   items: CartItem[];
   total: number;
@@ -75,120 +31,164 @@ interface CartContextType {
   removeItem: (modId: number) => Promise<void>;
   clearCart: () => Promise<void>;
   isInCart: (modId: number) => boolean;
-  refetch: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const {
     data: items = [],
     isLoading,
-    refetch
+    error
   } = useQuery<CartItem[]>({
-    queryKey: ['cart'],
-    queryFn: fetchCartItems,
+    queryKey: ['/api/cart'],
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
+      
+      const response = await fetch('/api/cart', { 
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.status === 401) return [];
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      
+      const data = await response.json();
+      console.log('[cart] Cart items fetched:', data);
+      return data;
+    },
     enabled: isAuthenticated,
-    staleTime: 30000,
-    refetchOnWindowFocus: false
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: 1
   });
 
-  const safeItems = items || [];
-  const total = calculateTotal(safeItems);
-  const count = safeItems.length;
-
-  const addMutation = useMutation({
-    mutationFn: addItemToCart,
+  const addItemMutation = useMutation({
+    mutationFn: async (modId: number) => {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ modId })
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to add item to cart');
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
       toast({
         title: "Added to cart",
-        description: "Item has been added to your cart"
+        description: "Item has been added to your cart.",
       });
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
 
-  const removeMutation = useMutation({
-    mutationFn: removeItemFromCart,
+  const removeItemMutation = useMutation({
+    mutationFn: async (modId: number) => {
+      const response = await fetch(`/api/cart/${modId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to remove item from cart');
+      }
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
       toast({
         title: "Removed from cart",
-        description: "Item has been removed from your cart"
+        description: "Item has been removed from your cart.",
       });
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
 
-  const clearMutation = useMutation({
-    mutationFn: clearEntireCart,
+  const clearCartMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/cart', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to clear cart');
+      }
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
       toast({
         title: "Cart cleared",
-        description: "All items have been removed from your cart"
+        description: "All items have been removed from your cart.",
       });
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
 
-  const addItem = async (modId: number) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Login required",
-        description: "Please log in to add items to your cart",
-        variant: "destructive"
-      });
-      return;
-    }
-    await addMutation.mutateAsync(modId);
+  const total = items.reduce((sum, item) => {
+    const price = item.mod?.discountPrice ?? item.mod?.price ?? 0;
+    return sum + price;
+  }, 0);
+
+  const count = items.length;
+
+  const isInCart = (modId: number): boolean => {
+    return items.some(item => item.modId === modId);
   };
 
-  const removeItem = async (modId: number) => {
-    await removeMutation.mutateAsync(modId);
+  const addItem = async (modId: number): Promise<void> => {
+    await addItemMutation.mutateAsync(modId);
   };
 
-  const clearCart = async () => {
-    await clearMutation.mutateAsync();
+  const removeItem = async (modId: number): Promise<void> => {
+    await removeItemMutation.mutateAsync(modId);
   };
 
-  const isInCart = (modId: number) => {
-    return safeItems.some(item => item.modId === modId);
+  const clearCart = async (): Promise<void> => {
+    await clearCartMutation.mutateAsync();
   };
 
   const value: CartContextType = {
-    items: safeItems,
+    items,
     total,
     count,
-    isLoading,
+    isLoading: isLoading || addItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending,
     addItem,
     removeItem,
     clearCart,
-    isInCart,
-    refetch
+    isInCart
   };
 
   return (
@@ -198,7 +198,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useCart() {
+export function useCart(): CartContextType {
   const context = useContext(CartContext);
   if (!context) {
     throw new Error('useCart must be used within a CartProvider');

@@ -1,4 +1,4 @@
-import { useCart } from "@/hooks/use-cart";
+import { useCart, type CartItem } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +45,7 @@ export default function CartPage() {
         
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => (
+            {items.map((item: CartItem) => (
               <Card key={item.id}>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
