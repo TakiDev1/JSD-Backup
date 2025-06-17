@@ -95,8 +95,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false
   });
 
-  const total = calculateTotal(items);
-  const count = items.length;
+  const safeItems = items || [];
+  const total = calculateTotal(safeItems);
+  const count = safeItems.length;
 
   const addMutation = useMutation({
     mutationFn: addItemToCart,
@@ -173,11 +174,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const isInCart = (modId: number) => {
-    return items.some(item => item.modId === modId);
+    return safeItems.some(item => item.modId === modId);
   };
 
   const value: CartContextType = {
-    items,
+    items: safeItems,
     total,
     count,
     isLoading,

@@ -1,294 +1,156 @@
-import { useEffect, useState } from "react";
-import { useCart } from "@/hooks/use-cart";
-import { useLocation } from "wouter";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShoppingCart, X, Trash2, ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { Separator } from "@/components/ui/separator";
+import { ShoppingCart, Trash2, X } from "lucide-react";
+import { Link } from "wouter";
+import { useCart, CartItem } from "@/hooks/use-cart";
 
-const CartDrawer = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { cartItems, cartTotal, removeItem, clearCart, isLoading, isPending, refreshCart } = useCart();
-  const { isAuthenticated } = useAuth();
-  const [, navigate] = useLocation();
-  const [lastOpenTime, setLastOpenTime] = useState(0);
-
-  // Listen for keyboard shortcut to open cart
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "c" && e.ctrlKey) {
-        setIsOpen((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-  
-  // Fetch cart items whenever drawer opens
-  useEffect(() => {
-    const refreshCartItems = async () => {
-      try {
-        if (isOpen && isAuthenticated) {
-          console.log("[cart-drawer] Drawer opened, refreshing cart items");
-          await refreshCart();
-          console.log("[cart-drawer] Cart refresh complete, items:", cartItems);
-        }
-      } catch (error) {
-        console.error("[cart-drawer] Error refreshing cart:", error);
-      }
-    };
+export function CartDrawer() {
+  try {
+    const cartContext = useCart();
     
-    refreshCartItems();
-  }, [isOpen, isAuthenticated, refreshCart, cartItems]);
-
-  // Track when the cart is opened to avoid animations triggering during transitions
-  useEffect(() => {
-    if (isOpen) {
-      setLastOpenTime(Date.now());
+    if (!cartContext) {
+      return (
+        <Button variant="ghost" size="icon" className="relative">
+          <ShoppingCart className="h-5 w-5" />
+        </Button>
+      );
     }
-  }, [isOpen]);
 
-  const handleRemoveItem = async (e: React.MouseEvent, modId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!modId || isPending) return;
-    
-    try {
-      await removeItem(modId);
-    } catch (error) {
-      console.error("Error removing item:", error);
-    }
-  };
+    const { 
+      items = [], 
+      total = 0, 
+      count = 0, 
+      isLoading = false, 
+      removeItem, 
+      clearCart 
+    } = cartContext;
 
-  const handleClearCart = async () => {
-    if (isPending) return;
-    
-    try {
-      await clearCart();
-    } catch (error) {
-      console.error("Error clearing cart:", error);
-    }
-  };
+    const safeItems: CartItem[] = Array.isArray(items) ? items : [];
+    const safeCount = typeof count === 'number' ? count : safeItems.length;
+    const safeTotal = typeof total === 'number' ? total : 0;
 
-  const handleCheckout = () => {
-    if (isPending) return;
-    
-    setIsOpen(false);
-    navigate("/checkout");
-  };
-
-  const navigateToItem = (modId: number) => {
-    setIsOpen(false);
-    navigate(`/mods/${modId}`);
-  };
-
-  const showEmptyState = !isAuthenticated || (!isLoading && cartItems.length === 0);
-  const showLoadingState = isAuthenticated && isLoading;
-  const showCartItems = isAuthenticated && !isLoading && cartItems.length > 0;
-
-  return (
-    <>
-      <Button
-        variant="outline"
-        size="icon"
-        className="cart-button fixed bottom-8 right-8 h-14 w-14 rounded-full bg-primary hover:bg-primary-light text-white shadow-lg z-50"
-        onClick={() => setIsOpen(true)}
-        disabled={isPending}
-      >
-        {isPending ? (
-          <Loader2 className="h-6 w-6 animate-spin" />
-        ) : (
-          <ShoppingCart className="h-6 w-6" />
-        )}
-        {!isPending && cartItems.length > 0 && (
-          <Badge className="absolute -top-2 -right-2 bg-secondary text-white">
-            {cartItems.length}
-          </Badge>
-        )}
-      </Button>
-
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent className="w-full sm:max-w-md bg-dark-lighter border-l border-dark-card">
-          <SheetHeader className="mb-5">
-            <SheetTitle className="font-display text-2xl text-white flex items-center">
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Your Cart
-              {!isLoading && (
-                <span className="ml-2 text-sm text-neutral-light">
-                  ({cartItems.length} {cartItems.length === 1 ? "item" : "items"})
-                </span>
-              )}
-            </SheetTitle>
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <ShoppingCart className="h-5 w-5" />
+            {safeCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {safeCount}
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Shopping Cart</SheetTitle>
+            <SheetDescription>
+              {safeCount === 0 ? "Your cart is empty" : `${safeCount} item${safeCount > 1 ? 's' : ''} in your cart`}
+            </SheetDescription>
           </SheetHeader>
 
-          {showLoadingState && (
-            <div className="flex flex-col items-center justify-center h-[60vh]">
-              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-              <h3 className="text-xl font-display font-semibold text-white">
-                Loading your cart...
-              </h3>
-            </div>
-          )}
-
-          {showEmptyState && (
-            <div className="flex flex-col items-center justify-center h-[60vh]">
-              <div className="w-20 h-20 rounded-full bg-dark-card flex items-center justify-center mb-4">
-                <ShoppingCart className="h-10 w-10 text-neutral" />
+          <div className="mt-6 space-y-4">
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Loading cart...</p>
               </div>
-              <h3 className="text-xl font-display font-semibold text-white mb-2">
-                {isAuthenticated ? "Your cart is empty" : "Sign in to use cart"}
-              </h3>
-              <p className="text-neutral-light text-center mb-6">
-                {isAuthenticated
-                  ? "Add some awesome mods to your cart to see them here"
-                  : "Please sign in to add items to your cart"}
-              </p>
-              <Button
-                onClick={() => {
-                  setIsOpen(false);
-                  if (!isAuthenticated) {
-                    navigate("/login");
-                  } else {
-                    navigate("/mods");
-                  }
-                }}
-              >
-                {isAuthenticated ? "Browse Mods" : "Sign In"}
-              </Button>
-            </div>
-          )}
-
-          {showCartItems && (
-            <>
-              <ScrollArea className="flex-1 h-[60vh] pr-4">
-                <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex bg-dark-card p-4 rounded-lg border border-dark-card hover:border-primary/30 transition-colors cursor-pointer"
-                      onClick={() => navigateToItem(item.modId)}
-                    >
-                      <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 mr-4">
-                        {item.mod?.previewImageUrl ? (
-                          <img
-                            src={item.mod.previewImageUrl}
-                            alt={item.mod.title || "Mod image"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-dark flex items-center justify-center">
-                            <ShoppingCart className="h-8 w-8 text-neutral" />
-                          </div>
-                        )}
-                      </div>
+            ) : safeItems.length === 0 ? (
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Your cart is empty</p>
+                <p className="text-sm text-muted-foreground mt-1">Add some mods to get started!</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {safeItems.map((item: CartItem) => (
+                    <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                      <img
+                        src={item.mod?.previewImageUrl || "/images/mod-placeholder.jpg"}
+                        alt={item.mod?.title || "Mod"}
+                        className="w-16 h-16 object-cover rounded"
+                      />
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-medium truncate">
-                          {item.mod?.title || "Unknown Mod"}
-                        </h3>
-                        <div className="flex items-center mt-1">
-                          {item.mod?.category && (
-                            <Badge className="bg-dark text-secondary text-xs">
-                              {item.mod.category}
-                            </Badge>
+                        <h4 className="font-medium text-sm truncate">{item.mod?.title || "Unknown Mod"}</h4>
+                        <p className="text-xs text-muted-foreground truncate">{item.mod?.description || ""}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {item.mod?.category || "misc"}
+                          </Badge>
+                          <span className="font-medium text-sm">
+                            ${item.mod?.discountPrice ?? item.mod?.price ?? 0}
+                          </span>
+                          {item.mod?.discountPrice && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              ${item.mod?.price ?? 0}
+                            </span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-white font-semibold">
-                            {item.mod ? (
-                              `$${item.mod.discountPrice !== null 
-                                ? item.mod.discountPrice.toFixed(2) 
-                                : item.mod.price.toFixed(2)}`
-                            ) : (
-                              "$0.00"
-                            )}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-neutral hover:text-red-500"
-                            onClick={(e) => handleRemoveItem(e, item.modId)}
-                          >
-                            {isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem && removeItem(item.modId)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
 
-              <div className="mt-6">
-                <Separator className="mb-4" />
+                <Separator />
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-light">Subtotal</span>
-                    <span className="text-white">${cartTotal.toFixed(2)}</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Total:</span>
+                    <span className="font-bold text-lg">${safeTotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-light">Tax</span>
-                    <span className="text-white">$0.00</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-white">Total</span>
-                    <span className="text-white">${cartTotal.toFixed(2)}</span>
+
+                  <div className="space-y-2">
+                    <Link href="/checkout" className="w-full">
+                      <Button className="w-full">
+                        Proceed to Checkout
+                      </Button>
+                    </Link>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => clearCart && clearCart()}
+                      className="w-full"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear Cart
+                    </Button>
                   </div>
                 </div>
-
-                <div className="mt-8 flex flex-col space-y-3">
-                  <Button 
-                    onClick={handleCheckout} 
-                    className="w-full"
-                    disabled={isPending}
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        Checkout <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleClearCart}
-                    className="w-full"
-                    disabled={isPending}
-                  >
-                    {isPending ? "Processing..." : "Clear Cart"}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
-    </>
-  );
-};
+    );
+  } catch (error) {
+    console.error('Cart drawer error:', error);
+    return (
+      <Button variant="ghost" size="icon" className="relative">
+        <ShoppingCart className="h-5 w-5" />
+      </Button>
+    );
+  }
+}
 
 export default CartDrawer;

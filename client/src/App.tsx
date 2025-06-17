@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
-import { CartDrawer } from "@/components/shared/cart-drawer-new";
+import CartDrawer from "@/components/shared/cart-drawer";
 import { CartProvider } from "@/hooks/use-cart";
 import AdminRoute from "@/components/protected/admin-route";
 import NotFound from "@/pages/not-found";
