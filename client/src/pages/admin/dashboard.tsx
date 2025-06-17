@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Users, Package, CreditCard, BarChart3, Activity, Settings,
   ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock,
-  FileCheck
+  FileCheck, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -237,10 +237,10 @@ const AdminDashboard = () => {
                   </Button>
                 </Link>
                 
-                <Link href="/admin/reviews">
+                <Link href="/admin/notifications">
                   <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                    <FileCheck className="w-5 h-5" />
-                    <span>Reviews</span>
+                    <Mail className="w-5 h-5" />
+                    <span>Notifications</span>
                   </Button>
                 </Link>
                 

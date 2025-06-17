@@ -27,6 +27,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminUsers from "@/pages/admin/users";
 import AdminSettings from "@/pages/admin/settings";
+import AdminNotifications from "@/pages/admin-notifications";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -81,6 +82,7 @@ function Router() {
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/users" component={AdminUsers} />
       <AdminRoute path="/admin/settings" component={AdminSettings} />
+      <AdminRoute path="/admin/notifications" component={AdminNotifications} />
       <Route component={NotFound} />
     </Switch>
   );

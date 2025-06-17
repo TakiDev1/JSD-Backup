@@ -453,6 +453,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Manual notification sending endpoint
+  app.post("/api/admin/notifications/send", auth.isAdmin, async (req, res) => {
+    try {
+      const { modId, version, changelog } = req.body;
+      
+      if (!modId || !version) {
+        return res.status(400).json({ message: "Mod ID and version are required" });
+      }
+      
+      const mod = await storage.getMod(modId);
+      if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      // Get recipient count before sending
+      const purchases = await storage.getPurchasesByMod(modId);
+      const recipientCount = purchases.length;
+      
+      console.log(`[ManualNotification] Sending notification for ${mod.title} v${version} to ${recipientCount} users`);
+      
+      // Send notifications
+      notifyModUpdateToAllOwners(modId, version, changelog)
+        .catch(error => console.error(`[ManualNotification] Failed to send notifications:`, error));
+      
+      res.json({
+        success: true,
+        recipientCount,
+        modTitle: mod.title,
+        version
+      });
+    } catch (error: any) {
+      console.error("[ManualNotification] Error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Notification history endpoint (placeholder - would need database table)
+  app.get("/api/admin/notifications/history", auth.isAdmin, async (req, res) => {
+    try {
+      // For now, return empty array - would need proper notification log table
+      res.json([]);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   // Add static file serving for uploaded images
   app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
   
@@ -494,6 +540,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertModVersionSchema.parse(versionData);
       const version = await storage.createModVersion(validatedData);
+      
+      // Trigger notifications to all mod owners about the new version
+      console.log(`[ModUpdate] Triggering notifications for mod ${mod.title} v${req.body.version}`);
+      notifyModUpdateToAllOwners(modId, req.body.version, req.body.changelog)
+        .catch(error => console.error(`[ModUpdate] Failed to send notifications:`, error));
       
       res.status(201).json(version);
     } catch (error: any) {
