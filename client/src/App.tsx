@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 import { CartDrawer } from "@/components/shared/cart-drawer-new";
-import { CartProvider } from "@/hooks/use-cart-clean";
+import { CartProvider } from "@/hooks/use-cart-final";
 import AdminRoute from "@/components/protected/admin-route";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";

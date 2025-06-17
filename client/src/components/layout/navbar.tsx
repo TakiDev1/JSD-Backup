@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart";
+import { useCart } from "@/hooks/use-cart-final";
 import { motion } from "framer-motion";
 import { Menu, X, Search, ShoppingCart, User, Settings } from "lucide-react";
 import jsdLogo from "@/assets/jsd_logo.png";
@@ -19,7 +19,7 @@ import jsdLogo from "@/assets/jsd_logo.png";
 const Navbar = () => {
   const [location] = useLocation();
   const { user, isAuthenticated, isAdmin, isPremium, login, logout, getUserAvatar } = useAuth();
-  const { cartCount } = useCart();
+  const { count: cartCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 

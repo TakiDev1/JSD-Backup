@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ShoppingCart } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
+import { useCart } from "@/hooks/use-cart-final";
 import { Mod } from "@shared/schema";
 import { motion } from "framer-motion";
 
@@ -13,9 +13,9 @@ interface ModCardProps {
 }
 
 const ModCard = ({ mod }: ModCardProps) => {
-  const { addItem, isModInCart, refreshCart, cartItems } = useCart();
+  const { addItem, isInCart } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [inCart, setInCart] = useState(false);
+  const modInCart = isInCart(mod.id);
 
   // Setup 3D rotation effect
   useEffect(() => {
