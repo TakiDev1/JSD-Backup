@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShoppingCart, Trash2, X } from "lucide-react";
-import { useCart } from "@/hooks/use-cart-new";
+import { useCart } from "@/hooks/use-cart";
 import { Link } from "wouter";
 
 export function CartDrawer() {

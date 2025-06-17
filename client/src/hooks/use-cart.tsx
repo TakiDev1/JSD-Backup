@@ -1,15 +1,68 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
-import {
-  CartItem,
-  fetchCartItems,
-  addItemToCart,
-  removeItemFromCart,
-  clearEntireCart,
-  calculateTotal
-} from '@/lib/cart-api';
+import { useAuth } from './use-auth';
+import { useToast } from './use-toast';
+
+export interface CartItem {
+  id: number;
+  userId: number;
+  modId: number;
+  addedAt: string;
+  mod: {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    discountPrice: number | null;
+    previewImageUrl: string;
+    category: string;
+    tags: string[];
+  };
+}
+
+const fetchCartItems = async (): Promise<CartItem[]> => {
+  const response = await fetch('/api/cart', { credentials: 'include' });
+  if (response.status === 401) return [];
+  if (!response.ok) throw new Error('Failed to fetch cart items');
+  return response.json();
+};
+
+const addItemToCart = async (modId: number): Promise<CartItem> => {
+  const response = await fetch('/api/cart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ modId })
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to add item to cart');
+  }
+  return response.json();
+};
+
+const removeItemFromCart = async (modId: number): Promise<void> => {
+  const response = await fetch(`/api/cart/${modId}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (!response.ok) throw new Error('Failed to remove item from cart');
+};
+
+const clearEntireCart = async (): Promise<void> => {
+  const response = await fetch('/api/cart', {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (!response.ok) throw new Error('Failed to clear cart');
+};
+
+const calculateTotal = (items: CartItem[]): number => {
+  return items.reduce((total, item) => {
+    const price = item.mod.discountPrice ?? item.mod.price;
+    return total + price;
+  }, 0);
+};
 
 interface CartContextType {
   items: CartItem[];
@@ -30,7 +83,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch cart items
   const {
     data: items = [],
     isLoading,
@@ -46,7 +98,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = calculateTotal(items);
   const count = items.length;
 
-  // Add item mutation
   const addMutation = useMutation({
     mutationFn: addItemToCart,
     onSuccess: () => {
@@ -65,7 +116,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  // Remove item mutation
   const removeMutation = useMutation({
     mutationFn: removeItemFromCart,
     onSuccess: () => {
@@ -84,7 +134,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  // Clear cart mutation
   const clearMutation = useMutation({
     mutationFn: clearEntireCart,
     onSuccess: () => {
@@ -112,22 +161,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    return addMutation.mutateAsync(modId);
+    await addMutation.mutateAsync(modId);
   };
 
   const removeItem = async (modId: number) => {
-    return removeMutation.mutateAsync(modId);
+    await removeMutation.mutateAsync(modId);
   };
 
   const clearCart = async () => {
-    return clearMutation.mutateAsync();
+    await clearMutation.mutateAsync();
   };
 
   const isInCart = (modId: number) => {
     return items.some(item => item.modId === modId);
   };
 
-  const contextValue: CartContextType = {
+  const value: CartContextType = {
     items,
     total,
     count,
@@ -140,7 +189,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <CartContext.Provider value={contextValue}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
