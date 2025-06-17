@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart-final";
+import { useCart } from "@/hooks/use-cart";
 import { motion } from "framer-motion";
 import { Menu, X, Search, ShoppingCart, User, Settings } from "lucide-react";
 import jsdLogo from "@/assets/jsd_logo.png";

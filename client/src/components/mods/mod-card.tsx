@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ShoppingCart } from "lucide-react";
-import { useCart } from "@/hooks/use-cart-final";
+import { useCart } from "@/hooks/use-cart";
 import { Mod } from "@shared/schema";
 import { motion } from "framer-motion";
 

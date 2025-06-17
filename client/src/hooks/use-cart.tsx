@@ -35,11 +35,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     data: items = [],
     isLoading,
     refetch
-  } = useQuery({
+  } = useQuery<CartItem[]>({
     queryKey: ['cart'],
     queryFn: fetchCartItems,
     enabled: isAuthenticated,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: false
   });
 
@@ -112,22 +112,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    await addMutation.mutateAsync(modId);
+    return addMutation.mutateAsync(modId);
   };
 
   const removeItem = async (modId: number) => {
-    await removeMutation.mutateAsync(modId);
+    return removeMutation.mutateAsync(modId);
   };
 
   const clearCart = async () => {
-    await clearMutation.mutateAsync();
+    return clearMutation.mutateAsync();
   };
 
   const isInCart = (modId: number) => {
     return items.some(item => item.modId === modId);
   };
 
-  const value: CartContextType = {
+  const contextValue: CartContextType = {
     items,
     total,
     count,
@@ -140,7 +140,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <CartContext.Provider value={value}>
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );
