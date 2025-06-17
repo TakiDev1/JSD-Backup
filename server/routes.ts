@@ -1013,6 +1013,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const latestVersion = await storage.getLatestModVersion(purchase.modId);
           
           console.log(`[ModLocker] Mod ${purchase.modId}: downloadUrl="${mod?.downloadUrl}", hasVersion=${!!latestVersion}`);
+          if (latestVersion) {
+            console.log(`[ModLocker] Version data:`, {
+              version: latestVersion.version,
+              releaseDate: latestVersion.releaseDate,
+              fileSize: latestVersion.fileSize,
+              changelog: latestVersion.changelog
+            });
+          }
           
           return {
             purchase,
