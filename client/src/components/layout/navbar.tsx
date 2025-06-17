@@ -76,7 +76,7 @@ const Navbar = () => {
             <Search className="h-5 w-5" />
           </Button>
           
-          <Link href="/checkout">
+          <Link href="/cart">
             <Button 
               variant="ghost" 
               size="icon" 

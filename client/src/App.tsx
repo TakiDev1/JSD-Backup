@@ -67,6 +67,7 @@ function Router() {
       <Route path="/mods" component={Mods} />
       <Route path="/mods/:id" component={ModDetails} />
       <Route path="/mod-locker" component={ModLocker} />
+      <Route path="/cart" component={Cart} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/debug-cart" component={DebugCart} />
