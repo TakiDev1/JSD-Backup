@@ -1,26 +1,129 @@
-import { useCart, type CartItem } from "@/hooks/use-cart";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, ShoppingCart, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
-export default function CartPage() {
-  const cartData = useCart();
-  const { 
-    items, 
-    total, 
-    count, 
-    isLoading, 
-    removeItem, 
-    clearCart 
-  } = cartData;
+interface CartItem {
+  id: number;
+  userId: number;
+  modId: number;
+  addedAt: string;
+  mod: {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    discountPrice: number | null;
+    previewImageUrl: string;
+    category: string;
+    tags: string[];
+    features: string[];
+    isSubscriptionOnly: boolean;
+  };
+}
 
-  // Debug logging
-  console.log('[CartPage] Cart data:', cartData);
-  console.log('[CartPage] Items:', items);
-  console.log('[CartPage] Count:', count);
-  console.log('[CartPage] IsLoading:', isLoading);
+export default function CartPage() {
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: items = [],
+    isLoading,
+    error
+  } = useQuery<CartItem[]>({
+    queryKey: ['/api/cart'],
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
+      
+      const response = await fetch('/api/cart', { 
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.status === 401) return [];
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      
+      const data = await response.json();
+      console.log('[CartPage] Cart items fetched:', data);
+      return data;
+    },
+    enabled: isAuthenticated,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: 1
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async (modId: number) => {
+      const response = await fetch(`/api/cart/${modId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to remove item from cart');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      toast({
+        title: "Removed from cart",
+        description: "Item has been removed from your cart.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const clearCartMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/cart', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to clear cart');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      toast({
+        title: "Cart cleared",
+        description: "All items have been removed from your cart.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const total = items.reduce((sum, item) => {
+    const price = item.mod?.discountPrice ?? item.mod?.price ?? 0;
+    return sum + price;
+  }, 0);
+
+  const count = items.length;
+
+  console.log('[CartPage] Rendering with:', { items, count, isLoading });
 
   if (isLoading) {
     return (
@@ -82,8 +185,9 @@ export default function CartPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => removeItem(item.modId)}
+                        onClick={() => removeItemMutation.mutate(item.modId)}
                         className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        disabled={removeItemMutation.isPending}
                       >
                         <X className="h-4 w-4 mr-1" />
                         Remove
@@ -115,8 +219,8 @@ export default function CartPage() {
                   <Button 
                     variant="outline" 
                     className="w-full" 
-                    onClick={clearCart}
-                    disabled={items.length === 0}
+                    onClick={() => clearCartMutation.mutate()}
+                    disabled={items.length === 0 || clearCartMutation.isPending}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Clear Cart
