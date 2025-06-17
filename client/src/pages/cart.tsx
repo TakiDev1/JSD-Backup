@@ -6,6 +6,7 @@ import { X, ShoppingCart, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function CartPage() {
+  const cartData = useCart();
   const { 
     items, 
     total, 
@@ -13,7 +14,13 @@ export default function CartPage() {
     isLoading, 
     removeItem, 
     clearCart 
-  } = useCart();
+  } = cartData;
+
+  // Debug logging
+  console.log('[CartPage] Cart data:', cartData);
+  console.log('[CartPage] Items:', items);
+  console.log('[CartPage] Count:', count);
+  console.log('[CartPage] IsLoading:', isLoading);
 
   if (isLoading) {
     return (
