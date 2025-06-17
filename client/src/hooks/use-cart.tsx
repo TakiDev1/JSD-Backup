@@ -17,6 +17,8 @@ export interface CartItem {
     previewImageUrl: string;
     category: string;
     tags: string[];
+    features: string[];
+    isSubscriptionOnly: boolean;
   };
 }
 
