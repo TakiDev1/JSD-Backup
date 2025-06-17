@@ -100,14 +100,24 @@ export function CartDrawer() {
                           )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItem && removeItem(item.modId)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeItem && removeItem(item.modId)}
+                          className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeItem && removeItem(item.modId)}
+                          className="text-xs px-2 py-1 h-6"
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
