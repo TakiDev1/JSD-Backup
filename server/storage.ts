@@ -47,6 +47,7 @@ export interface IStorage {
   
   // Purchase operations
   getPurchasesByUser(userId: number): Promise<schema.Purchase[]>;
+  getPurchasesByMod(modId: number): Promise<schema.Purchase[]>;
   getModPurchase(userId: number, modId: number): Promise<schema.Purchase | undefined>;
   createPurchase(purchase: schema.InsertPurchase): Promise<schema.Purchase>;
   
@@ -297,6 +298,10 @@ export class DatabaseStorage implements IStorage {
   // Purchase operations
   async getPurchasesByUser(userId: number): Promise<schema.Purchase[]> {
     return await db.select().from(purchases).where(eq(purchases.userId, userId));
+  }
+
+  async getPurchasesByMod(modId: number): Promise<schema.Purchase[]> {
+    return await db.select().from(purchases).where(eq(purchases.modId, modId));
   }
 
   async getModPurchase(userId: number, modId: number): Promise<schema.Purchase | undefined> {

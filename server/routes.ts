@@ -10,6 +10,7 @@ import * as schema from "@shared/schema";
 import { mods } from "@shared/schema";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
+import { notifyModUpdateToAllOwners } from "./notifications";
 import { z } from "zod";
 import { eq, sql, asc, desc } from "drizzle-orm";
 import {
