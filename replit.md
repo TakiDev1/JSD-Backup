@@ -109,6 +109,9 @@ JSD Mods Marketplace is a full-stack web application designed specifically for s
 - Implemented manual notification sending with mod selection and version tracking
 - Added notification link to admin dashboard quick actions for easy access
 - Email notifications include mod title, version, changelog, and download links
+- Added changelog and file size input fields to admin mod create/edit forms
+- Updated backend to properly handle version creation with changelog and file size metadata
+- Fixed mod version system to automatically update mod lockers when admins edit mods
 
 ### June 14, 2025
 - Fixed duplicate content in admin dashboard - removed redundant stat cards, kept only bottom layout with colorful icons
