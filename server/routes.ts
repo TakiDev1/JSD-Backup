@@ -415,6 +415,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
+
+  app.patch("/api/mods/:id", auth.isAdmin, async (req, res) => {
+    try {
+      console.log(`[PATCH /api/mods/${req.params.id}] Received data:`, req.body);
+      const validatedData = insertModSchema.partial().parse(req.body);
+      console.log(`[PATCH /api/mods/${req.params.id}] Validated data:`, validatedData);
+      
+      const mod = await storage.updateMod(parseInt(req.params.id), validatedData);
+      
+      if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      console.log(`[PATCH /api/mods/${req.params.id}] Updated mod:`, mod);
+      res.json(mod);
+    } catch (error: any) {
+      console.error(`[PATCH /api/mods/${req.params.id}] Error:`, error);
+      res.status(400).json({ message: error.message });
+    }
+  });
   
   app.delete("/api/mods/:id", auth.isAdmin, async (req, res) => {
     try {
