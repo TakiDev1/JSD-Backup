@@ -26,7 +26,8 @@ import {
   Package, Plus, MoreHorizontal, Edit, Trash, Star, Download, Eye, Car, 
   Truck, Tag, DollarSign, FileText, ChevronUp, ChevronDown, Search, Filter, 
   RefreshCw, Image as ImageIcon, Upload, File, Lightbulb, CheckCircle, 
-  ListChecks, Settings, SlidersHorizontal, PenTool, PlusCircle, Sparkles
+  ListChecks, Settings, SlidersHorizontal, PenTool, PlusCircle, Sparkles,
+  HardDrive, ClipboardList
 } from "lucide-react";
 import { MOD_CATEGORIES } from "@/lib/constants";
 
@@ -41,6 +42,10 @@ const modSchema = z.object({
   previewImageUrl: z.string(), // Accept any string including empty for local uploads
   downloadUrl: z.string().url("Must be a valid URL").or(z.string().length(0)),
   version: z.string().min(1, "Version is required"),
+  fileSize: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+    message: "File size must be a valid number > 0",
+  }),
+  changelog: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isSubscriptionOnly: z.boolean().default(false),
   releaseNotes: z.string().optional(),
@@ -524,6 +529,62 @@ const AdminMods = () => {
                         )}
                       />
                     </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="fileSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <HardDrive className="h-4 w-4 text-primary" /> 
+                            File Size (MB)
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type="number"
+                                step="0.1"
+                                placeholder="15.5" 
+                                className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : "")}
+                              />
+                              <HardDrive className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Size of the mod file in megabytes
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="changelog"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-primary" />
+                            Changelog
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="- Fixed engine physics
+- Added new paint options
+- Improved suspension" 
+                              className="min-h-[100px] focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            List of changes and improvements in this version
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
                     <FormField
                       control={form.control}

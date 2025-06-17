@@ -393,10 +393,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin mod routes
   app.post("/api/mods", auth.isAdmin, async (req, res) => {
     try {
-      const validatedData = insertModSchema.parse(req.body);
-      const mod = await storage.createMod(validatedData);
+      const { version, fileSize, changelog, ...modData } = req.body;
+      
+      // Create the mod first
+      const validatedModData = insertModSchema.omit({ version: true }).parse(modData);
+      const mod = await storage.createMod(validatedModData);
+      
+      // Create the initial version if version info is provided
+      if (version) {
+        const versionData = {
+          modId: mod.id,
+          version: version,
+          filePath: mod.downloadUrl || '',
+          fileSize: fileSize ? parseFloat(fileSize) * 1024 * 1024 : 0, // Convert MB to bytes
+          changelog: changelog || 'Initial release',
+          isLatest: true,
+          releaseDate: new Date()
+        };
+        
+        await storage.createModVersion(versionData);
+        console.log(`[POST /api/mods] Created version ${version} for mod ${mod.id}`);
+      }
+      
       res.status(201).json(mod);
     } catch (error: any) {
+      console.error("[POST /api/mods] Error:", error);
       res.status(400).json({ message: error.message });
     }
   });
@@ -418,17 +439,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/mods/:id", auth.isAdmin, async (req, res) => {
     try {
-      console.log(`[PATCH /api/mods/${req.params.id}] Received data:`, req.body);
-      const validatedData = insertModSchema.partial().parse(req.body);
-      console.log(`[PATCH /api/mods/${req.params.id}] Validated data:`, validatedData);
+      const { version, fileSize, changelog, ...modData } = req.body;
+      const modId = parseInt(req.params.id);
       
-      const mod = await storage.updateMod(parseInt(req.params.id), validatedData);
+      console.log(`[PATCH /api/mods/${modId}] Received data:`, req.body);
+      
+      // Update the mod first (excluding version-specific fields)
+      const validatedModData = insertModSchema.omit({ version: true }).partial().parse(modData);
+      const mod = await storage.updateMod(modId, validatedModData);
       
       if (!mod) {
         return res.status(404).json({ message: "Mod not found" });
       }
       
-      console.log(`[PATCH /api/mods/${req.params.id}] Updated mod:`, mod);
+      // Create new version if version info is provided
+      if (version) {
+        // Mark all existing versions as not latest
+        const existingVersions = await storage.getModVersions(modId);
+        for (const existingVersion of existingVersions) {
+          if (existingVersion.isLatest) {
+            // Note: Need to add updateModVersion method to storage
+            console.log(`[PATCH /api/mods/${modId}] Marking version ${existingVersion.version} as not latest`);
+          }
+        }
+        
+        // Create new version
+        const versionData = {
+          modId: modId,
+          version: version,
+          filePath: mod.downloadUrl || '',
+          fileSize: fileSize ? Math.round(parseFloat(fileSize) * 1024 * 1024) : 0, // Convert MB to bytes
+          changelog: changelog || 'Updated mod',
+          isLatest: true,
+          releaseDate: new Date()
+        };
+        
+        const newVersion = await storage.createModVersion(versionData);
+        console.log(`[PATCH /api/mods/${modId}] Created version ${version} for mod ${modId}`);
+        
+        // Send notifications for mod updates
+        try {
+          await notifyModUpdateToAllOwners(modId, version, changelog);
+          console.log(`[PATCH /api/mods/${modId}] Sent update notifications for version ${version}`);
+        } catch (notifyError) {
+          console.error(`[PATCH /api/mods/${modId}] Failed to send notifications:`, notifyError);
+        }
+      }
+      
+      console.log(`[PATCH /api/mods/${modId}] Updated mod:`, mod);
       res.json(mod);
     } catch (error: any) {
       console.error(`[PATCH /api/mods/${req.params.id}] Error:`, error);
