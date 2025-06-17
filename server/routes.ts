@@ -989,14 +989,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       const user = await storage.getUser(userId);
       
+      console.log(`[ModLocker] Loading for user ${userId}`);
+      
       // Get user's purchases
       const purchases = await storage.getPurchasesByUser(userId);
+      console.log(`[ModLocker] Found ${purchases.length} purchases`);
       
       // Get purchased mods with latest version information
       const purchasedMods = await Promise.all(
         purchases.map(async (purchase) => {
           const mod = await storage.getMod(purchase.modId);
           const latestVersion = await storage.getLatestModVersion(purchase.modId);
+          
+          console.log(`[ModLocker] Mod ${purchase.modId}: downloadUrl="${mod?.downloadUrl}", hasVersion=${!!latestVersion}`);
           
           return {
             purchase,
