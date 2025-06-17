@@ -578,6 +578,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       const modId = parseInt(req.params.id);
       
+      console.log(`[Download] User ${userId} requesting mod ${modId}`);
+      
       // Check if user has purchased the mod or has a subscription
       const purchase = await storage.getModPurchase(userId, modId);
       const user = await storage.getUser(userId);
@@ -587,21 +589,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Mod not found" });
       }
       
+      console.log(`[Download] Mod found: ${mod.title}, downloadUrl: "${mod.downloadUrl}"`);
+      
       // Allow download if user has purchased the mod or has a subscription for subscription-only mods
       if (!purchase && (!user?.stripeSubscriptionId || !mod.isSubscriptionOnly)) {
         return res.status(403).json({ message: "You need to purchase this mod first" });
       }
       
-      // Get the latest version
+      // First try to get the latest version file
       const version = await storage.getLatestModVersion(modId);
       
-      if (!version) {
-        return res.status(404).json({ message: "No version available for download" });
+      if (version && version.filePath) {
+        console.log(`[Download] Using version file: ${version.filePath}`);
+        // Serve the uploaded file
+        res.download(version.filePath);
+      } else if (mod.downloadUrl && mod.downloadUrl.trim() !== '') {
+        console.log(`[Download] Using downloadUrl redirect: ${mod.downloadUrl}`);
+        // Redirect to the download URL
+        res.redirect(mod.downloadUrl);
+      } else {
+        console.log(`[Download] No download source available for mod ${modId}`);
+        return res.status(404).json({ message: "No download available for this mod" });
       }
-      
-      // Serve the file
-      res.download(version.filePath);
     } catch (error: any) {
+      console.error(`[Download] Error:`, error);
       res.status(500).json({ message: error.message });
     }
   });
