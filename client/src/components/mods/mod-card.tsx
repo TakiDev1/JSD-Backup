@@ -13,8 +13,11 @@ interface ModCardProps {
 }
 
 const ModCard = ({ mod }: ModCardProps) => {
-  const { addItem, isInCart } = useCart();
+  const { addItem, isInCart, isLoading } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  
+  // Check if mod is in cart
   const modInCart = isInCart(mod.id);
 
   // Setup 3D rotation effect
