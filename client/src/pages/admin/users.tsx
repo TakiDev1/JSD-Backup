@@ -588,57 +588,6 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
-      toast({
-        title: "User Deleted",
-        description: "The user has been deleted successfully",
-      });
-      setIsDeleteDialogOpen(false);
-      setCurrentUser(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete user. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Link Discord mutation
-  const { mutate: syncPatreonUser, isPending: isSyncingPatreon } = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("POST", `/api/admin/users/${id}/sync-patreon`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      toast({
-        title: "Patreon Status Synced",
-        description: "The user's Patreon status has been updated",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to sync Patreon status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Edit user handler
-  const handleEditUser = (user: any) => {
-    setCurrentUser(user);
-    form.reset({
-      username: user.username,
-      email: user.email || "",
-      isAdmin: user.isAdmin || false,
-      isPremium: user.isPremium || false,
-      isBanned: user.isBanned || false,
-    });
-    setIsEditDialogOpen(true);
-  };
-  
-  // Delete user handler
   const handleDeleteUser = (user: any) => {
     setCurrentUser(user);
     setIsDeleteDialogOpen(true);

@@ -95,9 +95,11 @@ const AdminMods = () => {
       previewImageUrl: "",
       downloadUrl: "",
       version: "1.0.0",
+      fileSize: "1.0",
+      changelog: "",
+      releaseNotes: "",
       isFeatured: false,
       isSubscriptionOnly: false,
-      releaseNotes: "",
       tags: "",
     },
   });
@@ -198,6 +200,7 @@ const AdminMods = () => {
       version: mod.version || "1.0.0",
       isFeatured: mod.isFeatured || false,
       isSubscriptionOnly: mod.isSubscriptionOnly || false,
+      changelog: mod.changelog || "",
       releaseNotes: mod.releaseNotes || "",
       tags: mod.tags ? mod.tags.join(", ") : "",
     };
