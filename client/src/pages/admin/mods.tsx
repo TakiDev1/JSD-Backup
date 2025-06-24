@@ -570,7 +570,7 @@ const AdminMods = () => {
                       control={form.control}
                       name="changelog"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-span-2">
                           <FormLabel className="flex items-center gap-2">
                             <ClipboardList className="h-4 w-4 text-primary" />
                             Changelog
