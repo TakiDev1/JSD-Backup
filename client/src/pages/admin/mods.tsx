@@ -963,6 +963,36 @@ const AdminMods = () => {
                 
                 <FormField
                   control={form.control}
+                  name="fileSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <HardDrive className="h-4 w-4 text-primary" />
+                        File Size (MB)
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="number"
+                            step="0.1"
+                            placeholder="15.5" 
+                            className="pl-8 focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : "")}
+                          />
+                          <HardDrive className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Size of the mod file in megabytes
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="tags"
                   render={({ field }) => (
                     <FormItem>
@@ -1010,6 +1040,32 @@ const AdminMods = () => {
                   
                   {/* Removed isPublished field as all mods are now shown directly */}
                 </div>
+                
+                <FormField
+                  control={form.control}
+                  name="changelog"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel className="flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-primary" />
+                        Changelog
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="- Fixed engine physics
+- Added new paint options
+- Improved suspension" 
+                          className="min-h-[100px] focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-all" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        List of changes and improvements in this version
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}
