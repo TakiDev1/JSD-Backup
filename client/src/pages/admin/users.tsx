@@ -166,29 +166,6 @@ const AdminUsers = () => {
       });
     },
   });
-  
-  // Delete user mutation
-  const { mutate: deleteUser, isPending: isDeleting } = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/admin/users/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      toast({
-        title: "User deleted",
-        description: "User has been deleted successfully."
-      });
-      setIsDeleteDialogOpen(false);
-      setCurrentUser(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete user",
-        variant: "destructive"
-      });
-    }
-  });
 
   // Edit user handler
   const handleEditUser = (user: any) => {
@@ -588,36 +565,6 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
-  const handleDeleteUser = (user: any) => {
-    setCurrentUser(user);
-    setIsDeleteDialogOpen(true);
-  };
-  
-  // Ban/unban user handler
-  const handleToggleBanUser = (user: any) => {
-    setCurrentUser(user);
-    toggleBanUser({ id: user.id, banned: !user.isBanned });
-  };
-  
-  // Form submit handler
-  const onSubmit = (values: UserFormValues) => {
-    if (currentUser) {
-      updateUser({ ...values, id: currentUser.id });
-    }
-  };
-  
-  // Sort handler
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-  };
-  
-  if (!isAdmin) {
-    return (
       <div className="container mx-auto px-4 py-24 h-screen flex items-center justify-center">
         <Card className="w-full max-w-md bg-dark-card">
           <CardHeader>

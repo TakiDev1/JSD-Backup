@@ -198,10 +198,11 @@ const AdminMods = () => {
       previewImageUrl: mod.previewImageUrl || "",
       downloadUrl: mod.downloadUrl || "",
       version: mod.version || "1.0.0",
-      isFeatured: mod.isFeatured || false,
-      isSubscriptionOnly: mod.isSubscriptionOnly || false,
+      fileSize: mod.fileSize?.toString() || "1.0",
       changelog: mod.changelog || "",
       releaseNotes: mod.releaseNotes || "",
+      isFeatured: mod.isFeatured || false,
+      isSubscriptionOnly: mod.isSubscriptionOnly || false,
       tags: mod.tags ? mod.tags.join(", ") : "",
     };
     
