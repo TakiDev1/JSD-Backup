@@ -61,6 +61,7 @@ export const mods = pgTable("mods", {
   isSubscriptionOnly: boolean("is_subscription_only").default(false),
   version: text("version").default("1.0.0"),
   releaseNotes: text("release_notes"),
+  changelog: text("changelog").default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
