@@ -110,6 +110,7 @@ const AdminMods = () => {
       const formattedValues = {
         ...values,
         price: parseFloat(values.price),
+        fileSize: parseFloat(values.fileSize),
         tags: values.tags ? values.tags.split(",").map(tag => tag.trim()) : [],
       };
       return apiRequest("POST", "/api/mods", formattedValues);
@@ -139,6 +140,7 @@ const AdminMods = () => {
       const formattedValues = {
         ...modData,
         price: parseFloat(modData.price),
+        fileSize: parseFloat(modData.fileSize),
         tags: modData.tags ? modData.tags.split(",").map(tag => tag.trim()) : [],
       };
       return apiRequest("PATCH", `/api/mods/${id}`, formattedValues);
