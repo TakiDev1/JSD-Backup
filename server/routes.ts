@@ -658,16 +658,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const version = await storage.getLatestModVersion(modId);
       
       if (version && version.filePath) {
-        console.log(`[Download] Using version file: ${version.filePath}`);
-        // Serve the uploaded file
-        res.download(version.filePath);
-      } else if (mod.downloadUrl && mod.downloadUrl.trim() !== '') {
+        console.log(`[Download] Checking version file: ${version.filePath}`);
+        // Check if the file actually exists
+        try {
+          if (fs.existsSync(version.filePath)) {
+            console.log(`[Download] Serving uploaded file: ${version.filePath}`);
+            const fileName = `${mod.title.replace(/[^a-zA-Z0-9]/g, '_')}_v${version.version}.zip`;
+            res.download(version.filePath, fileName);
+            return;
+          } else {
+            console.log(`[Download] Version file doesn't exist, falling back to downloadUrl`);
+          }
+        } catch (fileError) {
+          console.log(`[Download] Error checking version file:`, fileError);
+        }
+      }
+      
+      // Fall back to mod download URL
+      if (mod.downloadUrl && mod.downloadUrl.trim() !== '' && !mod.downloadUrl.includes('example.com')) {
         console.log(`[Download] Using downloadUrl redirect: ${mod.downloadUrl}`);
-        // Redirect to the download URL
         res.redirect(mod.downloadUrl);
       } else {
-        console.log(`[Download] No download source available for mod ${modId}`);
-        return res.status(404).json({ message: "No download available for this mod" });
+        console.log(`[Download] No valid download source available for mod ${modId}`);
+        return res.status(404).json({ message: "Download not available for this mod. Please contact support." });
       }
     } catch (error: any) {
       console.error(`[Download] Error:`, error);
