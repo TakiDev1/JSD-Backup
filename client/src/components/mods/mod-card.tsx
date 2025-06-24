@@ -13,12 +13,12 @@ interface ModCardProps {
 }
 
 const ModCard = ({ mod }: ModCardProps) => {
-  const { addItem, isInCart, isLoading } = useCart();
+  const cart = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isAdding, setIsAdding] = useState(false);
   
-  // Check if mod is in cart
-  const modInCart = isInCart(mod.id);
+  // Safely check if mod is in cart - handle cases where cart might not be fully loaded
+  const modInCart = cart && cart.isInCart ? cart.isInCart(mod.id) : false;
 
   // Setup 3D rotation effect
   useEffect(() => {
@@ -115,7 +115,7 @@ const ModCard = ({ mod }: ModCardProps) => {
     e.stopPropagation();
     
     // Prevent double-clicks or adding already added items
-    if (modInCart || isAdding) {
+    if (modInCart || isAdding || !cart.addItem) {
       return;
     }
     
@@ -126,7 +126,7 @@ const ModCard = ({ mod }: ModCardProps) => {
       const button = e.currentTarget as HTMLElement;
       createFlyingAnimation(button);
       
-      await addItem(mod.id);
+      await cart.addItem(mod.id);
       
     } catch (error) {
       console.error("Error adding item to cart:", error);
