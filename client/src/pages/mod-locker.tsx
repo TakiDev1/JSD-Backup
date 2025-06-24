@@ -491,15 +491,32 @@ const ModLockerPage = () => {
                   </div>
                 </div>
                 
-                {selectedMod.latestVersion?.changelog && (
+                {(selectedMod.latestVersion?.changelog || selectedMod.mod?.releaseNotes) && (
                   <div>
                     <h3 className="text-lg font-display font-semibold text-white mb-4">
-                      Changelog
+                      Changelog & Release Notes
                     </h3>
-                    <div className="bg-dark p-4 rounded-lg">
-                      <p className="text-neutral-light text-sm whitespace-pre-wrap">
-                        {selectedMod.latestVersion.changelog}
-                      </p>
+                    <div className="bg-dark p-4 rounded-lg space-y-3">
+                      {selectedMod.latestVersion?.changelog && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2">
+                            Version {selectedMod.latestVersion.version}
+                          </h4>
+                          <p className="text-neutral-light text-sm whitespace-pre-wrap">
+                            {selectedMod.latestVersion.changelog}
+                          </p>
+                        </div>
+                      )}
+                      {selectedMod.mod?.releaseNotes && selectedMod.mod.releaseNotes !== selectedMod.latestVersion?.changelog && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-secondary mb-2">
+                            General Release Notes
+                          </h4>
+                          <p className="text-neutral-light text-sm whitespace-pre-wrap">
+                            {selectedMod.mod.releaseNotes}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

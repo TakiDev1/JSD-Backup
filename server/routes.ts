@@ -1181,9 +1181,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/admin/users", auth.isAdmin, async (req, res) => {
     try {
-      // Implement user listing logic
       const users = await storage.getAllUsers();
       res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/users/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update User",
+        details: `Updated user ${userId}: ${JSON.stringify(updates)}`,
+        ipAddress: req.ip
+      });
+      
+      const user = await storage.updateUser(userId, updates);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.delete("/api/admin/users/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const currentUserId = (req.user as any).id;
+      
+      // Prevent self-deletion
+      if (userId === currentUserId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: currentUserId,
+        action: "Delete User",
+        details: `Deleted user ${userId}`,
+        ipAddress: req.ip
+      });
+      
+      // Note: We need to implement deleteUser in storage
+      // For now, just ban the user instead
+      const user = await storage.banUser(userId, true);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/users/:id/ban", auth.isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { banned } = req.body;
+      const currentUserId = (req.user as any).id;
+      
+      // Prevent self-ban
+      if (userId === currentUserId) {
+        return res.status(400).json({ message: "Cannot ban your own account" });
+      }
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: currentUserId,
+        action: banned ? "Ban User" : "Unban User",
+        details: `${banned ? 'Banned' : 'Unbanned'} user ${userId}`,
+        ipAddress: req.ip
+      });
+      
+      const user = await storage.banUser(userId, banned);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

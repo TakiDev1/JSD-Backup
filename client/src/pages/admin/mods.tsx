@@ -46,9 +46,9 @@ const modSchema = z.object({
     message: "File size must be a valid number > 0",
   }),
   changelog: z.string().optional(),
+  releaseNotes: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isSubscriptionOnly: z.boolean().default(false),
-  releaseNotes: z.string().optional(),
   tags: z.string().optional(),
   features: z.string().optional(),
 });
