@@ -52,14 +52,7 @@ const ModCard = ({ mod }: ModCardProps) => {
     };
   }, []);
 
-  // Check if mod is in cart and keep track of inCart state
-  useEffect(() => {
-    if (mod && mod.id) {
-      const isInCart = isModInCart(mod.id);
-      console.log(`[mod-card] Checking if mod ${mod.id} is in cart:`, isInCart);
-      setInCart(isInCart);
-    }
-  }, [isModInCart, mod, cartItems]);
+
 
   const createFlyingAnimation = (button: HTMLElement) => {
     const cartButton = document.querySelector('.cart-button') as HTMLElement;
