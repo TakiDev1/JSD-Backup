@@ -114,129 +114,24 @@ const ModCard = ({ mod }: ModCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("=== ADD TO CART BUTTON CLICKED ===");
-    console.log("Mod info:", mod);
-    console.log("Mod ID:", mod.id, "Type:", typeof mod.id);
-    
-    // Prevent double-clicks
-    if (inCart) {
-      console.log("Item already in cart, not adding again");
+    // Prevent double-clicks or adding already added items
+    if (modInCart || isAdding) {
       return;
     }
     
     try {
-      console.log("Starting add to cart process for mod ID:", mod.id);
+      setIsAdding(true);
       
       // Get the button that was clicked for animation
       const button = e.currentTarget as HTMLElement;
-      
-      // Start animation immediately for better UX
-      console.log("Starting animation");
       createFlyingAnimation(button);
       
-      // Explicitly convert mod ID to number to avoid type issues
-      const numericModId = Number(mod.id);
-      console.log("Converted mod ID:", numericModId, "Type:", typeof numericModId);
+      await addItem(mod.id);
       
-      // Try direct fetch (bypass the useCart hook for debugging)
-      try {
-        console.log("[mod-card] Doing direct fetch to debug cart API...");
-        const directResponse = await fetch("/api/cart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "include",
-          body: JSON.stringify({ modId: numericModId })
-        });
-        
-        const text = await directResponse.text();
-        console.log("[mod-card] Direct API response status:", directResponse.status);
-        console.log("[mod-card] Direct API response text:", text);
-        
-        // Try to parse as JSON
-        try {
-          if (text) {
-            const json = JSON.parse(text);
-            console.log("[mod-card] Direct API response JSON:", json);
-          }
-        } catch (parseError) {
-          console.error("[mod-card] JSON parse error:", parseError);
-        }
-      } catch (directFetchError) {
-        console.error("[mod-card] Direct fetch error:", directFetchError);
-      }
-      
-      // Now use the regular addItem method
-      console.log("Calling addItem with mod ID:", numericModId);
-      
-      const result = await addItem(numericModId);
-      console.log("Add to cart result:", result);
-      
-      // Force refresh the cart
-      try {
-        console.log("[mod-card] Manually refreshing cart...");
-        await refreshCart();
-        console.log("[mod-card] Cart refresh completed");
-      } catch (refreshError) {
-        console.error("[mod-card] Cart refresh error:", refreshError);
-      }
-      
-      // Only update UI state after confirming the operation was successful
-      const isInCart = isModInCart(numericModId);
-      console.log("Is mod in cart after operation:", isInCart);
-      setInCart(isInCart);
-      
-      // If result is null but we have no error, it likely means the item was already in cart
-      if (result === null && !isInCart) {
-        console.warn("Operation returned null but item is not in cart - possible API issue");
-        
-        // Try to get cart items manually to debug
-        try {
-          console.log("[mod-card] Fetching cart items directly for debugging");
-          const cartResponse = await fetch("/api/cart", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            credentials: "include"
-          });
-          
-          const cartText = await cartResponse.text();
-          console.log("[mod-card] Direct cart GET status:", cartResponse.status);
-          console.log("[mod-card] Direct cart GET response:", cartText);
-          
-          // Try to parse as JSON
-          if (cartText) {
-            try {
-              const cartJson = JSON.parse(cartText);
-              console.log("[mod-card] Cart items:", cartJson);
-              console.log("[mod-card] Cart item count:", cartJson.length);
-              
-              // Check if mod is in returned cart data
-              const foundInCart = cartJson.some((item: any) => item.modId === numericModId);
-              console.log("[mod-card] Item found in direct cart fetch:", foundInCart);
-              
-              // Update UI if needed
-              if (foundInCart && !isInCart) {
-                console.log("[mod-card] Updating UI state - item IS in cart but not reflected in UI");
-                setInCart(true);
-              }
-            } catch (cartParseError) {
-              console.error("[mod-card] Cart JSON parse error:", cartParseError);
-            }
-          }
-        } catch (cartFetchError) {
-          console.error("[mod-card] Error fetching cart directly:", cartFetchError);
-        }
-      }
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      
-      // If there was an error, make sure UI state matches reality
-      const actualCartState = isModInCart(Number(mod.id));
-      console.log("Resetting inCart state due to error, actual state:", actualCartState);
-      setInCart(actualCartState);
+      console.error("Error adding item to cart:", error);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -287,10 +182,10 @@ const ModCard = ({ mod }: ModCardProps) => {
             <Button 
               className="flex-1 bg-primary hover:bg-primary-light text-white font-display font-semibold py-2 rounded transition-colors"
               onClick={handleAddToCart}
-              disabled={inCart}
+              disabled={modInCart || isAdding}
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
-              {inCart ? "Added to Cart" : "Add to Cart"}
+              {isAdding ? "Adding..." : modInCart ? "Added to Cart" : "Add to Cart"}
             </Button>
             <Button 
               variant="ghost"
