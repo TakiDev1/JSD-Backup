@@ -54,8 +54,8 @@ const ProfilePage = () => {
     enabled: isAuthenticated,
   });
 
-  const purchases = purchasesData || [];
-  const subscription = subscriptionData || null;
+  const purchases = (purchasesData as any[]) || [];
+  const subscription = subscriptionData as any || null;
 
   if (!isAuthenticated) {
     navigate("/login");
@@ -300,7 +300,7 @@ const ProfilePage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {purchases.length > 0 ? (
+                    {purchases && purchases.length > 0 ? (
                       <div className="grid gap-4">
                         {purchases.map((purchase: any, index: number) => (
                           <motion.div
@@ -363,11 +363,11 @@ const ProfilePage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="p-4 rounded-lg bg-white/5">
                             <Label className="text-white/70">Next Billing Date</Label>
-                            <p className="text-white font-medium">{new Date(subscription.nextBilling).toLocaleDateString()}</p>
+                            <p className="text-white font-medium">{subscription?.nextBilling ? new Date(subscription.nextBilling).toLocaleDateString() : 'N/A'}</p>
                           </div>
                           <div className="p-4 rounded-lg bg-white/5">
                             <Label className="text-white/70">Plan</Label>
-                            <p className="text-white font-medium">{subscription.plan}</p>
+                            <p className="text-white font-medium">{subscription?.plan || 'Premium'}</p>
                           </div>
                         </div>
                       </div>
