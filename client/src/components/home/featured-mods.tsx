@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const FeaturedMods = () => {
   const { isAuthenticated } = useAuth();
-  const { addItem: addToCart, isInCart: isModInCart } = useCart();
+  const { addItem: addToCart, isModInCart } = useCart();
   
   const { data, isLoading } = useQuery({
     queryKey: ["/api/mods", { featured: true, limit: 3 }],

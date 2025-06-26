@@ -32,6 +32,7 @@ interface CartContextType {
   removeItem: (modId: number) => Promise<void>;
   clearCart: () => Promise<void>;
   isInCart: (modId: number) => boolean;
+  isModInCart: (modId: number) => boolean;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -190,7 +191,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addItem,
     removeItem,
     clearCart,
-    isInCart
+    isInCart,
+    isModInCart: isInCart
   };
 
   return (
