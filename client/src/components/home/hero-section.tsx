@@ -23,7 +23,7 @@ const HeroSection = () => {
   
   const { data: settings } = useQuery({
     queryKey: ["/api/admin/settings"]
-  });
+  }) as { data?: { totalDownloads?: string; happyUsers?: string; modsCreated?: string } };
 
   const features = [
     { 
@@ -47,9 +47,9 @@ const HeroSection = () => {
   ];
 
   const stats = [
-    { icon: Download, label: "Downloads", value: settings?.totalDownloads || "10K+" },
-    { icon: Users, label: "Users", value: settings?.happyUsers || "5K+" },
-    { icon: Star, label: "Mods", value: settings?.modsCreated || "50+" }
+    { icon: Download, label: "Downloads", value: (settings as any)?.totalDownloads || "10K+" },
+    { icon: Users, label: "Users", value: (settings as any)?.happyUsers || "5K+" },
+    { icon: Star, label: "Mods", value: (settings as any)?.modsCreated || "50+" }
   ];
 
   useEffect(() => {

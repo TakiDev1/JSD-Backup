@@ -27,6 +27,7 @@ interface CartContextType {
   total: number;
   count: number;
   isLoading: boolean;
+  addToCart: (modId: number) => Promise<void>;
   addItem: (modId: number) => Promise<void>;
   removeItem: (modId: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -185,6 +186,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     total,
     count,
     isLoading: isLoading || addItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending,
+    addToCart: addItem,
     addItem,
     removeItem,
     clearCart,

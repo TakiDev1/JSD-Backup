@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useModLocker } from "@/hooks/use-mods";
+import { useModLocker } from "@/hooks/use-mod-locker";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,9 @@ interface LockerMod {
 
 const ModLockerPage = () => {
   const [, navigate] = useLocation();
-  const { isAuthenticated, user, isPremium, premiumExpiresAt } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isPremium = false; // Placeholder until isPremium is available
+  const premiumExpiresAt = null; // Placeholder until premiumExpiresAt is available
   const { data, isLoading, error } = useModLocker();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
