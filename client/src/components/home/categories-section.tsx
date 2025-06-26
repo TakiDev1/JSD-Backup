@@ -54,7 +54,7 @@ const CategoriesSection = () => {
   });
 
   return (
-    <section className="py-20 bg-dark-lighter">
+    <section className="py-20 bg-gradient-to-br from-black via-purple-900/20 to-black">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center max-w-3xl mx-auto mb-16"
@@ -64,7 +64,7 @@ const CategoriesSection = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
-            Explore by <span className="text-primary">Category</span>
+            Explore by <span className="bg-gradient-to-r from-purple-600 to-green-600 bg-clip-text text-transparent">Category</span>
           </h2>
           <p className="text-neutral mt-3">
             Find the perfect mods for your driving style and preferences
@@ -96,7 +96,7 @@ const CategoriesSection = () => {
                     alt={category.name} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-dark to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-purple-900/30 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-6">
                     <h3 className="text-xl font-display font-bold text-white mb-1">
                       {category.name}

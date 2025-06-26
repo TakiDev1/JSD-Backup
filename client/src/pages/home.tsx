@@ -1,6 +1,5 @@
 import HeroSection from "@/components/home/hero-section";
 import FeaturedMods from "@/components/home/featured-mods";
-import FeatureShowcase from "@/components/home/feature-showcase";
 import CategoriesSection from "@/components/home/categories-section";
 import DiscordSection from "@/components/home/discord-section";
 import TestimonialsSection from "@/components/home/testimonials-section";
@@ -14,13 +13,12 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="pt-16">
+    <div className="pt-16 scroll-smooth">
       <HeroSection />
       <FeaturedMods />
-      <FeatureShowcase />
       <CategoriesSection />
-      <DiscordSection />
       <TestimonialsSection />
+      <DiscordSection />
       <CallToAction />
     </div>
   );

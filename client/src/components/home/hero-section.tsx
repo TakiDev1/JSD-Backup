@@ -30,19 +30,19 @@ const HeroSection = () => {
       icon: Car, 
       title: "Premium Vehicles", 
       description: "Hand-crafted vehicle mods with stunning detail",
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-purple-600 to-purple-700"
     },
     { 
       icon: Gauge, 
       title: "Performance Tuned", 
       description: "Optimized for maximum performance and realism",
-      gradient: "from-green-500 to-teal-600"
+      gradient: "from-green-600 to-green-700"
     },
     { 
       icon: Trophy, 
       title: "Award Winning", 
       description: "Community favorite mods with 5-star ratings",
-      gradient: "from-yellow-500 to-orange-600"
+      gradient: "from-purple-600 to-green-600"
     }
   ];
 
@@ -62,13 +62,13 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Modern gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-900/30 to-black"></div>
       
       {/* Animated mesh gradient */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute top-0 -right-4 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       {/* Grid pattern overlay */}
@@ -89,7 +89,7 @@ const HeroSection = () => {
               transition={{ duration: 0.8 }}
               className="mb-6"
             >
-              <Badge className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white px-4 py-2 text-sm font-medium">
+              <Badge className="bg-gradient-to-r from-purple-600 via-green-600 to-purple-600 text-white px-4 py-2 text-sm font-medium">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Premium BeamNG.drive Marketplace
               </Badge>
