@@ -118,10 +118,11 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-black via-purple-900/30 to-black">
       {/* Background Elements */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-purple-500/5 to-transparent"></div>
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-green-500/10 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-purple-500/10 to-transparent"></div>
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -184,6 +185,7 @@ const AdminDashboard = () => {
               value: stats.users, 
               change: "+12% from last month", 
               icon: Users, 
+              color: "from-purple-600 to-purple-700",
               delay: 0.1
             },
             { 
@@ -191,6 +193,7 @@ const AdminDashboard = () => {
               value: stats.mods, 
               change: "+3 new this week", 
               icon: Package, 
+              color: "from-green-600 to-green-700",
               delay: 0.2
             },
             { 
@@ -198,6 +201,7 @@ const AdminDashboard = () => {
               value: `$${stats.revenue}`, 
               change: "+25% from last month", 
               icon: DollarSign, 
+              color: "from-purple-600 to-purple-700",
               delay: 0.3
             },
             { 
@@ -205,6 +209,7 @@ const AdminDashboard = () => {
               value: stats.purchases, 
               change: "+18% conversion rate", 
               icon: TrendingUp, 
+              color: "from-green-600 to-green-700",
               delay: 0.4
             },
             { 
@@ -212,6 +217,7 @@ const AdminDashboard = () => {
               value: stats.activeUsers, 
               change: "Last 30 days", 
               icon: UserCheck, 
+              color: "from-purple-600 to-purple-700",
               delay: 0.5
             },
             { 
@@ -219,6 +225,7 @@ const AdminDashboard = () => {
               value: stats.pendingReviews, 
               change: "Requires attention", 
               icon: MessageSquare, 
+              color: "from-green-600 to-green-700",
               delay: 0.6
             }
           ].map((stat, index) => (
@@ -228,10 +235,10 @@ const AdminDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: stat.delay }}
             >
-              <Card className="bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/15 transition-all duration-300 group">
+              <Card className="bg-black/40 backdrop-blur-xl border-white/10 hover:border-white/20 transition-all duration-300 group">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-white/70">{stat.title}</CardTitle>
-                  <div className="p-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 group-hover:scale-110 transition-transform duration-300">
+                  <CardTitle className="text-sm font-medium text-white/80">{stat.title}</CardTitle>
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                     <stat.icon className="h-4 w-4 text-white" />
                   </div>
                 </CardHeader>
@@ -251,10 +258,10 @@ const AdminDashboard = () => {
             transition={{ delay: 0.7 }}
             className="col-span-1 lg:col-span-2"
           >
-            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+            <Card className="bg-black/40 backdrop-blur-xl border-white/10">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-purple-400" />
+                  <Zap className="w-5 h-5 text-green-400" />
                   Quick Actions
                 </CardTitle>
                 <CardDescription className="text-white/70">
@@ -264,16 +271,16 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { href: "/admin/mods", icon: Package, label: "Manage Mods" },
-                    { href: "/admin/users", icon: Users, label: "Manage Users" },
-                    { href: "/admin/notifications", icon: Mail, label: "Notifications" },
-                    { href: "/admin/settings", icon: Settings, label: "Settings" }
+                    { href: "/admin/mods", icon: Package, label: "Manage Mods", color: "from-purple-600 to-purple-700" },
+                    { href: "/admin/users", icon: Users, label: "Manage Users", color: "from-green-600 to-green-700" },
+                    { href: "/admin/notifications", icon: Mail, label: "Notifications", color: "from-purple-600 to-purple-700" },
+                    { href: "/admin/settings", icon: Settings, label: "Settings", color: "from-green-600 to-green-700" }
                   ].map((action, index) => (
                     <Link key={action.href} href={action.href}>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25"
+                        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${action.color} p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25`}
                       >
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
@@ -293,10 +300,10 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+            <Card className="bg-black/40 backdrop-blur-xl border-white/10">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-purple-400" />
+                  <Activity className="w-5 h-5 text-green-400" />
                   Recent Activity
                 </CardTitle>
                 <CardDescription className="text-white/70">
@@ -312,9 +319,9 @@ const AdminDashboard = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.9 + index * 0.1 }}
-                        className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
+                        className="flex items-center space-x-4 p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors duration-200"
                       >
-                        <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-purple-400 rounded-full animate-pulse"></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">
                             {activity.action}
