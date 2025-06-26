@@ -43,8 +43,12 @@ const DiscordSection = () => {
   };
 
   return (
-    <section className="py-20 bg-dark relative overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 bottom-0 bg-[url('https://images.unsplash.com/photo-1629429407759-12f41a77f560?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-10"></div>
+    <section className="py-20 bg-gradient-to-br from-black via-purple-900/30 to-black relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+      </div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -55,7 +59,7 @@ const DiscordSection = () => {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            <div className="bg-dark-lighter rounded-2xl p-8 border border-dark-card transform rotate-1 shadow-lg">
+            <div className="bg-black/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-900/30 transform rotate-1 shadow-lg hover:border-purple-600/50 transition-all duration-300">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <div className="w-10 h-10 bg-[#5865F2] rounded-full flex items-center justify-center">
@@ -70,7 +74,7 @@ const DiscordSection = () => {
                 </div>
               </div>
               
-              <div className="bg-dark-card p-6 rounded-lg mb-6">
+              <div className="bg-black/40 p-6 rounded-lg mb-6 border border-purple-900/20">
                 <h4 className="text-lg font-display font-bold text-white mb-4">Login with Discord</h4>
                 <p className="text-neutral mb-6">Connect your Discord account for a seamless experience. Your Discord roles will sync automatically.</p>
                 
@@ -96,7 +100,7 @@ const DiscordSection = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6">
-              Join Our <span className="text-primary">Community</span>
+              Join Our <span className="bg-gradient-to-r from-purple-600 to-green-600 bg-clip-text text-transparent">Community</span>
             </h2>
             <p className="text-neutral-light text-lg mb-8">
               Connect your Discord account for a seamless experience with exclusive benefits:

@@ -18,9 +18,13 @@ const CallToAction = () => {
   };
 
   return (
-    <section className="py-20 bg-primary bg-opacity-10 relative overflow-hidden">
-      <div className="absolute inset-0 bg-dark bg-opacity-50"></div>
-      <div className="absolute top-0 left-0 right-0 bottom-0 bg-[url('https://images.unsplash.com/photo-1633422158505-e637088bb19d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center opacity-10"></div>
+    <section className="py-20 bg-gradient-to-br from-black via-green-900/30 to-black relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-20 left-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+      </div>
       
       <div className="container mx-auto px-4 relative z-10">
         <motion.div 
@@ -31,9 +35,9 @@ const CallToAction = () => {
           transition={{ duration: 0.7 }}
         >
           <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-6">
-            Ready to Elevate Your <span className="text-primary">BeamNG Drive</span> Experience?
+            Ready to Elevate Your <span className="bg-gradient-to-r from-green-600 to-purple-600 bg-clip-text text-transparent">BeamNG Drive</span> Experience?
           </h2>
-          <p className="text-xl text-neutral-light mb-10">
+          <p className="text-xl text-gray-300 mb-10">
             Join thousands of satisfied drivers and experience JSD's premium mods today.
           </p>
           
@@ -45,20 +49,32 @@ const CallToAction = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
           >
             {!isAuthenticated && (
-              <Button 
-                className="bg-primary hover:bg-primary-light text-white font-display font-semibold py-4 px-8 rounded-md transition-colors text-lg"
-                onClick={handleLogin}
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.3 }}
               >
-                <i className="fab fa-discord mr-2"></i> Login with Discord
-              </Button>
+                <Button 
+                  className="bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-700 hover:to-green-700 text-white font-display font-semibold py-4 px-8 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl hover:shadow-purple-600/30"
+                  onClick={handleLogin}
+                >
+                  <i className="fab fa-discord mr-2"></i> Login with Discord
+                </Button>
+              </motion.div>
             )}
-            <Button 
-              variant="outline"
-              className="bg-dark-card hover:bg-dark-lighter text-white font-display font-semibold py-4 px-8 rounded-md transition-colors text-lg border border-primary/30"
-              onClick={handleBrowseMods}
+            <motion.div
+              whileHover={{ scale: 1.05, y: -3 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.3 }}
             >
-              <i className="fas fa-shopping-bag mr-2"></i> Browse Mods
-            </Button>
+              <Button 
+                variant="outline"
+                className="bg-black/50 backdrop-blur-sm hover:bg-black/70 text-white font-display font-semibold py-4 px-8 rounded-xl transition-all duration-300 text-lg border border-green-600/30 hover:border-green-600/70 shadow-lg hover:shadow-xl hover:shadow-green-600/20"
+                onClick={handleBrowseMods}
+              >
+                <i className="fas fa-shopping-bag mr-2"></i> Browse Mods
+              </Button>
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>

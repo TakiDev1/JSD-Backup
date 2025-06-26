@@ -45,7 +45,7 @@ const TestimonialsSection = () => {
   };
 
   return (
-    <section className="py-20 bg-dark-lighter">
+    <section className="py-20 bg-gradient-to-br from-black via-green-900/20 to-black">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center max-w-3xl mx-auto mb-16"
@@ -55,7 +55,7 @@ const TestimonialsSection = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
-            What Our <span className="text-primary">Users Say</span>
+            What Our <span className="bg-gradient-to-r from-green-600 to-purple-600 bg-clip-text text-transparent">Users Say</span>
           </h2>
           <p className="text-neutral mt-3">
             Hear from the BeamNG community about JSD's exceptional mods
@@ -76,7 +76,7 @@ const TestimonialsSection = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="bg-dark-card p-8 rounded-xl border border-dark-card transform hover:-translate-y-1 transition-transform">
+              <Card className="bg-black/50 backdrop-blur-sm p-8 rounded-xl border border-purple-900/30 transform hover:-translate-y-2 transition-all duration-300 hover:border-purple-600/50 hover:shadow-lg hover:shadow-purple-600/20">
                 <CardContent className="p-0">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center">
