@@ -1071,32 +1071,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       console.log(`[GET /api/purchases] Loading purchases for user ${userId}`);
       
-      // Get user's purchases with mod details
-      const purchases = await db.select({
-        id: schema.purchases.id,
-        userId: schema.purchases.userId,
-        modId: schema.purchases.modId,
-        transactionId: schema.purchases.transactionId,
-        price: schema.purchases.price,
-        status: schema.purchases.status,
-        purchaseDate: schema.purchases.purchaseDate,
-        mod: {
-          id: schema.mods.id,
-          title: schema.mods.title,
-          description: schema.mods.description,
-          price: schema.mods.price,
-          discountPrice: schema.mods.discountPrice,
-          previewImageUrl: schema.mods.previewImageUrl,
-          category: schema.mods.category,
-          downloadUrl: schema.mods.downloadUrl
-        }
-      })
-      .from(schema.purchases)
-      .leftJoin(schema.mods, eq(schema.purchases.modId, schema.mods.id))
-      .where(eq(schema.purchases.userId, userId));
+      // Get user's purchases using storage method
+      const purchases = await storage.getPurchasesByUser(userId);
       
-      console.log(`[GET /api/purchases] Found ${purchases.length} purchases for user ${userId}`);
-      res.json(purchases);
+      // Get mod details for each purchase
+      const purchasesWithMods = await Promise.all(
+        purchases.map(async (purchase) => {
+          const mod = await storage.getMod(purchase.modId);
+          return {
+            ...purchase,
+            mod: mod
+          };
+        })
+      );
+      
+      console.log(`[GET /api/purchases] Found ${purchasesWithMods.length} purchases for user ${userId}`);
+      res.json(purchasesWithMods);
     } catch (error: any) {
       console.error("[GET /api/purchases] Error:", error);
       res.status(500).json({ message: error.message });
@@ -1172,6 +1162,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         premiumExpiresAt: user?.premiumExpiresAt
       });
     } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // User subscription info route
+  app.get("/api/subscription", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const now = new Date();
+      const isPremiumActive = user.isPremium && user.premiumExpiresAt && new Date(user.premiumExpiresAt) > now;
+      
+      if (isPremiumActive) {
+        res.json({
+          active: true,
+          plan: "Premium",
+          nextBilling: user.premiumExpiresAt,
+          stripeSubscriptionId: user.stripeSubscriptionId
+        });
+      } else {
+        res.json({
+          active: false,
+          plan: null,
+          nextBilling: null,
+          stripeSubscriptionId: null
+        });
+      }
+    } catch (error: any) {
+      console.error("[GET /api/subscription] Error:", error);
       res.status(500).json({ message: error.message });
     }
   });
