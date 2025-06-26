@@ -6,9 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Lock, Download, Clock, Filter, Search, Info, AlertCircle, Package, Calendar } from "lucide-react";
+import { 
+  Lock, 
+  Download, 
+  Clock, 
+  Filter, 
+  Search, 
+  Info, 
+  AlertCircle, 
+  Package, 
+  Calendar,
+  Star,
+  FileDown,
+  Zap,
+  Crown,
+  Sparkles,
+  HardDrive
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -28,14 +44,12 @@ const ModLockerPage = () => {
   const [selectedMod, setSelectedMod] = useState<LockerMod | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
       navigate("/");
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Filter mods based on search and category
   const filterMods = (mods: LockerMod[]) => {
     return mods.filter(({ mod }) => {
       const matchesSearch = searchTerm === "" || 
@@ -48,487 +62,527 @@ const ModLockerPage = () => {
     });
   };
 
-  // Extract mod data
   const purchasedMods: LockerMod[] = data?.purchasedMods || [];
   const subscriptionMods: LockerMod[] = data?.subscriptionMods || [];
   const hasSubscription = data?.hasSubscription || false;
 
-  // Filter mods
   const filteredPurchasedMods = filterMods(purchasedMods);
   const filteredSubscriptionMods = filterMods(subscriptionMods);
 
-  // Get unique categories
   const categoriesArray = [
     ...purchasedMods.map(({ mod }) => mod.category),
     ...subscriptionMods.map(({ mod }) => mod.category)
   ];
   const categories = Array.from(new Set(categoriesArray));
 
-  // Show mod details
   const showModDetails = (mod: LockerMod) => {
     setSelectedMod(mod);
     setIsDetailsOpen(true);
   };
 
-  // Handle download
   const handleDownload = (modId: number) => {
     window.location.href = `/api/mods/${modId}/download`;
   };
 
-  // Check if user needs to upgrade for subscription-only mods
   const needsUpgrade = !hasSubscription && subscriptionMods.length > 0;
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-24 min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-300 text-lg">Loading your mod collection...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-24 min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-display font-bold text-white mb-4">
-            Error Loading Mod Locker
-          </h2>
-          <p className="text-neutral-light mb-8">
-            There was an error loading your mod locker. Please try again later.
-          </p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Oops! Something went wrong</h2>
+          <p className="text-slate-300 mb-6">We couldn't load your mod locker. Please try again.</p>
+          <Button onClick={() => window.location.reload()} className="bg-primary hover:bg-primary-light">
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-24 min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-white">
-            My <span className="text-primary">Mod Locker</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      {/* Background Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-purple-500/5 to-transparent"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-24 relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
+          <div className="flex justify-center mb-6">
+            <Badge className="bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 text-white border border-primary/30 px-6 py-3 text-base font-medium backdrop-blur-sm">
+              <Package className="mr-2 h-5 w-5" />
+              Your Personal Collection
+            </Badge>
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
+              Mod
+            </span>{" "}
+            <span className="bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Locker
+            </span>
           </h1>
-          <div className="flex items-center gap-3">
-            <p className="text-neutral-light">
-              Manage and download your purchased mods
-            </p>
-            {isPremium && (
-              <Badge className="bg-gradient-to-r from-primary to-secondary text-white">
+          
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-8">
+            Access and manage your premium mod collection with lightning-fast downloads
+          </p>
+
+          {isPremium && (
+            <div className="flex justify-center">
+              <Badge className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 text-white px-4 py-2 text-sm font-semibold">
+                <Crown className="mr-2 h-4 w-4" />
                 Premium Member {premiumExpiresAt && `until ${new Date(premiumExpiresAt).toLocaleDateString()}`}
               </Badge>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-          <div className="flex items-center md:w-auto w-full">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral h-4 w-4" />
+            </div>
+          )}
+        </motion.div>
+
+        {/* Search and Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex flex-col lg:flex-row gap-6 mb-12 bg-slate-900/40 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50"
+        >
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Search mods..."
-                className="pl-10 bg-dark-card w-full"
+                placeholder="Search your mods..."
+                className="pl-12 bg-slate-800/50 border-slate-600 focus:border-primary text-white placeholder-slate-400 h-12"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Filter className="text-neutral h-4 w-4" />
-            <select
-              className="bg-dark-card text-white p-2 rounded-md border border-dark-card focus:border-primary outline-none"
-              value={selectedCategory || ""}
-              onChange={(e) => setSelectedCategory(e.target.value || null)}
-            >
-              <option value="">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="text-slate-400 h-5 w-5" />
+              <select
+                className="bg-slate-800/50 border border-slate-600 text-white p-3 rounded-lg focus:border-primary outline-none backdrop-blur-sm"
+                value={selectedCategory || ""}
+                onChange={(e) => setSelectedCategory(e.target.value || null)}
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Subscription Banner */}
-      {needsUpgrade && (
-        <div className="mb-8">
+        {/* Premium Upgrade Banner */}
+        {needsUpgrade && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-primary/20 to-secondary/20 rounded-xl p-6 border border-primary/30"
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mb-12"
           >
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center">
-                <div className="bg-primary/20 p-3 rounded-full mr-4">
-                  <Lock className="h-6 w-6 text-primary" />
+            <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 rounded-2xl p-8 border border-amber-500/30 backdrop-blur-xl">
+              <div className="flex flex-col lg:flex-row items-center gap-6">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-full">
+                  <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-display font-bold text-white">
-                    Upgrade to Premium
+                <div className="flex-1 text-center lg:text-left">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    Unlock Premium Mods
                   </h3>
-                  <p className="text-neutral-light">
-                    Subscribe to get access to exclusive premium mods and early releases
+                  <p className="text-slate-300 text-lg">
+                    Get access to exclusive premium content and early releases with our subscription
                   </p>
                 </div>
+                <Button 
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-8 py-3 text-lg shadow-xl shadow-amber-500/25"
+                  onClick={() => navigate("/subscribe")}
+                >
+                  <Zap className="mr-2 h-5 w-5" />
+                  Upgrade Now
+                </Button>
               </div>
-              <Button 
-                className="bg-secondary hover:bg-secondary-dark text-white"
-                onClick={() => navigate("/subscribe")}
-              >
-                <Clock className="mr-2 h-4 w-4" /> Subscribe Now
-              </Button>
             </div>
           </motion.div>
-        </div>
-      )}
+        )}
 
-      <Tabs defaultValue="purchased" className="w-full">
-        <TabsList className="w-full mb-8">
-          <TabsTrigger value="purchased" className="flex-1">
-            Purchased Mods ({purchasedMods.length})
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="flex-1">
-            Subscription Mods ({subscriptionMods.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="purchased">
-          {filteredPurchasedMods.length === 0 ? (
-            <div className="text-center py-12 bg-dark-card rounded-xl">
-              {purchasedMods.length === 0 ? (
-                <>
-                  <AlertCircle className="h-12 w-12 text-neutral mx-auto mb-4" />
-                  <h3 className="text-xl font-display font-bold text-white mb-2">
-                    No Purchased Mods
-                  </h3>
-                  <p className="text-neutral-light mb-6">
-                    You haven't purchased any mods yet
-                  </p>
-                  <Button onClick={() => navigate("/mods")}>
-                    Browse Mods
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-12 w-12 text-neutral mx-auto mb-4" />
-                  <h3 className="text-xl font-display font-bold text-white mb-2">
-                    No Matching Mods
-                  </h3>
-                  <p className="text-neutral-light mb-6">
-                    No mods match your current search or filter
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedCategory(null);
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPurchasedMods.map(({ mod, purchase, latestVersion }) => (
-                <Card key={mod.id} className="bg-dark-card hover:border-primary/30 transition-all duration-300">
-                  <CardHeader className="p-0">
-                    <div className="relative h-48">
-                      <img 
-                        src={mod.thumbnail} 
-                        alt={mod.title} 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark to-transparent"></div>
-                      <div className="absolute bottom-4 left-4">
-                        <Badge className="bg-dark-card text-neutral-light">
-                          {mod.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <CardTitle className="text-xl font-display font-bold text-white mb-2">
-                      {mod.title}
-                    </CardTitle>
-                    <div className="flex flex-col gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Version:</span>
-                        <span className="text-white">{latestVersion?.version || "N/A"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Purchased:</span>
-                        <span className="text-white">
-                          {purchase ? formatDistanceToNow(new Date(purchase.purchaseDate), { addSuffix: true }) : "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Size:</span>
-                        <span className="text-white">
-                          {latestVersion ? `${(latestVersion.fileSize / 1024 / 1024).toFixed(2)} MB` : "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0 flex gap-3">
-                    <Button 
-                      className="flex-1"
-                      onClick={() => handleDownload(mod.id)}
-                    >
-                      <Download className="mr-2 h-4 w-4" /> Download
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => showModDetails({ mod, purchase, latestVersion })}
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="subscription">
-          {!hasSubscription ? (
-            <div className="text-center py-12 bg-dark-card rounded-xl">
-              <Lock className="h-12 w-12 text-neutral mx-auto mb-4" />
-              <h3 className="text-xl font-display font-bold text-white mb-2">
-                Premium Subscription Required
-              </h3>
-              <p className="text-neutral-light mb-6">
-                Subscribe to access exclusive premium mods
-              </p>
-              <Button 
-                className="bg-secondary hover:bg-secondary-dark text-white"
-                onClick={() => navigate("/subscribe")}
+        {/* Tabs */}
+        <Tabs defaultValue="purchased" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 p-2 rounded-xl mb-8">
+            <TabsTrigger 
+              value="purchased" 
+              className="data-[state=active]:bg-primary data-[state=active]:text-white text-slate-400 font-semibold py-3 rounded-lg transition-all duration-300"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Purchased ({purchasedMods.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subscription" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-slate-400 font-semibold py-3 rounded-lg transition-all duration-300"
+            >
+              <Crown className="mr-2 h-4 w-4" />
+              Premium ({subscriptionMods.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="purchased">
+            {filteredPurchasedMods.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center py-16 bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-slate-700/50"
               >
-                Subscribe Now
-              </Button>
-            </div>
-          ) : filteredSubscriptionMods.length === 0 ? (
-            <div className="text-center py-12 bg-dark-card rounded-xl">
-              {subscriptionMods.length === 0 ? (
-                <>
-                  <AlertCircle className="h-12 w-12 text-neutral mx-auto mb-4" />
-                  <h3 className="text-xl font-display font-bold text-white mb-2">
-                    No Subscription Mods Available
-                  </h3>
-                  <p className="text-neutral-light mb-6">
-                    There are currently no subscription mods available
-                  </p>
-                  <Button onClick={() => navigate("/mods")}>
-                    Browse Mods
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-12 w-12 text-neutral mx-auto mb-4" />
-                  <h3 className="text-xl font-display font-bold text-white mb-2">
-                    No Matching Mods
-                  </h3>
-                  <p className="text-neutral-light mb-6">
-                    No mods match your current search or filter
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedCategory(null);
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSubscriptionMods.map(({ mod, latestVersion }) => (
-                <Card key={mod.id} className="bg-dark-card hover:border-primary/30 transition-all duration-300">
-                  <CardHeader className="p-0">
-                    <div className="relative h-48">
-                      <img 
-                        src={mod.thumbnail} 
-                        alt={mod.title} 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark to-transparent"></div>
-                      <div className="absolute bottom-4 left-4">
-                        <Badge className="bg-dark-card text-neutral-light">
-                          {mod.category}
-                        </Badge>
-                      </div>
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-secondary text-white">Premium</Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <CardTitle className="text-xl font-display font-bold text-white mb-2">
-                      {mod.title}
-                    </CardTitle>
-                    <div className="flex flex-col gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Version:</span>
-                        <span className="text-white">{latestVersion?.version || "N/A"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Released:</span>
-                        <span className="text-white">
-                          {latestVersion ? formatDistanceToNow(new Date(latestVersion.releaseDate), { addSuffix: true }) : "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral">Size:</span>
-                        <span className="text-white">
-                          {latestVersion ? `${(latestVersion.fileSize / 1024 / 1024).toFixed(2)} MB` : "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0 flex gap-3">
+                {purchasedMods.length === 0 ? (
+                  <>
+                    <Package className="h-16 w-16 text-slate-500 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-4">No Purchased Mods Yet</h3>
+                    <p className="text-slate-400 text-lg mb-8 max-w-md mx-auto">
+                      Start building your collection by browsing our premium mod selection
+                    </p>
                     <Button 
-                      className="flex-1"
-                      onClick={() => handleDownload(mod.id)}
+                      onClick={() => navigate("/mods")}
+                      className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary-light hover:to-purple-500 text-white font-semibold px-8 py-3 text-lg shadow-xl shadow-primary/25"
                     >
-                      <Download className="mr-2 h-4 w-4" /> Download
+                      Browse Mods
                     </Button>
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-16 w-16 text-slate-500 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-4">No Matching Mods</h3>
+                    <p className="text-slate-400 text-lg mb-8">
+                      Try adjusting your search or filter criteria
+                    </p>
                     <Button 
                       variant="outline" 
-                      size="icon"
-                      onClick={() => showModDetails({ mod, latestVersion, subscription: true })}
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedCategory(null);
+                      }}
+                      className="border-slate-600 hover:border-primary text-white hover:bg-primary/10"
                     >
-                      <Info className="h-4 w-4" />
+                      Clear Filters
                     </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                  </>
+                )}
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredPurchasedMods.map(({ mod, purchase, latestVersion }, index) => (
+                  <motion.div
+                    key={mod.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                  >
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 hover:border-primary/50 transition-all duration-500 group hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 overflow-hidden">
+                      <CardHeader className="p-0">
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src={mod.thumbnail || "/api/placeholder/400/300"} 
+                            alt={mod.title} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                          <div className="absolute top-4 left-4">
+                            <Badge className="bg-slate-900/90 backdrop-blur-sm text-white border-0">
+                              {mod.category}
+                            </Badge>
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Star className="h-4 w-4 text-amber-400 fill-current" />
+                                <span className="text-white text-sm font-medium">4.8</span>
+                              </div>
+                              <div className="flex items-center space-x-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+                                <HardDrive className="h-3 w-3 text-slate-300" />
+                                <span className="text-white text-xs">
+                                  {latestVersion ? `${(latestVersion.fileSize / 1024 / 1024).toFixed(1)}MB` : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+                          {mod.title}
+                        </h3>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Version:</span>
+                            <span className="text-white font-medium">{latestVersion?.version || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Purchased:</span>
+                            <span className="text-white font-medium">
+                              {purchase ? formatDistanceToNow(new Date(purchase.purchaseDate), { addSuffix: true }) : "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                      
+                      <CardFooter className="p-6 pt-0 flex gap-3">
+                        <Button 
+                          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-green-500/25"
+                          onClick={() => handleDownload(mod.id)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="border-slate-600 hover:border-primary hover:bg-primary/10 text-white"
+                          onClick={() => showModDetails({ mod, purchase, latestVersion })}
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="subscription">
+            {!hasSubscription ? (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center py-16 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-red-500/10 backdrop-blur-xl rounded-2xl border border-amber-500/30"
+              >
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Crown className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Premium Subscription Required</h3>
+                <p className="text-slate-300 text-lg mb-8 max-w-md mx-auto">
+                  Unlock exclusive premium mods and get early access to new releases
+                </p>
+                <Button 
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-8 py-3 text-lg shadow-xl shadow-amber-500/25"
+                  onClick={() => navigate("/subscribe")}
+                >
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Subscribe Now
+                </Button>
+              </motion.div>
+            ) : filteredSubscriptionMods.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center py-16 bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-slate-700/50"
+              >
+                {subscriptionMods.length === 0 ? (
+                  <>
+                    <Crown className="h-16 w-16 text-amber-500 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-4">No Premium Mods Available</h3>
+                    <p className="text-slate-400 text-lg mb-8">
+                      Premium content will appear here as it becomes available
+                    </p>
+                    <Button 
+                      onClick={() => navigate("/mods")}
+                      className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary-light hover:to-purple-500 text-white font-semibold px-8 py-3 text-lg shadow-xl shadow-primary/25"
+                    >
+                      Browse All Mods
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-16 w-16 text-slate-500 mx-auto mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-4">No Matching Mods</h3>
+                    <p className="text-slate-400 text-lg mb-8">
+                      Try adjusting your search or filter criteria
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedCategory(null);
+                      }}
+                      className="border-slate-600 hover:border-primary text-white hover:bg-primary/10"
+                    >
+                      Clear Filters
+                    </Button>
+                  </>
+                )}
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredSubscriptionMods.map(({ mod, latestVersion }, index) => (
+                  <motion.div
+                    key={mod.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                  >
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border border-amber-500/30 hover:border-amber-400/50 transition-all duration-500 group hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/10 overflow-hidden">
+                      <CardHeader className="p-0">
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src={mod.thumbnail || "/api/placeholder/400/300"} 
+                            alt={mod.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                          <div className="absolute top-4 left-4">
+                            <Badge className="bg-slate-900/90 backdrop-blur-sm text-white border-0">
+                              {mod.category}
+                            </Badge>
+                          </div>
+                          <div className="absolute top-4 right-4">
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                              <Crown className="mr-1 h-3 w-3" />
+                              Premium
+                            </Badge>
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Star className="h-4 w-4 text-amber-400 fill-current" />
+                                <span className="text-white text-sm font-medium">4.9</span>
+                              </div>
+                              <div className="flex items-center space-x-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+                                <HardDrive className="h-3 w-3 text-slate-300" />
+                                <span className="text-white text-xs">
+                                  {latestVersion ? `${(latestVersion.fileSize / 1024 / 1024).toFixed(1)}MB` : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-amber-400 group-hover:to-orange-400 group-hover:bg-clip-text transition-all duration-300">
+                          {mod.title}
+                        </h3>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Version:</span>
+                            <span className="text-white font-medium">{latestVersion?.version || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Access:</span>
+                            <span className="text-amber-400 font-medium">Premium Only</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                      
+                      <CardFooter className="p-6 pt-0 flex gap-3">
+                        <Button 
+                          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/25"
+                          onClick={() => handleDownload(mod.id)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="border-amber-500/50 hover:border-amber-400 hover:bg-amber-500/10 text-white"
+                          onClick={() => showModDetails({ mod, latestVersion, subscription: true })}
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* Mod Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="bg-dark-card max-w-3xl">
+        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 text-white max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-display font-bold text-white">
+            <DialogTitle className="text-2xl font-bold">
               {selectedMod?.mod.title}
             </DialogTitle>
           </DialogHeader>
-          
           {selectedMod && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <img 
+                src={selectedMod.mod.thumbnail || "/api/placeholder/600/300"} 
+                alt={selectedMod.mod.title}
+                className="w-full h-48 object-cover rounded-lg"
+              />
               <div>
-                <img 
-                  src={selectedMod.mod.thumbnail} 
-                  alt={selectedMod.mod.title} 
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <h3 className="text-lg font-display font-semibold text-white mb-2">
-                      Description
-                    </h3>
-                    <p className="text-neutral-light text-sm">
-                      {selectedMod.mod.description}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Badge className="bg-dark text-secondary">{selectedMod.mod.category}</Badge>
-                    {selectedMod.mod.tags && selectedMod.mod.tags.map((tag: string) => (
-                      <Badge key={tag} variant="outline" className="text-neutral-light">{tag}</Badge>
-                    ))}
-                  </div>
+                <h4 className="text-lg font-semibold mb-2">Description</h4>
+                <p className="text-slate-300">{selectedMod.mod.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-400">Category:</span>
+                  <span className="text-white ml-2">{selectedMod.mod.category}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Version:</span>
+                  <span className="text-white ml-2">{selectedMod.latestVersion?.version || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">File Size:</span>
+                  <span className="text-white ml-2">
+                    {selectedMod.latestVersion ? `${(selectedMod.latestVersion.fileSize / 1024 / 1024).toFixed(2)} MB` : "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Type:</span>
+                  <span className="text-white ml-2">
+                    {selectedMod.subscription ? "Premium" : "Purchased"}
+                  </span>
                 </div>
               </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-display font-semibold text-white mb-4">
-                    Version Information
-                  </h3>
-                  
-                  <div className="bg-dark p-4 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-light flex items-center">
-                        <Package className="mr-2 h-4 w-4" /> Version
-                      </span>
-                      <span className="text-white font-medium">
-                        {selectedMod.latestVersion?.version || "N/A"}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-light flex items-center">
-                        <Calendar className="mr-2 h-4 w-4" /> Released
-                      </span>
-                      <span className="text-white">
-                        {selectedMod.latestVersion ? 
-                          formatDistanceToNow(new Date(selectedMod.latestVersion.releaseDate), { addSuffix: true }) :
-                          "N/A"}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-light flex items-center">
-                        <Info className="mr-2 h-4 w-4" /> File Size
-                      </span>
-                      <span className="text-white">
-                        {selectedMod.latestVersion ? 
-                          `${(selectedMod.latestVersion.fileSize / 1024 / 1024).toFixed(2)} MB` :
-                          "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {(selectedMod.latestVersion?.changelog || selectedMod.mod?.releaseNotes) && (
-                  <div>
-                    <h3 className="text-lg font-display font-semibold text-white mb-4">
-                      Changelog & Release Notes
-                    </h3>
-                    <div className="bg-dark p-4 rounded-lg space-y-3">
-                      {selectedMod.latestVersion?.changelog && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-primary mb-2">
-                            Version {selectedMod.latestVersion.version}
-                          </h4>
-                          <p className="text-neutral-light text-sm whitespace-pre-wrap">
-                            {selectedMod.latestVersion.changelog}
-                          </p>
-                        </div>
-                      )}
-                      {selectedMod.mod?.releaseNotes && selectedMod.mod.releaseNotes !== selectedMod.latestVersion?.changelog && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-secondary mb-2">
-                            General Release Notes
-                          </h4>
-                          <p className="text-neutral-light text-sm whitespace-pre-wrap">
-                            {selectedMod.mod.releaseNotes}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="pt-4">
-                  <Button 
-                    className="w-full"
-                    onClick={() => handleDownload(selectedMod.mod.id)}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download Latest Version
-                  </Button>
-                </div>
+              <div className="flex gap-3">
+                <Button 
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold"
+                  onClick={() => {
+                    handleDownload(selectedMod.mod.id);
+                    setIsDetailsOpen(false);
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Now
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="border-slate-600 hover:border-primary text-white hover:bg-primary/10"
+                >
+                  Close
+                </Button>
               </div>
             </div>
           )}
