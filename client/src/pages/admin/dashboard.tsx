@@ -271,16 +271,16 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { href: "/admin/mods", icon: Package, label: "Manage Mods", color: "from-purple-600 to-purple-700" },
-                    { href: "/admin/users", icon: Users, label: "Manage Users", color: "from-green-600 to-green-700" },
-                    { href: "/admin/notifications", icon: Mail, label: "Notifications", color: "from-purple-600 to-purple-700" },
-                    { href: "/admin/settings", icon: Settings, label: "Settings", color: "from-green-600 to-green-700" }
+                    { href: "/admin/mods", icon: Package, label: "Manage Mods" },
+                    { href: "/admin/users", icon: Users, label: "Manage Users" },
+                    { href: "/admin/notifications", icon: Mail, label: "Notifications" },
+                    { href: "/admin/settings", icon: Settings, label: "Settings" }
                   ].map((action, index) => (
                     <Link key={action.href} href={action.href}>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${action.color} p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25`}
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25"
                       >
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
