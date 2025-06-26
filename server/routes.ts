@@ -58,27 +58,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const auth = setupAuth(app);
 
   // Auth routes
-  // Discord routes will redirect to maintenance page
-  app.get("/api/auth/discord", (req, res) => {
-    res.redirect("/maintenance");
-  });
-  
-  app.get("/api/auth/discord/callback", (req, res) => {
-    res.redirect("/maintenance");
-  });
+  // Discord authentication routes
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    app.get("/api/auth/discord", passport.authenticate("discord"));
+    
+    app.get("/api/auth/discord/callback", 
+      passport.authenticate("discord", { failureRedirect: "/login?error=discord_failed" }),
+      (req, res) => {
+        console.log("Discord callback successful, redirecting user");
+        res.redirect("/");
+      }
+    );
+  } else {
+    // Fallback routes when Discord is not configured
+    app.get("/api/auth/discord", (req, res) => {
+      res.status(503).json({ message: "Discord authentication not configured" });
+    });
+    
+    app.get("/api/auth/discord/callback", (req, res) => {
+      res.status(503).json({ message: "Discord authentication not configured" });
+    });
+  }
   
   // Add a route to check Discord auth availability
   app.get("/api/auth/discord-status", (req, res) => {
     const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
     res.json({ available });
   });
-  
-  // Add placeholder route for callback to avoid 404 errors
-  if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
-    app.get("/api/auth/discord/callback", (req, res) => {
-      res.status(503).json({ message: "Discord authentication not configured" });
-    });
-  }
   
   // Regular user login route
   app.post("/api/auth/login", async (req, res) => {
