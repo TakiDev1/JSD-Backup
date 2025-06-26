@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -42,6 +42,16 @@ const ProfilePage = () => {
     email: user?.email || ""
   });
 
+  // Update edit data when user changes
+  useEffect(() => {
+    if (user) {
+      setEditData({
+        username: user.username || "",
+        email: user.email || ""
+      });
+    }
+  }, [user]);
+
   // Get user purchases
   const { data: purchasesData } = useQuery({
     queryKey: ['/api/purchases'],
@@ -56,6 +66,9 @@ const ProfilePage = () => {
 
   const purchases = (purchasesData as any[]) || [];
   const subscription = subscriptionData as any || null;
+
+  console.log("Profile Debug - Purchases data:", purchasesData);
+  console.log("Profile Debug - Subscription data:", subscriptionData);
 
   if (!isAuthenticated) {
     navigate("/login");
@@ -263,10 +276,22 @@ const ProfilePage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {[
-                        { action: "Downloaded Test Mod", date: "2 hours ago", type: "download" },
-                        { action: "Added Test Mod to cart", date: "1 day ago", type: "cart" },
-                        { action: "Joined JSD Mods", date: "3 weeks ago", type: "join" }
+                      {purchases.length > 0 ? purchases.slice(0, 3).map((purchase: any, index: number) => (
+                        <motion.div
+                          key={purchase.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.8 + index * 0.1 }}
+                          className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
+                        >
+                          <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">Purchased {purchase.mod?.title}</p>
+                            <p className="text-xs text-white/60">{new Date(purchase.purchaseDate).toLocaleDateString()}</p>
+                          </div>
+                        </motion.div>
+                      )) : [
+                        { action: "Joined JSD Mods", date: new Date(user?.createdAt || Date.now()).toLocaleDateString(), type: "join" }
                       ].map((activity, index) => (
                         <motion.div
                           key={index}
@@ -315,7 +340,7 @@ const ProfilePage = () => {
                                 <Package className="w-6 h-6 text-white" />
                               </div>
                               <div>
-                                <h3 className="text-white font-medium">{purchase.mod?.title}</h3>
+                                <h3 className="text-white font-medium">{purchase.mod?.title || 'Unknown Mod'}</h3>
                                 <p className="text-white/60 text-sm">Purchased {new Date(purchase.purchaseDate).toLocaleDateString()}</p>
                               </div>
                             </div>

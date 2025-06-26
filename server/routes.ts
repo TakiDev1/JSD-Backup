@@ -1065,6 +1065,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User purchases route
+  app.get("/api/purchases", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      console.log(`[GET /api/purchases] Loading purchases for user ${userId}`);
+      
+      // Get user's purchases with mod details
+      const purchases = await db.select({
+        id: schema.purchases.id,
+        userId: schema.purchases.userId,
+        modId: schema.purchases.modId,
+        transactionId: schema.purchases.transactionId,
+        price: schema.purchases.price,
+        status: schema.purchases.status,
+        purchaseDate: schema.purchases.purchaseDate,
+        mod: {
+          id: schema.mods.id,
+          title: schema.mods.title,
+          description: schema.mods.description,
+          price: schema.mods.price,
+          discountPrice: schema.mods.discountPrice,
+          previewImageUrl: schema.mods.previewImageUrl,
+          category: schema.mods.category,
+          downloadUrl: schema.mods.downloadUrl
+        }
+      })
+      .from(schema.purchases)
+      .leftJoin(schema.mods, eq(schema.purchases.modId, schema.mods.id))
+      .where(eq(schema.purchases.userId, userId));
+      
+      console.log(`[GET /api/purchases] Found ${purchases.length} purchases for user ${userId}`);
+      res.json(purchases);
+    } catch (error: any) {
+      console.error("[GET /api/purchases] Error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // User's mod locker route
   app.get("/api/mod-locker", auth.isAuthenticated, async (req, res) => {
     try {
