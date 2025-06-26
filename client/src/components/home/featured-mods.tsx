@@ -32,14 +32,28 @@ const FeaturedMods = () => {
 
   if (isLoading) {
     return (
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-800/50"></div>
+      <section className="py-32 relative overflow-hidden bg-gradient-to-br from-black via-purple-900/20 to-black">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-20">
+          <motion.div 
+            className="text-center mb-20"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
             <h2 className="text-5xl md:text-6xl font-black text-white mb-4">
-              Featured <span className="bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">Mods</span>
+              Featured <span className="gradient-text">Mods</span>
             </h2>
-          </div>
+            <p className="text-gray-300 text-xl max-w-2xl mx-auto">
+              Discover our most popular and cutting-edge BeamNG.drive modifications, handpicked for exceptional quality and performance.
+            </p>
+          </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-slate-800/50 rounded-2xl h-[500px] animate-pulse backdrop-blur-sm"></div>
