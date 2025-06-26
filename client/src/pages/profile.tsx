@@ -84,25 +84,25 @@ const ProfilePage = () => {
       icon: Package, 
       label: "Mods Owned", 
       value: purchases.length, 
-      color: "from-blue-500 to-cyan-500" 
+      color: "from-purple-600 to-pink-600" 
     },
     { 
       icon: Download, 
       label: "Total Downloads", 
       value: "1.2K", 
-      color: "from-green-500 to-emerald-500" 
+      color: "from-purple-600 to-pink-600" 
     },
     { 
       icon: Star, 
       label: "Reviews Given", 
       value: "23", 
-      color: "from-yellow-500 to-orange-500" 
+      color: "from-purple-600 to-pink-600" 
     },
     { 
       icon: Calendar, 
       label: "Member Since", 
       value: new Date(user?.createdAt || Date.now()).getFullYear(), 
-      color: "from-purple-500 to-pink-500" 
+      color: "from-purple-600 to-pink-600" 
     }
   ];
 
@@ -254,7 +254,7 @@ const ProfilePage = () => {
                 <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-green-400" />
+                      <TrendingUp className="w-5 h-5 text-purple-400" />
                       Recent Activity
                     </CardTitle>
                     <CardDescription className="text-white/70">
@@ -275,7 +275,7 @@ const ProfilePage = () => {
                           transition={{ delay: 0.8 + index * 0.1 }}
                           className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
                         >
-                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+                          <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white">{activity.action}</p>
                             <p className="text-xs text-white/60">{activity.date}</p>
@@ -292,7 +292,7 @@ const ProfilePage = () => {
                 <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Package className="w-5 h-5 text-blue-400" />
+                      <Package className="w-5 h-5 text-purple-400" />
                       My Purchases
                     </CardTitle>
                     <CardDescription className="text-white/70">
@@ -311,7 +311,7 @@ const ProfilePage = () => {
                             className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
                           >
                             <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                                 <Package className="w-6 h-6 text-white" />
                               </div>
                               <div>
@@ -351,7 +351,7 @@ const ProfilePage = () => {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30">
                           <div className="flex items-center gap-3">
-                            <Crown className="w-8 h-8 text-yellow-400" />
+                            <Crown className="w-8 h-8 text-purple-400" />
                             <div>
                               <h3 className="text-white font-semibold">Premium Member</h3>
                               <p className="text-white/70 text-sm">Full access to all premium content</p>
@@ -389,7 +389,7 @@ const ProfilePage = () => {
                 <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-orange-400" />
+                      <Settings className="w-5 h-5 text-purple-400" />
                       Account Settings
                     </CardTitle>
                     <CardDescription className="text-white/70">
@@ -443,7 +443,7 @@ const ProfilePage = () => {
                         <div className="flex justify-end">
                           <Button
                             onClick={handleSaveProfile}
-                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                           >
                             <Save className="w-4 h-4 mr-2" />
                             Save Changes
@@ -458,7 +458,7 @@ const ProfilePage = () => {
                       <h3 className="text-white font-medium">Account Security</h3>
                       <div className="flex items-center justify-between p-4 rounded-lg bg-white/5">
                         <div className="flex items-center gap-3">
-                          <Shield className="w-5 h-5 text-green-400" />
+                          <Shield className="w-5 h-5 text-purple-400" />
                           <div>
                             <p className="text-white font-medium">Password</p>
                             <p className="text-white/60 text-sm">Last updated 30 days ago</p>

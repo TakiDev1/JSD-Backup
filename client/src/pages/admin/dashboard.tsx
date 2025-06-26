@@ -184,7 +184,6 @@ const AdminDashboard = () => {
               value: stats.users, 
               change: "+12% from last month", 
               icon: Users, 
-              color: "from-blue-500 to-cyan-500",
               delay: 0.1
             },
             { 
@@ -192,7 +191,6 @@ const AdminDashboard = () => {
               value: stats.mods, 
               change: "+3 new this week", 
               icon: Package, 
-              color: "from-green-500 to-emerald-500",
               delay: 0.2
             },
             { 
@@ -200,7 +198,6 @@ const AdminDashboard = () => {
               value: `$${stats.revenue}`, 
               change: "+25% from last month", 
               icon: DollarSign, 
-              color: "from-yellow-500 to-orange-500",
               delay: 0.3
             },
             { 
@@ -208,7 +205,6 @@ const AdminDashboard = () => {
               value: stats.purchases, 
               change: "+18% conversion rate", 
               icon: TrendingUp, 
-              color: "from-purple-500 to-pink-500",
               delay: 0.4
             },
             { 
@@ -216,7 +212,6 @@ const AdminDashboard = () => {
               value: stats.activeUsers, 
               change: "Last 30 days", 
               icon: UserCheck, 
-              color: "from-cyan-500 to-blue-500",
               delay: 0.5
             },
             { 
@@ -224,7 +219,6 @@ const AdminDashboard = () => {
               value: stats.pendingReviews, 
               change: "Requires attention", 
               icon: MessageSquare, 
-              color: "from-orange-500 to-red-500",
               delay: 0.6
             }
           ].map((stat, index) => (
@@ -237,7 +231,7 @@ const AdminDashboard = () => {
               <Card className="bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/15 transition-all duration-300 group">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-white/70">{stat.title}</CardTitle>
-                  <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                  <div className="p-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 group-hover:scale-110 transition-transform duration-300">
                     <stat.icon className="h-4 w-4 text-white" />
                   </div>
                 </CardHeader>
@@ -260,7 +254,7 @@ const AdminDashboard = () => {
             <Card className="bg-white/10 backdrop-blur-xl border-white/20">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-400" />
+                  <Zap className="w-5 h-5 text-purple-400" />
                   Quick Actions
                 </CardTitle>
                 <CardDescription className="text-white/70">
@@ -270,16 +264,16 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { href: "/admin/mods", icon: Package, label: "Manage Mods", color: "from-green-500 to-emerald-600" },
-                    { href: "/admin/users", icon: Users, label: "Manage Users", color: "from-blue-500 to-cyan-600" },
-                    { href: "/admin/notifications", icon: Mail, label: "Notifications", color: "from-purple-500 to-pink-600" },
-                    { href: "/admin/settings", icon: Settings, label: "Settings", color: "from-orange-500 to-red-600" }
+                    { href: "/admin/mods", icon: Package, label: "Manage Mods" },
+                    { href: "/admin/users", icon: Users, label: "Manage Users" },
+                    { href: "/admin/notifications", icon: Mail, label: "Notifications" },
+                    { href: "/admin/settings", icon: Settings, label: "Settings" }
                   ].map((action, index) => (
                     <Link key={action.href} href={action.href}>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${action.color} p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg`}
+                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25"
                       >
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
@@ -302,7 +296,7 @@ const AdminDashboard = () => {
             <Card className="bg-white/10 backdrop-blur-xl border-white/20">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-green-400" />
+                  <Activity className="w-5 h-5 text-purple-400" />
                   Recent Activity
                 </CardTitle>
                 <CardDescription className="text-white/70">
@@ -320,7 +314,7 @@ const AdminDashboard = () => {
                         transition={{ delay: 0.9 + index * 0.1 }}
                         className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
                       >
-                        <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">
                             {activity.action}
