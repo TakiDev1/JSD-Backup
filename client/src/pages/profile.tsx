@@ -1,572 +1,479 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useModLocker } from "@/hooks/use-mods";
-import { useQuery } from "@tanstack/react-query";
-import { API } from "@/lib/constants";
-import { formatDistanceToNow } from "date-fns";
-import { LogOut, Download, ShoppingBag, CreditCard, User, Settings, Star, Clock, Package } from "lucide-react";
+import { 
+  User, 
+  Settings, 
+  Package, 
+  CreditCard, 
+  Crown, 
+  LogOut, 
+  Download,
+  Calendar,
+  Star,
+  TrendingUp,
+  Shield,
+  Mail,
+  Eye,
+  Edit3,
+  Save,
+  X
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const ProfilePage = () => {
   const [, navigate] = useLocation();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
-  
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-    }
-  }, [isAuthenticated, navigate]);
-  
-  // Get user's purchases and mod locker data
-  const { data: lockerData } = useModLocker();
-  
-  // Get recent purchases
-  const recentPurchases = lockerData?.purchasedMods?.slice(0, 5) || [];
-  
-  // Get active subscription
-  const hasSubscription = lockerData?.hasSubscription || false;
-  
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="container mx-auto px-4 py-24 min-h-screen flex items-center justify-center">
-        <Card className="bg-dark-card">
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <h3 className="text-xl font-display font-bold text-white mb-2">
-                Please log in to view your profile
-              </h3>
-              <Button onClick={() => navigate("/")} className="mt-4">
-                Back to Home
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    username: user?.username || "",
+    email: user?.email || ""
+  });
+
+  // Get user purchases
+  const { data: purchasesData } = useQuery({
+    queryKey: ['/api/purchases'],
+    enabled: isAuthenticated,
+  });
+
+  // Get user subscription info
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['/api/subscription'],
+    enabled: isAuthenticated,
+  });
+
+  const purchases = purchasesData || [];
+  const subscription = subscriptionData || null;
+
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
   }
 
+  const handleSaveProfile = async () => {
+    try {
+      await apiRequest("PATCH", "/api/profile", editData);
+      setIsEditing(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stats = [
+    { 
+      icon: Package, 
+      label: "Mods Owned", 
+      value: purchases.length, 
+      color: "from-blue-500 to-cyan-500" 
+    },
+    { 
+      icon: Download, 
+      label: "Total Downloads", 
+      value: "1.2K", 
+      color: "from-green-500 to-emerald-500" 
+    },
+    { 
+      icon: Star, 
+      label: "Reviews Given", 
+      value: "23", 
+      color: "from-yellow-500 to-orange-500" 
+    },
+    { 
+      icon: Calendar, 
+      label: "Member Since", 
+      value: new Date(user?.createdAt || Date.now()).getFullYear(), 
+      color: "from-purple-500 to-pink-500" 
+    }
+  ];
+
   return (
-    <div className="container mx-auto px-4 py-24 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="w-full lg:w-1/3">
-            <Card className="bg-dark-card sticky top-24">
-              <CardHeader className="pb-0">
-                <div className="flex justify-center mb-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={user.discordAvatar ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png` : undefined} />
-                    <AvatarFallback className="text-2xl bg-primary text-white">
-                      {user.username?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      {/* Background Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-purple-500/5 to-transparent"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4"
+        >
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                Profile Dashboard
+              </h1>
+            </div>
+            <p className="text-white/70 text-lg">Manage your account and view your activity</p>
+          </div>
+          
+          {isAdmin && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button 
+                onClick={() => navigate("/admin")}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+              >
+                <Crown className="mr-2 h-4 w-4" />
+                Admin Dashboard
+              </Button>
+            </motion.div>
+          )}
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Profile Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-1"
+          >
+            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+              <CardHeader className="text-center pb-4">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                  <User className="w-12 h-12 text-white" />
                 </div>
-                <CardTitle className="text-center text-2xl font-display text-white">
-                  {user.username}
-                </CardTitle>
-                <div className="flex justify-center mt-2 mb-4">
-                  {isAdmin ? (
-                    <Badge className="bg-red-500/20 text-red-500 border-red-500/30">Admin</Badge>
-                  ) : hasSubscription ? (
-                    <Badge className="bg-secondary/20 text-secondary border-secondary/30">Premium Subscriber</Badge>
-                  ) : (
-                    <Badge className="bg-primary/20 text-primary border-primary/30">Member</Badge>
+                <CardTitle className="text-white text-xl">{user?.username}</CardTitle>
+                <CardDescription className="text-white/60">{user?.email}</CardDescription>
+                
+                <div className="flex justify-center gap-2 mt-3">
+                  {isAdmin && (
+                    <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Admin
+                    </Badge>
+                  )}
+                  {subscription && (
+                    <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30">
+                      <Star className="w-3 h-3 mr-1" />
+                      Premium
+                    </Badge>
                   )}
                 </div>
               </CardHeader>
+              
               <CardContent>
-                <Separator className="my-4" />
-                
                 <nav className="space-y-2">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start" 
-                    onClick={() => setActiveTab("overview")}
-                  >
-                    <User className="mr-2 h-4 w-4" /> 
-                    Overview
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => navigate("/mod-locker")}
-                  >
-                    <Download className="mr-2 h-4 w-4" /> 
-                    Mod Locker
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab("purchases")}
-                  >
-                    <ShoppingBag className="mr-2 h-4 w-4" /> 
-                    Purchase History
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab("subscription")}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" /> 
-                    Subscription
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab("settings")}
-                  >
-                    <Settings className="mr-2 h-4 w-4" /> 
-                    Settings
-                  </Button>
-                  
-                  {isAdmin && (
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start"
-                      onClick={() => navigate("/admin")}
+                  {[
+                    { id: "overview", icon: User, label: "Overview" },
+                    { id: "purchases", icon: Package, label: "My Purchases" },
+                    { id: "subscription", icon: CreditCard, label: "Subscription" },
+                    { id: "settings", icon: Settings, label: "Settings" }
+                  ].map((item) => (
+                    <Button
+                      key={item.id}
+                      variant="ghost"
+                      className={`w-full justify-start text-white/70 hover:text-white hover:bg-white/10 ${
+                        activeTab === item.id ? "bg-white/10 text-white" : ""
+                      }`}
+                      onClick={() => setActiveTab(item.id)}
                     >
-                      <i className="fas fa-crown mr-2 text-yellow-500"></i>
-                      Admin Dashboard
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
                     </Button>
-                  )}
+                  ))}
                   
-                  <Separator className="my-4" />
+                  <Separator className="my-4 bg-white/20" />
                   
                   <Button 
                     variant="ghost" 
-                    className="w-full justify-start text-red-500"
+                    className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
                     onClick={() => logout()}
                   >
-                    <LogOut className="mr-2 h-4 w-4" /> 
+                    <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </Button>
                 </nav>
               </CardContent>
             </Card>
-          </div>
-          
-          <div className="w-full lg:w-2/3">
+          </motion.div>
+
+          {/* Main Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="lg:col-span-3"
+          >
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-4 mb-8">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="purchases">Purchases</TabsTrigger>
-                <TabsTrigger value="subscription">Subscription</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview">
-                <div className="space-y-8">
-                  <Card className="bg-dark-card">
-                    <CardHeader>
-                      <CardTitle className="text-xl font-display text-white">
-                        Account Overview
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Username</h4>
-                            <p className="text-white">{user.username}</p>
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {stats.map((stat, index) => (
+                    <motion.div
+                      key={stat.label}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                    >
+                      <Card className="bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/15 transition-all duration-300 group">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium text-white/70">{stat.label}</CardTitle>
+                          <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                            <stat.icon className="h-4 w-4 text-white" />
                           </div>
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Email</h4>
-                            <p className="text-white">{user.email || "No email provided"}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Discord ID</h4>
-                            <p className="text-white">{user.discordId || "Not connected"}</p>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Account Created</h4>
-                            <p className="text-white">
-                              {user.createdAt 
-                                ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })
-                                : "Unknown"}
-                            </p>
-                          </div>
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Last Login</h4>
-                            <p className="text-white">
-                              {user.lastLogin 
-                                ? formatDistanceToNow(new Date(user.lastLogin), { addSuffix: true })
-                                : "Unknown"}
-                            </p>
-                          </div>
-                          <div>
-                            <h4 className="text-neutral-light text-sm">Subscription Status</h4>
-                            <p className="text-white flex items-center">
-                              {hasSubscription ? (
-                                <>
-                                  <span className="bg-green-500 h-2 w-2 rounded-full mr-2"></span>
-                                  Active Premium
-                                </>
-                              ) : (
-                                <>
-                                  <span className="bg-neutral h-2 w-2 rounded-full mr-2"></span>
-                                  No Active Subscription
-                                </>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-dark-card">
-                    <CardHeader>
-                      <CardTitle className="text-xl font-display text-white">
-                        Recent Purchases
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {recentPurchases.length > 0 ? (
-                        <div className="space-y-4">
-                          {recentPurchases.map(({ mod, purchase }) => (
-                            <div key={purchase.id} className="flex items-center">
-                              <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 mr-4">
-                                <img 
-                                  src={mod.thumbnail} 
-                                  alt={mod.title} 
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-white font-medium truncate">
-                                  {mod.title}
-                                </h4>
-                                <div className="flex items-center mt-1">
-                                  <Badge className="bg-dark text-secondary text-xs">
-                                    {mod.category}
-                                  </Badge>
-                                  <span className="text-neutral text-xs ml-2">
-                                    Purchased {formatDistanceToNow(new Date(purchase.purchaseDate), { addSuffix: true })}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <span className="text-white font-semibold">
-                                  ${purchase.price.toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          <div className="pt-4 text-center">
-                            <Button 
-                              variant="outline"
-                              onClick={() => setActiveTab("purchases")}
-                            >
-                              View All Purchases
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="w-16 h-16 bg-dark-lighter rounded-full flex items-center justify-center mx-auto mb-4">
-                            <ShoppingBag className="h-8 w-8 text-neutral" />
-                          </div>
-                          <h3 className="text-lg font-display font-semibold text-white mb-2">
-                            No Purchases Yet
-                          </h3>
-                          <p className="text-neutral-light mb-6">
-                            You haven't made any purchases yet
-                          </p>
-                          <Button onClick={() => navigate("/mods")}>
-                            Browse Mods
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-white">{stat.value}</div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="purchases">
-                <Card className="bg-dark-card">
+
+                {/* Recent Activity */}
+                <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
-                    <CardTitle className="text-xl font-display text-white">
-                      Purchase History
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                      Recent Activity
                     </CardTitle>
+                    <CardDescription className="text-white/70">
+                      Your latest interactions with the platform
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {recentPurchases.length > 0 ? (
-                      <div className="space-y-6">
-                        {recentPurchases.map(({ mod, purchase }) => (
-                          <div key={purchase.id} className="bg-dark-lighter p-4 rounded-lg border border-dark-card">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between">
-                              <div className="flex items-center mb-4 md:mb-0">
-                                <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 mr-4">
-                                  <img 
-                                    src={mod.thumbnail} 
-                                    alt={mod.title} 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div>
-                                  <h4 className="text-white font-medium">
-                                    {mod.title}
-                                  </h4>
-                                  <div className="flex items-center mt-1">
-                                    <Badge className="bg-dark text-secondary text-xs">
-                                      {mod.category}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex items-center mt-2 text-neutral text-sm">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    <span>
-                                      {formatDistanceToNow(new Date(purchase.purchaseDate), { addSuffix: true })}
-                                    </span>
-                                  </div>
-                                </div>
+                    <div className="space-y-4">
+                      {[
+                        { action: "Downloaded Test Mod", date: "2 hours ago", type: "download" },
+                        { action: "Added Test Mod to cart", date: "1 day ago", type: "cart" },
+                        { action: "Joined JSD Mods", date: "3 weeks ago", type: "join" }
+                      ].map((activity, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.8 + index * 0.1 }}
+                          className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
+                        >
+                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">{activity.action}</p>
+                            <p className="text-xs text-white/60">{activity.date}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Purchases Tab */}
+              <TabsContent value="purchases" className="space-y-6">
+                <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Package className="w-5 h-5 text-blue-400" />
+                      My Purchases
+                    </CardTitle>
+                    <CardDescription className="text-white/70">
+                      Mods you have purchased and own
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {purchases.length > 0 ? (
+                      <div className="grid gap-4">
+                        {purchases.map((purchase: any, index: number) => (
+                          <motion.div
+                            key={purchase.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                                <Package className="w-6 h-6 text-white" />
                               </div>
-                              <div className="flex flex-col md:items-end">
-                                <div className="text-white font-semibold text-lg">
-                                  ${purchase.price.toFixed(2)}
-                                </div>
-                                <div className="text-neutral text-sm">
-                                  Transaction ID: {purchase.transactionId.substring(0, 8)}...
-                                </div>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="mt-2"
-                                  onClick={() => window.open(`/api/mods/${mod.id}/download`, '_blank')}
-                                >
-                                  <Download className="h-3 w-3 mr-2" /> Download
-                                </Button>
+                              <div>
+                                <h3 className="text-white font-medium">{purchase.mod?.title}</h3>
+                                <p className="text-white/60 text-sm">Purchased {new Date(purchase.purchaseDate).toLocaleDateString()}</p>
                               </div>
                             </div>
-                          </div>
+                            <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+                              <Download className="w-4 h-4 mr-2" />
+                              Download
+                            </Button>
+                          </motion.div>
                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-dark-lighter rounded-full flex items-center justify-center mx-auto mb-4">
-                          <ShoppingBag className="h-8 w-8 text-neutral" />
-                        </div>
-                        <h3 className="text-lg font-display font-semibold text-white mb-2">
-                          No Purchase History
-                        </h3>
-                        <p className="text-neutral-light mb-6">
-                          You haven't made any purchases yet
-                        </p>
-                        <Button onClick={() => navigate("/mods")}>
-                          Browse Mods
-                        </Button>
+                        <Package className="w-16 h-16 mx-auto mb-4 text-white/30" />
+                        <p className="text-white/60">No purchases yet</p>
+                        <p className="text-white/40 text-sm mt-1">Browse our mod collection to get started</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
-              
-              <TabsContent value="subscription">
-                <Card className="bg-dark-card">
+
+              {/* Subscription Tab */}
+              <TabsContent value="subscription" className="space-y-6">
+                <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
-                    <CardTitle className="text-xl font-display text-white">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-purple-400" />
                       Subscription Status
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {hasSubscription ? (
-                      <div className="space-y-6">
-                        <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-6">
-                          <div className="flex items-center mb-4">
-                            <Star className="h-6 w-6 text-secondary mr-3" />
-                            <h3 className="text-xl font-display font-semibold text-white">Premium Subscription</h3>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="text-neutral-light text-sm">Status</h4>
-                                <p className="text-white flex items-center">
-                                  <span className="bg-green-500 h-2 w-2 rounded-full mr-2"></span>
-                                  Active
-                                </p>
-                              </div>
-                              <div>
-                                <h4 className="text-neutral-light text-sm">Plan</h4>
-                                <p className="text-white">Monthly Premium</p>
-                              </div>
-                              <div>
-                                <h4 className="text-neutral-light text-sm">Price</h4>
-                                <p className="text-white">$9.99 / month</p>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              <div>
-                                <h4 className="text-neutral-light text-sm">Next Billing Date</h4>
-                                <p className="text-white">
-                                  {/* Simulated next billing date */}
-                                  {new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div>
-                                <h4 className="text-neutral-light text-sm">Payment Method</h4>
-                                <p className="text-white flex items-center">
-                                  <i className="fas fa-credit-card mr-2"></i>
-                                  •••• 4242
-                                </p>
-                              </div>
+                    {subscription ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+                          <div className="flex items-center gap-3">
+                            <Crown className="w-8 h-8 text-yellow-400" />
+                            <div>
+                              <h3 className="text-white font-semibold">Premium Member</h3>
+                              <p className="text-white/70 text-sm">Full access to all premium content</p>
                             </div>
                           </div>
-                          
-                          <div className="flex flex-col md:flex-row gap-4">
-                            <Button
-                              variant="outline"
-                              className="border-secondary/30 text-secondary"
-                              onClick={() => alert("This would manage your subscription")}
-                            >
-                              Manage Subscription
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-red-500/30 text-red-500"
-                              onClick={() => alert("This would cancel your subscription")}
-                            >
-                              Cancel Subscription
-                            </Button>
-                          </div>
+                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30">Active</Badge>
                         </div>
                         
-                        <div>
-                          <h3 className="text-lg font-display font-semibold text-white mb-4">Premium Benefits</h3>
-                          <div className="space-y-3">
-                            <div className="flex items-start">
-                              <div className="bg-secondary/20 p-2 rounded-full mr-3">
-                                <Package className="h-4 w-4 text-secondary" />
-                              </div>
-                              <div>
-                                <h4 className="text-white font-medium">Exclusive Premium Mods</h4>
-                                <p className="text-neutral-light">Access to all premium subscription-only mods</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <div className="bg-secondary/20 p-2 rounded-full mr-3">
-                                <Download className="h-4 w-4 text-secondary" />
-                              </div>
-                              <div>
-                                <h4 className="text-white font-medium">Unlimited Downloads</h4>
-                                <p className="text-neutral-light">Download as many mods as you want</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <div className="bg-secondary/20 p-2 rounded-full mr-3">
-                                <Clock className="h-4 w-4 text-secondary" />
-                              </div>
-                              <div>
-                                <h4 className="text-white font-medium">Early Access</h4>
-                                <p className="text-neutral-light">Get new mods before everyone else</p>
-                              </div>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-lg bg-white/5">
+                            <Label className="text-white/70">Next Billing Date</Label>
+                            <p className="text-white font-medium">{new Date(subscription.nextBilling).toLocaleDateString()}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-white/5">
+                            <Label className="text-white/70">Plan</Label>
+                            <p className="text-white font-medium">{subscription.plan}</p>
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-dark-lighter rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Star className="h-8 w-8 text-neutral" />
-                        </div>
-                        <h3 className="text-lg font-display font-semibold text-white mb-2">
-                          No Active Subscription
-                        </h3>
-                        <p className="text-neutral-light mb-6">
-                          Upgrade to Premium to unlock exclusive mods and benefits
-                        </p>
-                        <Button 
-                          className="bg-secondary hover:bg-secondary-dark text-white"
-                          onClick={() => navigate("/subscribe")}
-                        >
-                          <Star className="mr-2 h-4 w-4" /> Subscribe Now
+                        <Crown className="w-16 h-16 mx-auto mb-4 text-white/30" />
+                        <p className="text-white/60 mb-4">No active subscription</p>
+                        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                          Upgrade to Premium
                         </Button>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
-              
-              <TabsContent value="settings">
-                <Card className="bg-dark-card">
+
+              {/* Settings Tab */}
+              <TabsContent value="settings" className="space-y-6">
+                <Card className="bg-white/10 backdrop-blur-xl border-white/20">
                   <CardHeader>
-                    <CardTitle className="text-xl font-display text-white">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-orange-400" />
                       Account Settings
                     </CardTitle>
+                    <CardDescription className="text-white/70">
+                      Update your account information and preferences
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-8">
-                      <div>
-                        <h3 className="text-lg font-display font-semibold text-white mb-4">Profile Settings</h3>
-                        <p className="text-neutral-light mb-4">
-                          Your profile information is synchronized with Discord. 
-                          To update your profile, please make changes in your Discord account.
-                        </p>
-                        <Button 
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-medium">Profile Information</h3>
+                        <Button
                           variant="outline"
-                          onClick={() => window.open("https://discord.com/users/@me", "_blank")}
+                          size="sm"
+                          onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
+                          className="text-white border-white/20 hover:bg-white/10"
                         >
-                          <i className="fab fa-discord mr-2"></i> Open Discord Settings
+                          {isEditing ? <X className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
+                          {isEditing ? "Cancel" : "Edit"}
                         </Button>
                       </div>
                       
-                      <Separator />
-                      
-                      <div>
-                        <h3 className="text-lg font-display font-semibold text-white mb-4">Notification Preferences</h3>
-                        <p className="text-neutral-light mb-4">
-                          Notification settings are coming soon. You'll be able to customize how you
-                          receive mod updates, discount notifications, and more.
-                        </p>
-                        <Button 
-                          variant="outline"
-                          disabled
-                        >
-                          Manage Notifications (Coming Soon)
-                        </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-white/70">Username</Label>
+                          {isEditing ? (
+                            <Input
+                              value={editData.username}
+                              onChange={(e) => setEditData({...editData, username: e.target.value})}
+                              className="bg-white/10 border-white/20 text-white"
+                            />
+                          ) : (
+                            <div className="p-3 rounded-lg bg-white/5 text-white">{user?.username}</div>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-white/70">Email</Label>
+                          {isEditing ? (
+                            <Input
+                              value={editData.email}
+                              onChange={(e) => setEditData({...editData, email: e.target.value})}
+                              className="bg-white/10 border-white/20 text-white"
+                            />
+                          ) : (
+                            <div className="p-3 rounded-lg bg-white/5 text-white">{user?.email}</div>
+                          )}
+                        </div>
                       </div>
                       
-                      <Separator />
-                      
-                      <div>
-                        <h3 className="text-lg font-display font-semibold text-white mb-4">Danger Zone</h3>
-                        <p className="text-neutral-light mb-4">
-                          These actions are permanent and cannot be undone.
-                        </p>
-                        <div className="space-y-4">
-                          <Button 
-                            variant="outline"
-                            className="border-red-500/30 text-red-500 w-full justify-start"
-                            onClick={() => logout()}
+                      {isEditing && (
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={handleSaveProfile}
+                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                           >
-                            <LogOut className="mr-2 h-4 w-4" /> 
-                            Logout from all devices
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            className="border-red-500/30 text-red-500 w-full justify-start"
-                            onClick={() => alert("This would delete your account")}
-                          >
-                            <i className="fas fa-trash-alt mr-2"></i>
-                            Delete Account
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
                           </Button>
                         </div>
+                      )}
+                    </div>
+
+                    <Separator className="bg-white/20" />
+
+                    <div className="space-y-4">
+                      <h3 className="text-white font-medium">Account Security</h3>
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-white/5">
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-5 h-5 text-green-400" />
+                          <div>
+                            <p className="text-white font-medium">Password</p>
+                            <p className="text-white/60 text-sm">Last updated 30 days ago</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
+                          Change Password
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

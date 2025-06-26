@@ -1,23 +1,30 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Users, Package, CreditCard, BarChart3, Activity, Settings,
-  ShieldAlert, RefreshCw, Star, Shield, ShieldCheck, Clock,
-  FileCheck, Mail
-} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { 
+  Users, 
+  Package, 
+  DollarSign, 
+  TrendingUp, 
+  UserCheck, 
+  MessageSquare, 
+  Settings, 
+  Activity,
+  Mail,
+  Shield,
+  Crown,
+  Zap,
+  BarChart3
+} from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -25,7 +32,7 @@ const AdminDashboard = () => {
   const queryClient = useQueryClient();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   
-  // Get site stats - only fetch if user is authenticated and admin
+  // Get site stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
     enabled: !!user && isAdmin,
@@ -40,17 +47,17 @@ const AdminDashboard = () => {
     pendingReviews: (statsData as any)?.pendingReviews || 0
   };
   
-  // Get site settings - only fetch if user is authenticated and admin
+  // Get site settings
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
     enabled: !!user && isAdmin,
   });
   
   const settings = {
-    maintenanceMode: (settingsData as any)?.maintenanceMode || false
+    maintenanceMode: (settingsData as any)?.maintenanceMode === 'true' || false
   };
   
-  // Recent activity - only fetch if user is authenticated and admin
+  // Recent activity
   const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
     enabled: !!user && isAdmin,
@@ -61,288 +68,291 @@ const AdminDashboard = () => {
   // Mutation to toggle maintenance mode
   const { mutate: toggleMaintenance, isPending: isTogglingMaintenance } = useMutation({
     mutationFn: async (enabled: boolean) => {
-      return apiRequest("POST", "/api/admin/settings/maintenance", { enabled });
+      const response = await apiRequest("POST", "/api/admin/settings", {
+        key: "maintenanceMode",
+        value: enabled.toString()
+      });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
       toast({
-        title: `Maintenance Mode ${maintenanceMode ? 'Disabled' : 'Enabled'}`,
-        description: `The site is now ${maintenanceMode ? 'accessible to all users' : 'in maintenance mode'}`,
-        variant: maintenanceMode ? "default" : "destructive",
-      });
-      setMaintenanceMode(!maintenanceMode);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to toggle maintenance mode",
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Patreon integration sync
-  const { mutate: syncPatreon, isPending: isSyncingPatreon } = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/patreon/sync", {});
-    },
-    onSuccess: () => {
-      toast({
-        title: "Patreon Synchronized",
-        description: "Successfully synced Patreon supporters to subscriber database",
+        title: "Settings Updated",
+        description: `Maintenance mode ${maintenanceMode ? 'enabled' : 'disabled'}`,
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to sync Patreon data",
+        description: "Failed to update maintenance mode",
         variant: "destructive",
       });
     },
   });
-  
-  // For demo purposes, use state to simulate loading
-  useState(() => {
-    if (settingsLoading) return;
-    setMaintenanceMode(settings?.maintenanceMode || false);
-  });
-  
+
   if (!isAdmin) {
     return (
-      <div className="container mx-auto px-4 py-24 h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md bg-dark-card">
-          <CardHeader>
-            <CardTitle className="text-white">Access Denied</CardTitle>
-            <CardDescription>You don't have permission to access the admin dashboard</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button asChild>
-              <Link href="/">Return to Home</Link>
-            </Button>
-          </CardFooter>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md"
+        >
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+            <CardHeader className="text-center">
+              <Shield className="w-16 h-16 mx-auto mb-4 text-red-400" />
+              <CardTitle className="text-white text-2xl">Access Denied</CardTitle>
+              <CardDescription className="text-white/70">
+                You don't have permission to access the admin dashboard
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Link href="/">Return to Home</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
-  
+
   return (
-    <div className="container mx-auto px-4 py-24">
-      <div className="flex flex-col space-y-8">
-        <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      {/* Background Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-purple-500/5 to-transparent"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4"
+        >
           <div>
-            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-            <p className="text-neutral-light">Welcome back, {user?.username}</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg">
+                <Crown className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+            </div>
+            <p className="text-white/70 text-lg">Manage your JSD Mods platform with advanced controls</p>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-4"
+          >
+            <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+              <Label htmlFor="maintenance-mode" className="text-sm font-medium text-white">
+                Maintenance Mode
+              </Label>
               <Switch
                 id="maintenance-mode"
                 checked={maintenanceMode}
-                onCheckedChange={() => toggleMaintenance(!maintenanceMode)}
+                onCheckedChange={(checked) => {
+                  setMaintenanceMode(checked);
+                  toggleMaintenance(checked);
+                }}
                 disabled={isTogglingMaintenance}
               />
-              <Label htmlFor="maintenance-mode" className="text-white">
-                Maintenance Mode {maintenanceMode && <Badge variant="destructive">Active</Badge>}
-              </Label>
             </div>
             
-            <Button 
-              variant="outline" 
-              onClick={() => syncPatreon()} 
-              disabled={isSyncingPatreon}
+            <Badge 
+              variant={maintenanceMode ? "destructive" : "secondary"}
+              className={`px-3 py-1 ${
+                maintenanceMode 
+                  ? "bg-red-500/20 text-red-300 border-red-500/30" 
+                  : "bg-green-500/20 text-green-300 border-green-500/30"
+              }`}
             >
-              Sync Patreon
-            </Button>
-          </div>
+              {maintenanceMode ? "Maintenance" : "Live"}
+            </Badge>
+          </motion.div>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+          {[
+            { 
+              title: "Total Users", 
+              value: stats.users, 
+              change: "+12% from last month", 
+              icon: Users, 
+              color: "from-blue-500 to-cyan-500",
+              delay: 0.1
+            },
+            { 
+              title: "Total Mods", 
+              value: stats.mods, 
+              change: "+3 new this week", 
+              icon: Package, 
+              color: "from-green-500 to-emerald-500",
+              delay: 0.2
+            },
+            { 
+              title: "Total Revenue", 
+              value: `$${stats.revenue}`, 
+              change: "+25% from last month", 
+              icon: DollarSign, 
+              color: "from-yellow-500 to-orange-500",
+              delay: 0.3
+            },
+            { 
+              title: "Total Purchases", 
+              value: stats.purchases, 
+              change: "+18% conversion rate", 
+              icon: TrendingUp, 
+              color: "from-purple-500 to-pink-500",
+              delay: 0.4
+            },
+            { 
+              title: "Active Users", 
+              value: stats.activeUsers, 
+              change: "Last 30 days", 
+              icon: UserCheck, 
+              color: "from-cyan-500 to-blue-500",
+              delay: 0.5
+            },
+            { 
+              title: "Pending Reviews", 
+              value: stats.pendingReviews, 
+              change: "Requires attention", 
+              icon: MessageSquare, 
+              color: "from-orange-500 to-red-500",
+              delay: 0.6
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: stat.delay }}
+            >
+              <Card className="bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/15 transition-all duration-300 group">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-white/70">{stat.title}</CardTitle>
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                    <stat.icon className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                  <p className="text-xs text-white/60">{stat.change}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
-        
-        {/* Stats Cards with Icons - Bottom Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-light text-sm font-medium">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-3xl font-bold text-white">{stats.users}</div>
-                <div className="p-2 bg-purple-500/10 rounded-full">
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-light text-sm font-medium">Total Mods</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-3xl font-bold text-white">{stats.mods}</div>
-                <div className="p-2 bg-blue-500/10 rounded-full">
-                  <Package className="w-6 h-6 text-blue-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-light text-sm font-medium">Sales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-3xl font-bold text-white">{stats.purchases}</div>
-                <div className="p-2 bg-green-500/10 rounded-full">
-                  <CreditCard className="w-6 h-6 text-green-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-dark-card border-dark-lighter/50 hover:border-primary/50 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-light text-sm font-medium">Revenue</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-3xl font-bold text-white">${stats.revenue}</div>
-                <div className="p-2 bg-amber-500/10 rounded-full">
-                  <BarChart3 className="w-6 h-6 text-amber-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="bg-dark-card border-dark-lighter/50 col-span-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-white">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Link href="/admin/mods">
-                  <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                    <Package className="w-5 h-5" />
-                    <span>Manage Mods</span>
-                  </Button>
-                </Link>
-                
-                <Link href="/admin/users">
-                  <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                    <Users className="w-5 h-5" />
-                    <span>Manage Users</span>
-                  </Button>
-                </Link>
-                
-                <Link href="/admin/notifications">
-                  <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                    <Mail className="w-5 h-5" />
-                    <span>Notifications</span>
-                  </Button>
-                </Link>
-                
-                <Link href="/admin/settings">
-                  <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                    <Settings className="w-5 h-5" />
-                    <span>Settings</span>
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-dark-card border-dark-lighter/50">
-            <CardHeader>
-              <CardTitle className="text-white">System Health</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex flex-col space-y-1">
-                  <div className="flex justify-between">
-                    <Label>Server Status</Label>
-                    <Badge variant="outline" className="bg-green-500/10 text-green-400">Online</Badge>
-                  </div>
-                  <div className="h-2 bg-dark-lighter rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: "98%" }}></div>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="col-span-1 lg:col-span-2"
+          >
+            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-400" />
+                  Quick Actions
+                </CardTitle>
+                <CardDescription className="text-white/70">
+                  Manage your platform with these essential tools
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { href: "/admin/mods", icon: Package, label: "Manage Mods", color: "from-green-500 to-emerald-600" },
+                    { href: "/admin/users", icon: Users, label: "Manage Users", color: "from-blue-500 to-cyan-600" },
+                    { href: "/admin/notifications", icon: Mail, label: "Notifications", color: "from-purple-500 to-pink-600" },
+                    { href: "/admin/settings", icon: Settings, label: "Settings", color: "from-orange-500 to-red-600" }
+                  ].map((action, index) => (
+                    <Link key={action.href} href={action.href}>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${action.color} p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg`}
+                      >
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
+                          <action.icon className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform duration-300" />
+                          <span className="text-sm font-medium text-center">{action.label}</span>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  ))}
                 </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <div className="flex justify-between">
-                    <Label>Database</Label>
-                    <Badge variant="outline" className="bg-green-500/10 text-green-400">Healthy</Badge>
-                  </div>
-                  <div className="h-2 bg-dark-lighter rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: "95%" }}></div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <div className="flex justify-between">
-                    <Label>API Response</Label>
-                    <Badge variant="outline" className="bg-green-500/10 text-green-400">Fast</Badge>
-                  </div>
-                  <div className="h-2 bg-dark-lighter rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: "90%" }}></div>
-                  </div>
-                </div>
-                
-                <Separator className="my-4" />
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert className="w-5 h-5 text-primary" />
-                    <span>Security Status</span>
-                  </div>
-                  <Badge className="bg-green-600">Protected</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Card className="bg-dark-card border-dark-lighter/50">
-          <CardHeader>
-            <CardTitle className="text-white">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative overflow-x-auto rounded-md">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-neutral-light uppercase bg-dark-lighter">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">User</th>
-                    <th scope="col" className="px-6 py-3">Action</th>
-                    <th scope="col" className="px-6 py-3">Details</th>
-                    <th scope="col" className="px-6 py-3">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activityLoading ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-4 text-center">Loading activity...</td>
-                    </tr>
-                  ) : recentActivity.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-4 text-center">No recent activity</td>
-                    </tr>
-                  ) : (
-                    recentActivity.map((activity: any, index: number) => (
-                      <tr key={index} className="border-b border-dark-lighter bg-dark-card hover:bg-dark-lighter/50">
-                        <td className="px-6 py-4 font-medium whitespace-nowrap">{activity.user}</td>
-                        <td className="px-6 py-4">{activity.action}</td>
-                        <td className="px-6 py-4">{activity.details}</td>
-                        <td className="px-6 py-4">{activity.time}</td>
-                      </tr>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-green-400" />
+                  Recent Activity
+                </CardTitle>
+                <CardDescription className="text-white/70">
+                  Latest actions on your platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.length > 0 ? (
+                    recentActivity.slice(0, 5).map((activity: any, index: number) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.9 + index * 0.1 }}
+                        className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
+                      >
+                        <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {activity.action}
+                          </p>
+                          <p className="text-xs text-white/60 truncate">
+                            {activity.details}
+                          </p>
+                        </div>
+                        <div className="text-xs text-white/50 bg-white/10 px-2 py-1 rounded-full">
+                          {new Date(activity.timestamp).toLocaleDateString()}
+                        </div>
+                      </motion.div>
                     ))
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.9 }}
+                      className="text-center py-8"
+                    >
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
+                        <Activity className="w-8 h-8 text-purple-400" />
+                      </div>
+                      <p className="text-sm text-white/60">No recent activity</p>
+                      <p className="text-xs text-white/40 mt-1">Activity will appear here as users interact with your platform</p>
+                    </motion.div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
