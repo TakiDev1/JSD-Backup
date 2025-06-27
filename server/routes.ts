@@ -224,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't send password back to client
         // Create a user object without password
         const userWithoutPassword = { ...user };
-        delete userWithoutPassword.password;
+        delete (userWithoutPassword as any).password;
         
         // Make sure isAdmin is set
         userWithoutPassword.isAdmin = true;
