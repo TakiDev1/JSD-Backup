@@ -67,33 +67,67 @@ const FeaturedMods = () => {
   const mods = data?.mods || [];
 
   return (
-    <section className="py-32 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-800/50"></div>
-      <div className="absolute top-0 left-0 w-full h-full opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.1) 1px, transparent 0)`,
-          backgroundSize: '30px 30px'
-        }}></div>
-      </div>
+    <section className="relative py-32 overflow-hidden bg-gradient-to-br from-black via-purple-900/20 to-black">
+      {/* Background effects matching hero */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.15),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(34,197,94,0.15),transparent_70%)]" />
+      
+      {/* Animated background orbs */}
+      <motion.div
+        className="absolute top-20 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 right-10 w-40 h-40 bg-green-500/20 rounded-full blur-xl"
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.6, 0.3, 0.6],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-20"
+          className="text-center mb-16"
         >
-          <Badge className="bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 text-white border border-primary/30 px-6 py-2 mb-6 text-sm font-medium backdrop-blur-sm">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Community Favorites
-          </Badge>
-          <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
-            Featured <span className="bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">Mods</span>
-          </h2>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Handpicked premium mods that deliver exceptional quality and performance
+          <motion.h2 
+            className="text-5xl md:text-6xl font-bold mb-6"
+            animate={{
+              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              background: "linear-gradient(90deg, #a855f7, #22c55e, #a855f7)",
+              backgroundSize: "200% 200%",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Featured Mods
+          </motion.h2>
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+            Discover our handpicked selection of premium BeamNG mods
           </p>
         </motion.div>
 
