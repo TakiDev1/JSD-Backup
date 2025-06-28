@@ -105,11 +105,11 @@ export function SalesBanner() {
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Rotate deals every 2-3 minutes
+  // Rotate deals every 1-2 minutes for maximum impact
   useEffect(() => {
     const getRandomDeal = () => {
       const template = dealTemplates[Math.floor(Math.random() * dealTemplates.length)];
-      const timeVariations = [1800, 2400, 3600, 4500]; // 30min, 40min, 1hr, 1hr 15min
+      const timeVariations = [900, 1200, 1800, 2400]; // 15min, 20min, 30min, 40min
       const randomTime = timeVariations[Math.floor(Math.random() * timeVariations.length)];
       
       return {
@@ -121,11 +121,11 @@ export function SalesBanner() {
     // Set initial deal
     setCurrentDeal(getRandomDeal());
 
-    // Rotate deals every 2-3 minutes
+    // Rotate deals every 1-2 minutes for more engagement
     const dealRotationInterval = setInterval(() => {
       setCurrentDeal(getRandomDeal());
       setIsVisible(true);
-    }, Math.random() * 60000 + 120000); // 2-3 minutes
+    }, Math.random() * 60000 + 60000); // 1-2 minutes
 
     return () => clearInterval(dealRotationInterval);
   }, []);
@@ -316,17 +316,38 @@ export function FloatingDealNotification({ onClose }: { onClose: () => void }) {
       message: 'Add 1 more car to unlock 30% off everything!',
       type: 'info',
       gradient: 'from-blue-600 to-purple-600'
+    },
+    {
+      id: 'flash-sale',
+      title: '⚡ Flash Sale Alert',
+      message: 'Flash sale starts in 5 minutes - 60% off all mods!',
+      type: 'warning',
+      gradient: 'from-yellow-600 to-orange-600'
+    },
+    {
+      id: 'new-customer',
+      title: '🎉 Welcome Bonus',
+      message: 'New customers get 40% off their first purchase!',
+      type: 'success',
+      gradient: 'from-purple-600 to-pink-600'
+    },
+    {
+      id: 'social-proof',
+      title: '👥 Popular Choice',
+      message: '127 people bought this mod in the last hour!',
+      type: 'info',
+      gradient: 'from-indigo-600 to-blue-600'
     }
   ];
 
   const notification = notifications[Math.floor(Math.random() * notifications.length)];
 
   useEffect(() => {
-    // Auto-hide after 8 seconds
+    // Auto-hide after 6 seconds for faster cycling
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onClose, 300);
-    }, 8000);
+    }, 6000);
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -366,7 +387,7 @@ export function FloatingDealNotification({ onClose }: { onClose: () => void }) {
         
         <motion.div
           animate={{ width: ['100%', '0%'] }}
-          transition={{ duration: 8, ease: "linear" }}
+          transition={{ duration: 6, ease: "linear" }}
           className="h-1 bg-white/30 rounded-full mt-3"
         />
       </div>
@@ -397,11 +418,11 @@ export function StickyDealBanner() {
     }
   ];
 
-  // Rotate offers every 10 seconds
+  // Rotate offers every 8 seconds for more engagement
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentOffer(prev => (prev + 1) % offers.length);
-    }, 10000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [offers.length]);
