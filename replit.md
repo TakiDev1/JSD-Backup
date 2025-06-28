@@ -118,6 +118,10 @@ JSD Mods Marketplace is a full-stack web application designed specifically for s
 - Added achievement unlocks and progress tracking during checkout process
 - Built notification system with multiple deal types (flash sales, bundles, limited time offers)
 - Enhanced user experience with contextual upselling that doesn't feel intrusive
+- Optimized notification frequency to reduce spam - urgent popups only show on weekends
+- Repositioned floating notifications to top-right to avoid interference with navigation
+- Reduced notification frequency across all pages for better user experience
+- Made bottom banner persistent while making other notifications more subtle and less frequent
 
 ### June 26, 2025
 - Completed comprehensive redesign of admin panel and profile dashboards with modern aesthetic

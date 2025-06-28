@@ -17,25 +17,21 @@ const Home = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Show floating notifications periodically
+  // Show floating notifications less frequently - only occasionally
   useEffect(() => {
-    const showNotification = () => {
-      // Random delay between 15-45 seconds
-      const delay = Math.random() * 30000 + 15000;
-      setTimeout(() => {
-        setShowFloatingNotification(true);
-      }, delay);
-    };
-
-    // Initial notification after 10 seconds
-    const initialTimer = setTimeout(showNotification, 10000);
-
-    // Set up recurring notifications every 45-90 seconds
-    const interval = setInterval(() => {
-      if (Math.random() > 0.3) { // 70% chance to show
+    // Initial notification after 2 minutes
+    const initialTimer = setTimeout(() => {
+      if (Math.random() > 0.7) { // Only 30% chance for initial notification
         setShowFloatingNotification(true);
       }
-    }, Math.random() * 45000 + 45000);
+    }, 120000);
+
+    // Set up less frequent recurring notifications every 3-5 minutes
+    const interval = setInterval(() => {
+      if (Math.random() > 0.8) { // Only 20% chance to show
+        setShowFloatingNotification(true);
+      }
+    }, Math.random() * 120000 + 180000); // Every 3-5 minutes
 
     return () => {
       clearTimeout(initialTimer);
@@ -43,13 +39,18 @@ const Home = () => {
     };
   }, []);
 
-  // Show urgent popup after user has been on page for 30 seconds
+  // Show urgent popup only on weekends after user has been on page for 30 seconds
   useEffect(() => {
-    const popupTimer = setTimeout(() => {
-      setShowUrgentPopup(true);
-    }, 30000);
+    const now = new Date();
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6; // Sunday = 0, Saturday = 6
+    
+    if (isWeekend) {
+      const popupTimer = setTimeout(() => {
+        setShowUrgentPopup(true);
+      }, 30000);
 
-    return () => clearTimeout(popupTimer);
+      return () => clearTimeout(popupTimer);
+    }
   }, []);
 
   return (

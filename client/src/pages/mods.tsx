@@ -22,15 +22,19 @@ const ModsPage = () => {
     if (params.has("page")) setCurrentPage(parseInt(params.get("page") || "1"));
   }, []);
 
-  // Show floating deals while browsing
+  // Show floating deals very rarely while browsing
   useEffect(() => {
-    const timer = setTimeout(() => setShowFloatingDeal(true), 15000);
-    
-    const interval = setInterval(() => {
-      if (Math.random() > 0.4) { // 60% chance to show
+    const timer = setTimeout(() => {
+      if (Math.random() > 0.8) { // Only 20% chance for initial
         setShowFloatingDeal(true);
       }
-    }, Math.random() * 60000 + 30000); // Every 30-90 seconds
+    }, 60000); // Wait 1 minute
+    
+    const interval = setInterval(() => {
+      if (Math.random() > 0.9) { // Only 10% chance to show
+        setShowFloatingDeal(true);
+      }
+    }, Math.random() * 180000 + 120000); // Every 2-5 minutes
 
     return () => {
       clearTimeout(timer);

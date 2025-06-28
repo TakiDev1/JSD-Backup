@@ -171,10 +171,14 @@ export default function CartPage() {
     return sum;
   }, 0);
 
-  // Show floating deals periodically
+  // Show floating deals less frequently in cart
   useEffect(() => {
     if (count > 0) {
-      const timer = setTimeout(() => setShowFloatingDeal(true), 8000);
+      const timer = setTimeout(() => {
+        if (Math.random() > 0.6) { // Only 40% chance to show
+          setShowFloatingDeal(true);
+        }
+      }, 30000); // Wait 30 seconds instead of 8
       return () => clearTimeout(timer);
     }
   }, [count]);

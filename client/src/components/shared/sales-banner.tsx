@@ -105,11 +105,11 @@ export function SalesBanner() {
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Rotate deals every 1-2 minutes for maximum impact
+  // Rotate deals every 3-5 minutes for less spam
   useEffect(() => {
     const getRandomDeal = () => {
       const template = dealTemplates[Math.floor(Math.random() * dealTemplates.length)];
-      const timeVariations = [900, 1200, 1800, 2400]; // 15min, 20min, 30min, 40min
+      const timeVariations = [1800, 2400, 3600, 4500]; // 30min, 40min, 1hr, 1hr 15min
       const randomTime = timeVariations[Math.floor(Math.random() * timeVariations.length)];
       
       return {
@@ -121,11 +121,11 @@ export function SalesBanner() {
     // Set initial deal
     setCurrentDeal(getRandomDeal());
 
-    // Rotate deals every 1-2 minutes for more engagement
+    // Rotate deals every 3-5 minutes to be less intrusive
     const dealRotationInterval = setInterval(() => {
       setCurrentDeal(getRandomDeal());
       setIsVisible(true);
-    }, Math.random() * 60000 + 60000); // 1-2 minutes
+    }, Math.random() * 120000 + 180000); // 3-5 minutes
 
     return () => clearInterval(dealRotationInterval);
   }, []);
@@ -343,11 +343,11 @@ export function FloatingDealNotification({ onClose }: { onClose: () => void }) {
   const notification = notifications[Math.floor(Math.random() * notifications.length)];
 
   useEffect(() => {
-    // Auto-hide after 6 seconds for faster cycling
+    // Auto-hide after 8 seconds for better readability
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onClose, 300);
-    }, 6000);
+    }, 8000);
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -387,7 +387,7 @@ export function FloatingDealNotification({ onClose }: { onClose: () => void }) {
         
         <motion.div
           animate={{ width: ['100%', '0%'] }}
-          transition={{ duration: 6, ease: "linear" }}
+          transition={{ duration: 8, ease: "linear" }}
           className="h-1 bg-white/30 rounded-full mt-3"
         />
       </div>
@@ -418,11 +418,11 @@ export function StickyDealBanner() {
     }
   ];
 
-  // Rotate offers every 8 seconds for more engagement
+  // Rotate offers every 12 seconds for less distraction
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentOffer(prev => (prev + 1) % offers.length);
-    }, 8000);
+    }, 12000);
 
     return () => clearInterval(interval);
   }, [offers.length]);
