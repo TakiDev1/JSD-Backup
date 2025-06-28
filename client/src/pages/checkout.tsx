@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useStripe, Elements, PaymentElement, useElements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -15,6 +15,13 @@ import {
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckoutProgress } from "@/components/shared/checkout-progress";
+
+// Make sure to call `loadStripe` outside of a component's render to avoid
+// recreating the `Stripe` object on every render.
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+}
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface CartItem {
   id: number;
@@ -58,6 +65,144 @@ const checkoutSteps = [
     points: 25
   }
 ];
+
+const CheckoutForm = ({ cartItems, cartTotal, onSuccess }: any) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + "/checkout?success=true",
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        setPaymentError(error.message || "An error occurred while processing your payment.");
+        toast({
+          title: "Payment Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        // Payment succeeded
+        toast({
+          title: "Payment Successful",
+          description: "Thank you for your purchase!",
+        });
+        
+        onSuccess();
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || "An unexpected error occurred.");
+      toast({
+        title: "Error",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-white">Payment Details</h3>
+        <div className="p-4 border border-purple-900/30 rounded-lg bg-black/20">
+          <PaymentElement 
+            options={{
+              layout: {
+                type: 'tabs',
+                defaultCollapsed: false,
+              },
+            }}
+          />
+        </div>
+      </div>
+
+      {paymentError && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start">
+          <AlertCircle className="text-red-500 h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+          <p className="text-red-400 text-sm">{paymentError}</p>
+        </div>
+      )}
+
+      <div className="bg-black/30 rounded-lg p-4 space-y-3">
+        <div className="flex justify-between">
+          <span className="text-slate-300">Subtotal</span>
+          <span className="text-white">${cartTotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-300">Tax</span>
+          <span className="text-white">$0.00</span>
+        </div>
+        <Separator className="my-2" />
+        <div className="flex justify-between font-semibold">
+          <span className="text-white">Total</span>
+          <span className="text-white">${cartTotal.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <motion.div
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl text-lg transition-all duration-300"
+          disabled={!stripe || isProcessing}
+          size="lg"
+        >
+          <AnimatePresence mode="wait">
+            {isProcessing ? (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center"
+              >
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"
+                />
+                Processing Payment...
+              </motion.div>
+            ) : (
+              <motion.div
+                key="payment"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center"
+              >
+                <CreditCard className="h-5 w-5 mr-2" />
+                Pay ${cartTotal.toFixed(2)}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Button>
+      </motion.div>
+    </form>
+  );
+};
 
 const CheckoutSuccess = () => {
   const [, navigate] = useLocation();
@@ -155,9 +300,11 @@ const CheckoutPage = () => {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [userPoints] = useState(245); // Mock user points
+  const [clientSecret, setClientSecret] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Cart items query
   const {
@@ -202,6 +349,54 @@ const CheckoutPage = () => {
     }
   });
 
+  // Check for payment success in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      setIsSuccess(true);
+      clearCartMutation.mutate();
+    }
+  }, []);
+
+  // Create PaymentIntent on page load
+  useEffect(() => {
+    if (!isAuthenticated || cartItems.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const createIntent = async () => {
+      try {
+        const response = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            amount: cartTotal 
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create payment intent');
+        }
+        
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+      } catch (err: any) {
+        setError(err.message || "Failed to initialize payment. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    createIntent();
+  }, [isAuthenticated, cartItems, cartTotal]);
+
   // Step progression
   useEffect(() => {
     if (cartItems.length > 0 && !completedSteps.includes(1)) {
@@ -210,35 +405,12 @@ const CheckoutPage = () => {
     }
   }, [cartItems, completedSteps]);
 
-  const handleCheckout = async () => {
-    setIsProcessing(true);
-    
-    try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Complete step 2
-      setCompletedSteps(prev => [...prev, 2]);
-      setCurrentStep(3);
-      
-      // Clear cart and show success
-      await clearCartMutation.mutateAsync();
-      setCompletedSteps(prev => [...prev, 3]);
-      setIsSuccess(true);
-      
-      toast({
-        title: "Payment successful!",
-        description: "Your mods are now available in your library.",
-      });
-    } catch (error) {
-      toast({
-        title: "Payment failed",
-        description: "Please try again or contact support.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+  // Handle checkout success
+  const handleCheckoutSuccess = () => {
+    setCompletedSteps(prev => [...prev, 2, 3]);
+    setCurrentStep(3);
+    setIsSuccess(true);
+    clearCartMutation.mutate();
   };
 
   if (!isAuthenticated) {
@@ -388,109 +560,59 @@ const CheckoutPage = () => {
                   <span className="bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">Payment Information</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-slate-300">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={user?.email || ""}
-                      disabled
-                      className="bg-black/30 border-purple-900/30 text-white"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber" className="text-slate-300">Card Number</Label>
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      disabled={isProcessing}
-                      className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry" className="text-slate-300">Expiry Date</Label>
-                      <Input
-                        id="expiry"
-                        placeholder="MM/YY"
-                        disabled={isProcessing}
-                        className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center min-h-[300px]">
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-8 h-8 border-4 border-purple-600/30 border-t-purple-600 rounded-full mb-4"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvc" className="text-slate-300">CVC</Label>
-                      <Input
-                        id="cvc"
-                        placeholder="123"
-                        disabled={isProcessing}
-                        className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
-                      />
+                      <p className="text-slate-300">Initializing secure payment...</p>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-slate-300">Cardholder Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="John Doe"
-                      disabled={isProcessing}
-                      className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
-                    />
+                ) : error ? (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
+                    <div className="flex items-start space-x-4">
+                      <AlertCircle className="text-red-500 h-5 w-5 mt-0.5" />
+                      <div>
+                        <h3 className="text-red-400 font-semibold mb-2">Payment Error</h3>
+                        <p className="text-red-300 text-sm">{error}</p>
+                        <Button
+                          variant="outline"
+                          className="mt-4 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                          onClick={() => window.location.reload()}
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    onClick={handleCheckout}
-                    disabled={isProcessing}
-                    className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl text-lg transition-all duration-300"
-                    size="lg"
-                  >
-                    <AnimatePresence mode="wait">
-                      {isProcessing ? (
-                        <motion.div
-                          key="processing"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center"
-                        >
-                          <motion.div 
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"
-                          />
-                          Processing Payment...
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="payment"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center"
-                        >
-                          <Lock className="h-5 w-5 mr-2" />
-                          Complete Payment ${cartTotal.toFixed(2)}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </Button>
-                </motion.div>
-                
-                <div className="text-center text-sm text-slate-400">
-                  <p className="flex items-center justify-center">
-                    <Shield className="h-4 w-4 mr-2 text-green-400" />
-                    🔒 Secured by Stripe
-                  </p>
-                </div>
+                ) : clientSecret ? (
+                  <Elements stripe={stripePromise} options={{ 
+                    clientSecret, 
+                    appearance: { 
+                      theme: 'night',
+                      variables: {
+                        colorBackground: 'rgba(0, 0, 0, 0.3)',
+                        colorText: '#ffffff',
+                        colorPrimary: '#8b5cf6',
+                        borderRadius: '8px'
+                      }
+                    } 
+                  }}>
+                    <CheckoutForm 
+                      cartItems={cartItems} 
+                      cartTotal={cartTotal} 
+                      onSuccess={handleCheckoutSuccess}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">Unable to initialize payment form</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>

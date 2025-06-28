@@ -105,14 +105,6 @@ export default function CartPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Show floating deals periodically
-  useEffect(() => {
-    if (count > 0) {
-      const timer = setTimeout(() => setShowFloatingDeal(true), 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [count]);
-
   const removeItemMutation = useMutation({
     mutationFn: async (modId: number) => {
       const response = await fetch(`/api/cart/${modId}`, {
@@ -178,6 +170,14 @@ export default function CartPage() {
     }
     return sum;
   }, 0);
+
+  // Show floating deals periodically
+  useEffect(() => {
+    if (count > 0) {
+      const timer = setTimeout(() => setShowFloatingDeal(true), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
 
   // Smart deals based on cart content
   const deals: Deal[] = [
