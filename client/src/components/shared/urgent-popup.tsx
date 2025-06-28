@@ -36,7 +36,7 @@ const urgentDeals = [
   {
     id: 'weekend-special',
     title: '🎯 WEEKEND SPECIAL!',
-    subtitle: 'Ends Sunday midnight',
+    subtitle: 'Limited time offer',
     description: 'Weekend warriors special - get the ultimate drift car collection at an unbeatable price.',
     discount: 50,
     originalPrice: 120,
