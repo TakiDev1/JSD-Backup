@@ -8,6 +8,7 @@ import { X, ShoppingCart, Trash2, ArrowLeft, Star, Heart, Zap, Sparkles, Gift, T
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from 'react';
+import { FloatingDealNotification } from "@/components/shared/sales-banner";
 
 interface CartItem {
   id: number;
@@ -47,6 +48,7 @@ export default function CartPage() {
   const queryClient = useQueryClient();
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes
   const [showUpsells, setShowUpsells] = useState(false);
+  const [showFloatingDeal, setShowFloatingDeal] = useState(false);
 
   // Cart items query
   const {
@@ -102,6 +104,14 @@ export default function CartPage() {
     const timer = setTimeout(() => setShowUpsells(true), 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Show floating deals periodically
+  useEffect(() => {
+    if (count > 0) {
+      const timer = setTimeout(() => setShowFloatingDeal(true), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
 
   const removeItemMutation = useMutation({
     mutationFn: async (modId: number) => {
@@ -657,6 +667,13 @@ export default function CartPage() {
           )}
         </div>
       </div>
+
+      {/* Floating deal notifications */}
+      {showFloatingDeal && (
+        <FloatingDealNotification 
+          onClose={() => setShowFloatingDeal(false)}
+        />
+      )}
     </div>
   );
 }
