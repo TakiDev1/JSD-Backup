@@ -54,11 +54,8 @@ const Home = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black">
-      {/* Sales banner at the top */}
-      <SalesBanner />
-      
-      {/* Add top padding to account for banner */}
-      <div className="pt-20 scroll-smooth">
+      {/* Remove top banner to avoid covering navigation */}
+      <div className="pt-16 scroll-smooth">
         <HeroSection />
         <FeaturedMods />
         <CategoriesSection />

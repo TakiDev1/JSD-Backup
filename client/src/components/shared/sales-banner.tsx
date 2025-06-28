@@ -360,7 +360,7 @@ export function FloatingDealNotification({ onClose }: { onClose: () => void }) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
-      className="fixed bottom-6 right-6 z-50 max-w-sm"
+      className="fixed top-20 right-6 z-50 max-w-sm"
     >
       <div className={`bg-gradient-to-r ${notification.gradient} rounded-xl p-4 shadow-2xl backdrop-blur-sm border border-white/20`}>
         <div className="flex items-start justify-between">

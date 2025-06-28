@@ -7,17 +7,35 @@ import { Pagination } from "@/components/ui/pagination";
 import { ChevronRight, ChevronLeft, Search } from "lucide-react";
 import { Mod } from "@shared/schema";
 import { useLocation } from "wouter";
+import { FloatingDealNotification, StickyDealBanner } from "@/components/shared/sales-banner";
 
 const ModsPage = () => {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showFloatingDeal, setShowFloatingDeal] = useState(false);
 
   // Parse URL params on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.has("search")) setSearchTerm(params.get("search") || "");
     if (params.has("page")) setCurrentPage(parseInt(params.get("page") || "1"));
+  }, []);
+
+  // Show floating deals while browsing
+  useEffect(() => {
+    const timer = setTimeout(() => setShowFloatingDeal(true), 15000);
+    
+    const interval = setInterval(() => {
+      if (Math.random() > 0.4) { // 60% chance to show
+        setShowFloatingDeal(true);
+      }
+    }, Math.random() * 60000 + 30000); // Every 30-90 seconds
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   // Get mods from API - removed filters

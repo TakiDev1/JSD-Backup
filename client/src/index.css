@@ -394,6 +394,12 @@ html {
   }
 }
 
+/* Notification stacking */
+.floating-notification {
+  z-index: 60;
+  margin-bottom: 1rem;
+}
+
 /* Stripe Elements styling */
 .StripeElement {
   background-color: rgba(0, 0, 0, 0.3) !important;

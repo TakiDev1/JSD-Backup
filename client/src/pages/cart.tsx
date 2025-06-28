@@ -668,7 +668,7 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Floating deal notifications */}
+      {/* Floating deal notifications - positioned at top right */}
       {showFloatingDeal && (
         <FloatingDealNotification 
           onClose={() => setShowFloatingDeal(false)}
