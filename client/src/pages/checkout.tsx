@@ -1,74 +1,239 @@
 import { useEffect, useState } from 'react';
-import { useStripe, Elements, PaymentElement, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShoppingCart, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
-import { completePurchase } from "@/lib/cart";
-import { useLocation } from "wouter";
+import { 
+  Loader2, ShoppingCart, CreditCard, CheckCircle, AlertCircle, Lock, 
+  ArrowLeft, Shield, Star, Sparkles, Crown, Download, Zap, Timer, Gift 
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckoutProgress } from "@/components/shared/checkout-progress";
 
-// Make sure to call `loadStripe` outside of a component's render to avoid
-// recreating the `Stripe` object on every render.
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+interface CartItem {
+  id: number;
+  userId: number;
+  modId: number;
+  addedAt: string;
+  mod: {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    discountPrice: number | null;
+    previewImageUrl: string;
+    category: string;
+    tags: string[];
+    features: string[];
+    isSubscriptionOnly: boolean;
+  };
 }
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-const CheckoutForm = ({ cartItems, cartTotal, onSuccess }: any) => {
-  const stripe = useStripe();
-  const elements = useElements();
+const checkoutSteps = [
+  {
+    id: 1,
+    title: "Review Cart",
+    description: "Verify your selected mods",
+    icon: ShoppingCart,
+    points: 10
+  },
+  {
+    id: 2,
+    title: "Payment Info",
+    description: "Enter secure payment details",
+    icon: CreditCard,
+    points: 15
+  },
+  {
+    id: 3,
+    title: "Complete",
+    description: "Download and enjoy your mods",
+    icon: Download,
+    points: 25
+  }
+];
+
+const CheckoutSuccess = () => {
+  const [, navigate] = useLocation();
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-green-900/20 to-black flex items-center justify-center relative overflow-hidden">
+      {/* Success background animation */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-20 left-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+      </div>
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+        className="relative z-10 max-w-md w-full mx-4"
+      >
+        <Card className="bg-black/50 backdrop-blur-lg border-green-900/30">
+          <CardContent className="p-8 text-center">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.3, type: "spring", bounce: 0.6 }}
+              className="mb-6"
+            >
+              <div className="w-20 h-20 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="h-12 w-12 text-white" />
+              </div>
+            </motion.div>
+            
+            <motion.h2 
+              className="text-3xl font-bold mb-4 bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              Payment Successful!
+            </motion.h2>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="space-y-4 mb-8"
+            >
+              <p className="text-slate-300 text-lg">
+                Your mods are now available in your library. Enjoy!
+              </p>
+              
+              <div className="flex items-center justify-center gap-4 text-sm">
+                <div className="flex items-center text-green-400">
+                  <Crown className="h-4 w-4 mr-1" />
+                  <span>+50 Points Earned</span>
+                </div>
+                <div className="flex items-center text-yellow-400">
+                  <Star className="h-4 w-4 mr-1" />
+                  <span>Checkout Master</span>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div 
+              className="space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+            >
+              <Button 
+                className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700 text-white font-bold py-3 rounded-xl transition-all duration-300" 
+                onClick={() => navigate("/mod-locker")}
+              >
+                <Download className="mr-2 h-5 w-5" />
+                View My Mods
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full border-green-600/50 text-green-400 hover:bg-green-600/20 hover:border-green-600 transition-all duration-300" 
+                onClick={() => navigate("/mods")}
+              >
+                Continue Shopping
+              </Button>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+};
+
+const CheckoutPage = () => {
+  const [, navigate] = useLocation();
+  const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [userPoints] = useState(245); // Mock user points
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-    setPaymentError(null);
-
-    try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + "/checkout/success",
-        },
-        redirect: "if_required",
+  // Cart items query
+  const {
+    data: cartItems = [],
+    isLoading: cartLoading
+  } = useQuery<CartItem[]>({
+    queryKey: ['/api/cart'],
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
+      
+      const response = await fetch('/api/cart', { 
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
       });
+      
+      if (response.status === 401) return [];
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      
+      return await response.json();
+    },
+    enabled: isAuthenticated
+  });
 
-      if (error) {
-        setPaymentError(error.message || "An error occurred while processing your payment.");
-        toast({
-          title: "Payment Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else if (paymentIntent && paymentIntent.status === "succeeded") {
-        // Payment succeeded, complete the purchase
-        await completePurchase(paymentIntent.id);
-        
-        toast({
-          title: "Payment Successful",
-          description: "Thank you for your purchase!",
-        });
-        
-        onSuccess();
+  const cartTotal = cartItems.reduce((sum, item) => {
+    const price = item.mod?.discountPrice ?? item.mod?.price ?? 0;
+    return sum + price;
+  }, 0);
+
+  const clearCartMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/cart', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to clear cart');
       }
-    } catch (err: any) {
-      setPaymentError(err.message || "An unexpected error occurred.");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    }
+  });
+
+  // Step progression
+  useEffect(() => {
+    if (cartItems.length > 0 && !completedSteps.includes(1)) {
+      setCompletedSteps([1]);
+      setCurrentStep(2);
+    }
+  }, [cartItems, completedSteps]);
+
+  const handleCheckout = async () => {
+    setIsProcessing(true);
+    
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Complete step 2
+      setCompletedSteps(prev => [...prev, 2]);
+      setCurrentStep(3);
+      
+      // Clear cart and show success
+      await clearCartMutation.mutateAsync();
+      setCompletedSteps(prev => [...prev, 3]);
+      setIsSuccess(true);
+      
       toast({
-        title: "Error",
-        description: err.message || "An unexpected error occurred.",
+        title: "Payment successful!",
+        description: "Your mods are now available in your library.",
+      });
+    } catch (error) {
+      toast({
+        title: "Payment failed",
+        description: "Please try again or contact support.",
         variant: "destructive",
       });
     } finally {
@@ -76,322 +241,335 @@ const CheckoutForm = ({ cartItems, cartTotal, onSuccess }: any) => {
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-display font-semibold text-white">Payment Details</h3>
-        <PaymentElement 
-          options={{
-            layout: {
-              type: 'tabs',
-              defaultCollapsed: false,
-            },
-          }}
-        />
-      </div>
-
-      {paymentError && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start">
-          <AlertCircle className="text-red-500 h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-          <p className="text-red-400 text-sm">{paymentError}</p>
-        </div>
-      )}
-
-      <div className="bg-dark-lighter rounded-lg p-4 space-y-3">
-        <div className="flex justify-between">
-          <span className="text-neutral-light">Subtotal</span>
-          <span className="text-white">${cartTotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-neutral-light">Tax</span>
-          <span className="text-white">$0.00</span>
-        </div>
-        <Separator className="my-2" />
-        <div className="flex justify-between font-semibold">
-          <span className="text-white">Total</span>
-          <span className="text-white">${cartTotal.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <Button 
-        type="submit" 
-        className="w-full"
-        disabled={!stripe || isProcessing}
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="mr-2 h-4 w-4" />
-            Pay ${cartTotal.toFixed(2)}
-          </>
-        )}
-      </Button>
-    </form>
-  );
-};
-
-const CheckoutSuccess = () => {
-  const [, navigate] = useLocation();
-  
-  return (
-    <Card className="w-full bg-dark-card border-green-500/30">
-      <CardHeader>
-        <div className="flex items-center space-x-4">
-          <CheckCircle className="h-8 w-8 text-green-500" />
-          <div>
-            <CardTitle className="text-2xl font-display text-white">Payment Successful!</CardTitle>
-            <CardDescription>Thank you for your purchase</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-neutral-light">
-          Your payment has been processed successfully. Your mods are now available in your Mod Locker.
-        </p>
-      </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-4">
-        <Button className="w-full sm:w-auto" onClick={() => navigate("/mod-locker")}>
-          Go to Mod Locker
-        </Button>
-        <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/mods")}>
-          Continue Shopping
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-};
-
-const CheckoutPage = () => {
-  const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
-  const { cartItems, cartTotal, clearCart } = useCart();
-  const [clientSecret, setClientSecret] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Debug cart state
-  useEffect(() => {
-    console.log("[checkout] Cart debug info:", {
-      cartItems,
-      cartItemsCount: cartItems?.length || 0,
-      cartTotal,
-      isAuthenticated
-    });
-  }, [cartItems, cartTotal, isAuthenticated]);
-
-  // Check for payment success in URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment_intent_status') === 'succeeded') {
-      setIsSuccess(true);
-      clearCart();
-    }
-  }, [clearCart]);
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    // Only redirect once we've confirmed the user is not authenticated
-    if (!isAuthenticated && !isLoading) {
-      console.log("Checkout: User not authenticated, redirecting to auth page");
-      navigate("/auth");
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
-  // Create PaymentIntent on page load
-  useEffect(() => {
-    // First check if we're authenticated
-    if (!isAuthenticated) {
-      console.log("Checkout: User not authenticated, waiting for auth status");
-      return;
-    }
-    
-    // Then check if cart has items
-    if (cartItems.length === 0) {
-      console.log("Checkout: Cart is empty, skipping payment intent creation");
-      setIsLoading(false);
-      return;
-    }
-
-    console.log("Checkout: Creating payment intent for cart total:", cartTotal);
-    setIsLoading(true);
-    setError(null);
-
-    const createIntent = async () => {
-      try {
-        const res = await apiRequest("POST", "/api/create-payment-intent", { 
-          amount: cartTotal 
-        });
-        const data = await res.json();
-        console.log("Checkout: Payment intent created successfully");
-        setClientSecret(data.clientSecret);
-      } catch (err: any) {
-        console.error("Checkout: Error creating payment intent:", err);
-        setError(err.message || "Failed to initialize payment. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    createIntent();
-  }, [isAuthenticated, cartItems, cartTotal]);
-
-  // Handle checkout success
-  const handleCheckoutSuccess = () => {
-    setIsSuccess(true);
-    clearCart();
-  };
-
-  if (isSuccess) {
+  if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-24 min-h-screen">
-        <div className="max-w-lg mx-auto">
-          <CheckoutSuccess />
+      <div className="min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
         </div>
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10"
+        >
+          <Card className="w-full max-w-md bg-black/50 backdrop-blur-lg border-purple-900/30">
+            <CardContent className="p-8 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
+              >
+                <Lock className="h-16 w-16 text-purple-400 mx-auto mb-6" />
+              </motion.div>
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">Please Sign In</h2>
+              <p className="text-slate-300 mb-6">
+                You need to be signed in to complete your purchase.
+              </p>
+              <Link href="/login">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-700 hover:to-green-700 text-white font-bold py-3 rounded-xl transition-all duration-300">
+                  <Zap className="mr-2 h-5 w-5" />
+                  Sign In Now
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-24 min-h-screen">
-      <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-8">
-        Checkout
-      </h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          {isLoading ? (
-            <Card className="bg-dark-card">
-              <CardContent className="flex items-center justify-center min-h-[300px]">
-                <div className="flex flex-col items-center">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-                  <p className="text-neutral-light">Initializing checkout...</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : error ? (
-            <Card className="bg-dark-card border-red-500/30">
-              <CardHeader>
-                <CardTitle className="text-xl font-display text-white">
-                  Checkout Error
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start space-x-4">
-                  <AlertCircle className="text-red-500 h-5 w-5 mt-0.5" />
-                  <div>
-                    <p className="text-neutral-light">{error}</p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => window.location.reload()}
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : cartItems.length === 0 ? (
-            <Card className="bg-dark-card">
-              <CardHeader>
-                <CardTitle className="text-xl font-display text-white">
-                  Your Cart is Empty
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-neutral-light mb-6">
-                  Add some mods to your cart before checking out.
-                </p>
-                <Button onClick={() => navigate("/mods")}>
+  if (cartItems.length === 0 && !isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10"
+        >
+          <Card className="w-full max-w-md bg-black/50 backdrop-blur-lg border-purple-900/30">
+            <CardContent className="p-8 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
+              >
+                <CreditCard className="h-16 w-16 text-purple-400 mx-auto mb-6" />
+              </motion.div>
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">Cart is Empty</h2>
+              <p className="text-slate-300 mb-6">
+                Add some amazing mods to your cart before checking out.
+              </p>
+              <Link href="/mods">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-700 hover:to-green-700 text-white font-bold py-3 rounded-xl transition-all duration-300">
+                  <Sparkles className="mr-2 h-5 w-5" />
                   Browse Mods
                 </Button>
-              </CardContent>
-            </Card>
-          ) : clientSecret ? (
-            <Card className="bg-dark-card">
-              <CardContent className="pt-6">
-                <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night' } }}>
-                  <CheckoutForm 
-                    cartItems={cartItems} 
-                    cartTotal={cartTotal} 
-                    onSuccess={handleCheckoutSuccess}
-                  />
-                </Elements>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-
-        <div className="lg:col-span-1">
-          <Card className="bg-dark-card sticky top-24">
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl font-display text-white">
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                Order Summary
-              </CardTitle>
-              <CardDescription>
-                {cartItems.length} item{cartItems.length !== 1 && 's'} in your cart
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {cartItems.length === 0 ? (
-                <p className="text-neutral-light text-center py-4">
-                  Your cart is empty
-                </p>
-              ) : (
-                <>
-                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {cartItems.map((item: any) => (
-                      <div key={item.id} className="flex items-center space-x-4">
-                        <img 
-                          src={item.mod?.previewImageUrl || "/images/mod-placeholder.jpg"} 
-                          alt={item.mod?.title} 
-                          className="w-16 h-16 object-cover rounded-md"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/mod-placeholder.jpg";
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium truncate">{item.mod?.title}</h4>
-                          <div className="flex items-center">
-                            <Badge variant="outline" className="text-neutral-light text-xs">
-                              {item.mod?.category}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-white font-medium">
-                          ${(item.mod?.discountPrice || item.mod?.price || 0).toFixed(2)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-light">Subtotal</span>
-                      <span className="text-white">${cartTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-light">Tax</span>
-                      <span className="text-white">$0.00</span>
-                    </div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between font-semibold">
-                      <span className="text-white">Total</span>
-                      <span className="text-white">${cartTotal.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </>
-              )}
+              </Link>
             </CardContent>
           </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (isSuccess) {
+    return <CheckoutSuccess />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black relative overflow-hidden">
+      {/* Floating background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl animate-pulse delay-500"></div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Header */}
+        <motion.div 
+          className="flex items-center justify-between mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link href="/cart" className="inline-flex items-center text-slate-300 hover:text-white transition-colors group">
+            <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to Cart
+          </Link>
+          
+          <div className="text-right">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">
+              Secure Checkout
+            </h1>
+            <div className="flex items-center text-sm text-slate-400 mt-1">
+              <Shield className="h-4 w-4 mr-2 text-green-400" />
+              SSL Encrypted
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Progress stepper */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-12"
+        >
+          <CheckoutProgress
+            currentStep={currentStep}
+            totalSteps={3}
+            steps={checkoutSteps}
+            completedSteps={completedSteps}
+            userPoints={userPoints}
+          />
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Checkout Form */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="bg-black/50 backdrop-blur-lg border-purple-900/30 hover:border-purple-600/50 transition-all duration-500">
+              <CardHeader>
+                <CardTitle className="flex items-center text-2xl">
+                  <CreditCard className="h-6 w-6 mr-3 text-purple-400" />
+                  <span className="bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">Payment Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-slate-300">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={user?.email || ""}
+                      disabled
+                      className="bg-black/30 border-purple-900/30 text-white"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="cardNumber" className="text-slate-300">Card Number</Label>
+                    <Input
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      disabled={isProcessing}
+                      className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="expiry" className="text-slate-300">Expiry Date</Label>
+                      <Input
+                        id="expiry"
+                        placeholder="MM/YY"
+                        disabled={isProcessing}
+                        className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cvc" className="text-slate-300">CVC</Label>
+                      <Input
+                        id="cvc"
+                        placeholder="123"
+                        disabled={isProcessing}
+                        className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-slate-300">Cardholder Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="John Doe"
+                      disabled={isProcessing}
+                      className="bg-black/30 border-purple-900/30 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
+                    onClick={handleCheckout}
+                    disabled={isProcessing}
+                    className="w-full bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl text-lg transition-all duration-300"
+                    size="lg"
+                  >
+                    <AnimatePresence mode="wait">
+                      {isProcessing ? (
+                        <motion.div
+                          key="processing"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center"
+                        >
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"
+                          />
+                          Processing Payment...
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="payment"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center"
+                        >
+                          <Lock className="h-5 w-5 mr-2" />
+                          Complete Payment ${cartTotal.toFixed(2)}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </motion.div>
+                
+                <div className="text-center text-sm text-slate-400">
+                  <p className="flex items-center justify-center">
+                    <Shield className="h-4 w-4 mr-2 text-green-400" />
+                    🔒 Secured by Stripe
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Order Summary */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Card className="bg-black/50 backdrop-blur-lg border-green-900/30 hover:border-green-600/50 transition-all duration-500 sticky top-8">
+              <CardHeader>
+                <CardTitle className="text-2xl bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent">Order Summary</CardTitle>
+                <div className="flex items-center text-sm text-slate-400">
+                  <Gift className="h-4 w-4 mr-2 text-yellow-400" />
+                  Instant download after payment
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  {cartItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-black/30 to-purple-900/10 border border-purple-900/20 order-summary-item"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.mod.previewImageUrl || "/images/mod-placeholder.jpg"}
+                          alt={item.mod.title}
+                          className="w-14 h-14 object-cover rounded-lg"
+                        />
+                        <div>
+                          <h4 className="font-semibold text-white line-clamp-1">{item.mod.title}</h4>
+                          <Badge className="bg-gradient-to-r from-green-600/20 to-purple-600/20 text-green-300 border-green-600/30 text-xs mt-1">
+                            {item.mod.category}
+                          </Badge>
+                        </div>
+                      </div>
+                      <span className="font-bold text-green-400 text-lg">
+                        ${item.mod.discountPrice || item.mod.price}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+                
+                <div className="h-px bg-gradient-to-r from-purple-600/30 to-green-600/30"></div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-slate-300">Subtotal</span>
+                    <span className="font-semibold text-white">${cartTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-400">
+                    <span>Tax</span>
+                    <span>$0.00</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-green-400">
+                    <span>Processing Fee</span>
+                    <span>FREE</span>
+                  </div>
+                  <div className="h-px bg-gradient-to-r from-purple-600/30 to-green-600/30"></div>
+                  <div className="flex justify-between font-bold text-xl">
+                    <span className="text-white">Total</span>
+                    <span className="bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent">${cartTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-900/20 to-purple-900/20 p-4 rounded-lg border border-green-900/30">
+                  <div className="flex items-center text-sm text-green-300">
+                    <Star className="h-4 w-4 mr-2" />
+                    <span>Earn 50 points with this purchase</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </div>
