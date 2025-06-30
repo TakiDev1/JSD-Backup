@@ -128,6 +128,13 @@ html {
   transform-style: preserve-3d;
 }
 
+/* Site color animations */
+@keyframes site-border {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .animate-bounce-in {
   animation: bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }

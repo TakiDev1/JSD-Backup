@@ -149,15 +149,15 @@ const FeaturedMods = () => {
               className="perspective-1000"
             >
               <Card className="group relative overflow-hidden bg-gradient-to-br from-black/60 via-purple-900/20 to-green-900/20 border border-purple-500/30 hover:border-green-500/60 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-purple-500/30">
-                {/* Interactive glow effect */}
+                {/* Interactive glow effect - using site colors */}
                 <motion.div
-                  className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 rounded-xl opacity-0 group-hover:opacity-75 blur-lg transition-opacity duration-700"
+                  className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-green-600 rounded-xl opacity-0 group-hover:opacity-75 blur-lg transition-opacity duration-700"
                   animate={{
                     background: [
-                      "linear-gradient(45deg, #8b5cf6, #ec4899, #22c55e)",
-                      "linear-gradient(135deg, #22c55e, #8b5cf6, #ec4899)",
-                      "linear-gradient(225deg, #ec4899, #22c55e, #8b5cf6)",
-                      "linear-gradient(315deg, #8b5cf6, #ec4899, #22c55e)"
+                      "linear-gradient(45deg, #8b5cf6, #22c55e)",
+                      "linear-gradient(135deg, #22c55e, #8b5cf6)",
+                      "linear-gradient(225deg, #8b5cf6, #22c55e)",
+                      "linear-gradient(315deg, #22c55e, #8b5cf6)"
                     ]
                   }}
                   transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
