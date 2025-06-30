@@ -1,8 +1,8 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Star, Download, ShoppingCart, Eye, TrendingUp, Heart, Clock } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Star, Download, ShoppingCart, Eye, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/hooks/use-cart";
@@ -131,115 +131,244 @@ const FeaturedMods = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {mods.map((mod: any, index: number) => (
             <motion.div
               key={mod.id}
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.15 }}
+              transition={{ duration: 0.8, delay: index * 0.2 }}
               viewport={{ once: true }}
-              className="group"
+              whileHover={{ 
+                y: -20,
+                scale: 1.05,
+                rotateY: 5,
+                rotateX: 5,
+                transition: { duration: 0.4, ease: "easeOut" }
+              }}
+              className="perspective-1000"
             >
-              <Card className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 hover:border-primary/50 transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-primary/10 overflow-hidden">
-                <CardHeader className="p-0 relative">
-                  <div className="relative h-64 overflow-hidden">
-                    <img 
-                      src={mod.thumbnail || "/api/placeholder/400/300"} 
-                      alt={mod.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    
-                    {/* Gradient Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    {/* Top Badges */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge className="bg-slate-900/90 backdrop-blur-sm text-white border-0 px-3 py-1">
-                        {mod.category}
-                      </Badge>
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-3 py-1">
-                        Featured
-                      </Badge>
-                    </div>
-
-                    {/* Favorite Button */}
-                    <button className="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 hover:bg-red-500/20 hover:border-red-500 transition-all duration-300 group/heart">
-                      <Heart className="h-4 w-4 text-white group-hover/heart:text-red-400 transition-colors" />
-                    </button>
-                    
-                    {/* Bottom Info Bar */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-amber-400 fill-current" />
-                            <span className="text-white text-sm font-semibold">4.9</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Download className="h-4 w-4 text-slate-300" />
-                            <span className="text-white text-sm font-medium">2.1K</span>
-                          </div>
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-black/60 via-purple-900/20 to-green-900/20 border border-purple-500/30 hover:border-green-500/60 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-purple-500/30">
+                {/* Interactive glow effect */}
+                <motion.div
+                  className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 rounded-xl opacity-0 group-hover:opacity-75 blur-lg transition-opacity duration-700"
+                  animate={{
+                    background: [
+                      "linear-gradient(45deg, #8b5cf6, #ec4899, #22c55e)",
+                      "linear-gradient(135deg, #22c55e, #8b5cf6, #ec4899)",
+                      "linear-gradient(225deg, #ec4899, #22c55e, #8b5cf6)",
+                      "linear-gradient(315deg, #8b5cf6, #ec4899, #22c55e)"
+                    ]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                
+                {/* Shimmer overlay */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 opacity-0 group-hover:opacity-100"
+                  initial={{ x: "-100%" }}
+                  whileHover={{ x: "200%" }}
+                  transition={{ duration: 1.2, ease: "easeInOut" }}
+                />
+                
+                <CardHeader className="p-0 relative z-10">
+                  <div className="relative aspect-video overflow-hidden">
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 1 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      {mod.previewImageUrl ? (
+                        <img
+                          src={mod.previewImageUrl}
+                          alt={mod.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-green-900/40">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Eye className="h-16 w-16 text-purple-400" />
+                          </motion.div>
                         </div>
-                        <div className="flex items-center space-x-1 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
-                          <Clock className="h-3 w-3 text-slate-300" />
-                          <span className="text-white text-xs font-medium">Updated 2d ago</span>
+                      )}
+                    </motion.div>
+                    
+                    {/* Interactive badges */}
+                    <motion.div
+                      className="absolute top-4 left-4"
+                      whileHover={{ scale: 1.15, rotate: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 px-4 py-2 rounded-full backdrop-blur-sm shadow-lg border border-white/20">
+                        <span className="text-white text-sm font-bold tracking-wide">✨ Featured</span>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Interactive rating */}
+                    <motion.div
+                      className="absolute top-4 right-4"
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <div className="bg-black/80 backdrop-blur-md px-3 py-2 rounded-full border border-yellow-500/40 shadow-lg">
+                        <div className="flex items-center gap-1">
+                          <motion.div
+                            animate={{ rotate: [0, 360] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          </motion.div>
+                          <span className="text-white text-sm font-semibold">4.9</span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
+                    
+                    {/* Interactive heart button */}
+                    <motion.button
+                      className="absolute bottom-4 right-4 w-12 h-12 bg-black/70 backdrop-blur-md rounded-full border border-red-500/30 flex items-center justify-center group/heart"
+                      whileHover={{ scale: 1.3, rotate: 15 }}
+                      whileTap={{ scale: 0.8 }}
+                      animate={{
+                        boxShadow: [
+                          "0 0 0 0 rgba(239, 68, 68, 0.4)",
+                          "0 0 0 10px rgba(239, 68, 68, 0)",
+                          "0 0 0 0 rgba(239, 68, 68, 0)"
+                        ]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.2 }}
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          rotate: [0, -10, 10, 0]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <Heart className="h-5 w-5 text-red-400 group-hover/heart:fill-current transition-all duration-300" />
+                      </motion.div>
+                    </motion.button>
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-purple-400 group-hover:bg-clip-text transition-all duration-300">
+                <CardContent className="p-6 bg-gradient-to-br from-black/80 via-purple-900/10 to-green-900/10 backdrop-blur-xl relative z-10">
+                  <motion.h3 
+                    className="text-2xl font-bold mb-3 text-white group-hover:bg-gradient-to-r group-hover:from-purple-300 group-hover:via-pink-300 group-hover:to-green-300 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500"
+                    whileHover={{ scale: 1.05, x: 5 }}
+                    animate={{
+                      textShadow: [
+                        "0 0 10px rgba(139, 92, 246, 0.3)",
+                        "0 0 20px rgba(236, 72, 153, 0.4)",
+                        "0 0 10px rgba(34, 197, 94, 0.3)"
+                      ]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  >
                     {mod.title}
-                  </h3>
-                  <p className="text-slate-400 text-sm mb-4 line-clamp-2 leading-relaxed">
+                  </motion.h3>
+                  <p className="text-slate-300 text-sm mb-6 leading-relaxed line-clamp-2">
                     {mod.description}
                   </p>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                        ${mod.price}
-                      </span>
-                      {mod.discountPrice && (
-                        <span className="text-sm text-slate-500 line-through">
-                          ${mod.discountPrice}
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Badge className="bg-gradient-to-r from-purple-500/30 to-green-500/30 text-white border border-purple-500/50 text-xs px-3 py-1 backdrop-blur-sm">
+                          {mod.category}
+                        </Badge>
+                      </motion.div>
+                      <motion.div 
+                        className="flex items-center gap-1 text-slate-300"
+                        whileHover={{ scale: 1.1 }}
+                        animate={{ y: [0, -2, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <Download className="h-4 w-4 text-green-400" />
+                        <span className="text-sm font-medium">2.3k</span>
+                      </motion.div>
                     </div>
-                    <div className="flex items-center space-x-1 text-slate-400 text-sm">
-                      <Eye className="h-4 w-4" />
-                      <span>1.2K</span>
-                    </div>
-                  </div>
-                </CardContent>
-
-                <CardFooter className="p-6 pt-0 flex gap-3">
-                  <Link href={`/mods/${mod.id}`} className="flex-1">
-                    <Button 
-                      variant="outline" 
-                      className="w-full border-slate-600 hover:border-primary hover:bg-primary/10 text-white transition-all duration-300"
+                    
+                    <motion.div 
+                      className="text-right"
+                      whileHover={{ scale: 1.1, rotate: -2 }}
                     >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Details
-                    </Button>
-                  </Link>
-                  <Button 
-                    className={`flex-1 transition-all duration-300 ${
-                      isModInCart(mod.id) 
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/25' 
-                        : 'bg-gradient-to-r from-primary to-purple-600 hover:from-primary-light hover:to-purple-500 shadow-lg shadow-primary/25'
-                    }`}
-                    onClick={() => handleAddToCart(mod)}
-                    disabled={isModInCart(mod.id)}
+                      {mod.discountPrice ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500 line-through text-sm">${mod.price}</span>
+                          <motion.span 
+                            className="text-2xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-green-300 bg-clip-text text-transparent"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            ${mod.discountPrice}
+                          </motion.span>
+                        </div>
+                      ) : (
+                        <motion.span 
+                          className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-green-200 bg-clip-text text-transparent"
+                          animate={{ scale: [1, 1.03, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          ${mod.price}
+                        </motion.span>
+                      )}
+                    </motion.div>
+                  </div>
+                  
+                  <motion.div
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: "0 10px 30px rgba(139, 92, 246, 0.3)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative overflow-hidden"
                   >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    {isModInCart(mod.id) ? 'Added' : 'Add to Cart'}
-                  </Button>
-                </CardFooter>
+                    <Button
+                      onClick={() => handleAddToCart(mod)}
+                      disabled={isModInCart(mod.id)}
+                      className={`w-full relative overflow-hidden border-0 font-semibold py-3 text-white transition-all duration-500 ${
+                        isModInCart(mod.id) 
+                          ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-green-500 shadow-lg shadow-green-500/40' 
+                          : 'bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 hover:from-purple-500 hover:via-pink-500 hover:to-green-500 shadow-lg shadow-purple-500/40'
+                      }`}
+                    >
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent -skew-x-12"
+                        initial={{ x: "-100%" }}
+                        whileHover={{ x: "200%" }}
+                        transition={{ duration: 0.8 }}
+                      />
+                      <div className="relative flex items-center justify-center gap-2">
+                        {isModInCart(mod.id) ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              <Star className="h-4 w-4 fill-current" />
+                            </motion.div>
+                            "Added to Cart"
+                          </>
+                        ) : (
+                          <>
+                            <motion.div
+                              whileHover={{ rotate: 15, scale: 1.1 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </motion.div>
+                            "Add to Cart"
+                          </>
+                        )}
+                      </div>
+                    </Button>
+                  </motion.div>
+                </CardContent>
               </Card>
             </motion.div>
           ))}
@@ -250,16 +379,17 @@ const FeaturedMods = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center"
+          className="text-center mt-16"
         >
-          <Link href="/mods">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary-light hover:to-purple-500 text-white font-semibold px-8 py-4 text-lg shadow-xl shadow-primary/25 border-0"
+          <Link to="/mods">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Explore All Mods
-              <TrendingUp className="ml-2 h-5 w-5" />
-            </Button>
+              <Button className="bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 hover:from-purple-500 hover:via-pink-500 hover:to-green-500 text-white border-0 px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
+                View All Mods
+              </Button>
+            </motion.div>
           </Link>
         </motion.div>
       </div>
