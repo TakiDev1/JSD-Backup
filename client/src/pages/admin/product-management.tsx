@@ -3,9 +3,40 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Package, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Eye, DollarSign, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProductManagement() {
+  const { data: stats } = useQuery({
+    queryKey: ['/api/admin/stats'],
+  });
+
+  const { data: allMods, isLoading } = useQuery({
+    queryKey: ['/api/mods'],
+  });
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto px-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-slate-700 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 bg-slate-700 rounded"></div>
+              ))}
+            </div>
+            <div className="h-96 bg-slate-700 rounded"></div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const featuredMods = allMods?.filter((mod: any) => mod.featured) || [];
+  const subscriptionMods = allMods?.filter((mod: any) => mod.isSubscriptionOnly) || [];
+  const categories = [...new Set(allMods?.map((mod: any) => mod.category))];
+
   return (
     <AdminLayout>
       <div className="container mx-auto px-4">
@@ -21,7 +52,7 @@ export default function ProductManagement() {
             </Button>
           </div>
 
-          {/* Quick Stats */}
+          {/* Real Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -34,8 +65,8 @@ export default function ProductManagement() {
                   <Package className="h-4 w-4 text-purple-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">342</div>
-                  <p className="text-xs text-purple-300">+23 this month</p>
+                  <div className="text-2xl font-bold text-white">{stats?.mods || 0}</div>
+                  <p className="text-xs text-purple-300">Published mods</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -48,11 +79,11 @@ export default function ProductManagement() {
               <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-green-200">Featured</CardTitle>
-                  <Eye className="h-4 w-4 text-green-400" />
+                  <Star className="h-4 w-4 text-green-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">12</div>
-                  <p className="text-xs text-green-300">3 pending review</p>
+                  <div className="text-2xl font-bold text-white">{featuredMods.length}</div>
+                  <p className="text-xs text-green-300">Featured mods</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -68,8 +99,8 @@ export default function ProductManagement() {
                   <Package className="h-4 w-4 text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">8</div>
-                  <p className="text-xs text-blue-300">No change</p>
+                  <div className="text-2xl font-bold text-white">{categories.length}</div>
+                  <p className="text-xs text-blue-300">Active categories</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -81,51 +112,63 @@ export default function ProductManagement() {
             >
               <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/30 border-orange-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-orange-200">Draft</CardTitle>
-                  <Edit className="h-4 w-4 text-orange-400" />
+                  <CardTitle className="text-sm font-medium text-orange-200">Premium Only</CardTitle>
+                  <Eye className="h-4 w-4 text-orange-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">7</div>
-                  <p className="text-xs text-orange-300">Awaiting completion</p>
+                  <div className="text-2xl font-bold text-white">{subscriptionMods.length}</div>
+                  <p className="text-xs text-orange-300">Subscription mods</p>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
-          {/* Product List */}
+          {/* Real Mod List */}
           <Card className="bg-slate-900/80 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Recent Mods
+                All Mods ({allMods?.length || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { name: "Drift King GT86", category: "Drift", status: "Published", price: "$15.99" },
-                  { name: "Speed Demon McLaren", category: "Sports", status: "Featured", price: "$24.99" },
-                  { name: "Off-Road Beast", category: "Vehicles", status: "Draft", price: "$19.99" },
-                  { name: "Classic Muscle Car", category: "Classics", status: "Published", price: "$12.99" },
-                  { name: "Rally Champion", category: "Rally", status: "Pending", price: "$18.99" }
-                ].map((mod, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                {allMods?.map((mod: any) => (
+                  <div key={mod.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center text-white font-bold">
-                        M{i + 1}
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        {mod.title?.[0]?.toUpperCase() || 'M'}
                       </div>
                       <div>
-                        <p className="text-white font-medium">{mod.name}</p>
-                        <p className="text-slate-400 text-sm">{mod.category} • {mod.price}</p>
+                        <p className="text-white font-medium">{mod.title}</p>
+                        <p className="text-slate-400 text-sm flex items-center gap-2">
+                          {mod.category} • 
+                          <DollarSign className="w-3 h-3" />
+                          ${mod.price}
+                          {mod.discountPrice && (
+                            <span className="text-green-400">
+                              (${mod.discountPrice} sale)
+                            </span>
+                          )}
+                        </p>
+                        {mod.description && (
+                          <p className="text-slate-500 text-xs truncate max-w-md">{mod.description}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Badge variant={
-                        mod.status === "Published" ? "default" : 
-                        mod.status === "Featured" ? "secondary" : 
-                        mod.status === "Draft" ? "outline" : "destructive"
-                      }>
-                        {mod.status}
+                      {mod.featured && (
+                        <Badge variant="default" className="bg-yellow-600">
+                          Featured
+                        </Badge>
+                      )}
+                      {mod.isSubscriptionOnly && (
+                        <Badge variant="secondary" className="bg-purple-600">
+                          Premium
+                        </Badge>
+                      )}
+                      <Badge variant="outline">
+                        {mod.category}
                       </Badge>
                       <div className="flex space-x-2">
                         <Button variant="outline" size="sm">
@@ -137,7 +180,9 @@ export default function ProductManagement() {
                       </div>
                     </div>
                   </div>
-                ))}
+                )) || (
+                  <div className="text-slate-400 text-center py-8">No mods found</div>
+                )}
               </div>
             </CardContent>
           </Card>

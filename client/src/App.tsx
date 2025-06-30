@@ -23,7 +23,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import MaintenancePage from "@/pages/maintenance";
 import DebugCart from "@/pages/debug-cart";
-import AdminDashboard from "@/pages/admin/dashboard-new";
+import AdminDashboard from "@/pages/admin/admin-dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminSettings from "@/pages/admin/settings";
 import AdminAnalytics from "@/pages/admin/analytics";
