@@ -104,9 +104,7 @@ function App() {
                 </main>
                 <Footer />
               </div>
-              <CartDrawer>
-                <></>
-              </CartDrawer>
+              <CartDrawer />
               <Toaster />
             </TooltipProvider>
           </CartProvider>
