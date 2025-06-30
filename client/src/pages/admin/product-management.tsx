@@ -7,11 +7,18 @@ import { Package, Plus, Edit, Trash2, Eye, DollarSign, Star } from "lucide-react
 import { useQuery } from "@tanstack/react-query";
 
 export default function ProductManagement() {
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  }>({
     queryKey: ['/api/admin/stats'],
   });
 
-  const { data: modsResponse, isLoading } = useQuery({
+  const { data: modsResponse, isLoading } = useQuery<{ mods: any[] }>({
     queryKey: ['/api/mods'],
   });
 

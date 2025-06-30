@@ -35,6 +35,8 @@ import SalesReport from "@/pages/admin/analytics/sales";
 import UserAnalytics from "@/pages/admin/analytics/users";
 import CreateUser from "@/pages/admin/users/create";
 import CreateMod from "@/pages/admin/mods/create";
+import OrderManagementIndex from "@/pages/admin/orders/index";
+import AdminSettingsIndex from "@/pages/admin/settings/index";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -128,11 +130,11 @@ function Router() {
       <AdminRoute path="/admin/communications/discord" component={AdminNotifications} />
       
       {/* Site Settings */}
-      <AdminRoute path="/admin/settings" component={AdminSettings} />
-      <AdminRoute path="/admin/settings/appearance" component={AdminSettings} />
-      <AdminRoute path="/admin/settings/seo" component={AdminSettings} />
-      <AdminRoute path="/admin/settings/security" component={AdminSettings} />
-      <AdminRoute path="/admin/settings/maintenance" component={AdminSettings} />
+      <AdminRoute path="/admin/settings" component={AdminSettingsIndex} />
+      <AdminRoute path="/admin/settings/appearance" component={AdminSettingsIndex} />
+      <AdminRoute path="/admin/settings/seo" component={AdminSettingsIndex} />
+      <AdminRoute path="/admin/settings/security" component={AdminSettingsIndex} />
+      <AdminRoute path="/admin/settings/maintenance" component={AdminSettingsIndex} />
       
       {/* Database */}
       <AdminRoute path="/admin/database/backup" component={AdminSettings} />
