@@ -1,7 +1,7 @@
-import { HeroSection } from "@/components/home/hero-section-clean";
-import FeaturedMods from "@/components/home/featured-mods-clean";
-import CategoriesSection from "@/components/home/categories-section-clean";
-import DiscordSection from "@/components/home/discord-section-clean";
+import HeroSection from "@/components/home/hero-section";
+import FeaturedMods from "@/components/home/featured-mods";
+import CategoriesSection from "@/components/home/categories-section";
+import DiscordSection from "@/components/home/discord-section";
 import TestimonialsSection from "@/components/home/testimonials-section";
 import CallToAction from "@/components/home/call-to-action";
 import { SalesBanner, FloatingDealNotification, StickyDealBanner } from "@/components/shared/sales-banner";

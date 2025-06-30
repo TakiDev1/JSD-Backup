@@ -1,4 +1,5 @@
-import { useCart, type CartItem } from "@/hooks/use-cart";
+import { useCart } from "@/hooks/use-cart";
+import type { CartItem } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -13,10 +14,10 @@ import {
 } from "@/components/ui/sheet";
 
 interface CartDrawerProps {
-  children?: React.ReactNode;
+  children: React.ReactNode;
 }
 
-export function CartDrawer({ children }: CartDrawerProps = {}) {
+export function CartDrawer({ children }: CartDrawerProps) {
   const { 
     items, 
     total, 
@@ -25,7 +26,7 @@ export function CartDrawer({ children }: CartDrawerProps = {}) {
     removeItem, 
     clearCart 
   } = useCart();
-  
+
   const safeItems: CartItem[] = Array.isArray(items) ? items : [];
   const safeCount = typeof count === 'number' ? count : safeItems.length;
   const safeTotal = typeof total === 'number' ? total : 0;

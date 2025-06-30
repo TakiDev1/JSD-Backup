@@ -2,17 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dynamic Background CSS Variables */
-:root {
-  --dynamic-primary-hue: 270;
-  --dynamic-secondary-hue: 120;
-  --dynamic-intensity: 0.15;
-  --dynamic-position-x: 30%;
-  --dynamic-position-y: 20%;
-  --dynamic-rotation: 0deg;
-  --dynamic-opacity: 0.8;
-}
-
 /* Enhanced scroll behavior and animations */
 html {
   scroll-behavior: smooth;
@@ -32,50 +21,6 @@ html {
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
-}
-
-/* Dynamic background gradient animations */
-@keyframes gradientShift {
-  0% { filter: hue-rotate(0deg); }
-  25% { filter: hue-rotate(90deg); }
-  50% { filter: hue-rotate(180deg); }
-  75% { filter: hue-rotate(270deg); }
-  100% { filter: hue-rotate(360deg); }
-}
-
-@keyframes gradientPulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
-}
-
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Dynamic background utility classes */
-.dynamic-bg-responsive {
-  background: radial-gradient(
-    circle at var(--dynamic-position-x, 30%) var(--dynamic-position-y, 20%),
-    hsla(var(--dynamic-primary-hue, 270), 70%, 60%, var(--dynamic-intensity, 0.15)),
-    transparent 70%
-  );
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dynamic-bg-secondary {
-  background: radial-gradient(
-    circle at calc(100% - var(--dynamic-position-x, 30%)) calc(100% - var(--dynamic-position-y, 20%)),
-    hsla(var(--dynamic-secondary-hue, 120), 60%, 55%, calc(var(--dynamic-intensity, 0.15) * 0.8)),
-    transparent 60%
-  );
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.gradient-animated {
-  background-size: 400% 400%;
-  animation: gradientFlow 8s ease infinite;
 }
 
 .animate-float {
