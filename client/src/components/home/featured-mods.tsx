@@ -1,12 +1,13 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Star, Download, ShoppingCart, Eye, TrendingUp, Heart, Clock } from "lucide-react";
+import { Star, Download, ShoppingCart, Eye, TrendingUp, Heart, Clock, Sparkles, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
+import { InteractiveModCard } from "../interactive/interactive-mod-card";
+import { TextReveal } from "../interactive/text-reveal";
+import { MagneticButton } from "../interactive/magnetic-button";
+import { FloatingParticles } from "../interactive/floating-particles";
 
 const FeaturedMods = () => {
   const { isAuthenticated } = useAuth();
@@ -32,29 +33,18 @@ const FeaturedMods = () => {
 
   if (isLoading) {
     return (
-      <section className="py-32 relative overflow-hidden bg-gradient-to-br from-black via-purple-900/20 to-black">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 left-20 w-40 h-40 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-40 h-40 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-        </div>
+      <section className="py-32 relative overflow-hidden">
+        <FloatingParticles count={30} colors={["#a855f7", "#22c55e"]} />
         
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div 
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-5xl md:text-6xl font-black text-white mb-4">
-              Featured <span className="gradient-text">Mods</span>
+          <TextReveal>
+            <h2 className="text-6xl md:text-7xl font-black text-center text-white mb-4">
+              <span className="bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">
+                Featured Mods
+              </span>
             </h2>
-            <p className="text-gray-300 text-xl max-w-2xl mx-auto">
-              Discover our most popular and cutting-edge BeamNG.drive modifications, handpicked for exceptional quality and performance.
-            </p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          </TextReveal>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-slate-800/50 rounded-2xl h-[500px] animate-pulse backdrop-blur-sm"></div>
             ))}

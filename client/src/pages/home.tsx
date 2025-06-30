@@ -1,5 +1,5 @@
-import HeroSection from "@/components/home/hero-section";
-import FeaturedMods from "@/components/home/featured-mods";
+import { HeroSection } from "@/components/home/hero-section";
+import FeaturedMods from "@/components/home/featured-mods-new";
 import CategoriesSection from "@/components/home/categories-section";
 import DiscordSection from "@/components/home/discord-section";
 import TestimonialsSection from "@/components/home/testimonials-section";
