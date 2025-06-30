@@ -148,16 +148,16 @@ const FeaturedMods = () => {
               }}
               className="perspective-1000"
             >
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-black/60 via-purple-900/20 to-green-900/20 border border-purple-500/30 hover:border-green-500/60 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-purple-500/30">
-                {/* Interactive glow effect - using site colors */}
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700 hover:border-slate-600 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-slate-800/50">
+                {/* Subtle dark glow effect */}
                 <motion.div
-                  className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-green-600 rounded-xl opacity-0 group-hover:opacity-75 blur-lg transition-opacity duration-700"
+                  className="absolute -inset-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-xl opacity-0 group-hover:opacity-30 blur-lg transition-opacity duration-700"
                   animate={{
                     background: [
-                      "linear-gradient(45deg, #8b5cf6, #22c55e)",
-                      "linear-gradient(135deg, #22c55e, #8b5cf6)",
-                      "linear-gradient(225deg, #8b5cf6, #22c55e)",
-                      "linear-gradient(315deg, #22c55e, #8b5cf6)"
+                      "linear-gradient(45deg, #475569, #374151)",
+                      "linear-gradient(135deg, #374151, #475569)",
+                      "linear-gradient(225deg, #475569, #374151)",
+                      "linear-gradient(315deg, #374151, #475569)"
                     ]
                   }}
                   transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
@@ -165,7 +165,7 @@ const FeaturedMods = () => {
                 
                 {/* Shimmer overlay */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 opacity-0 group-hover:opacity-100"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-300/5 to-transparent -skew-x-12 opacity-0 group-hover:opacity-100"
                   initial={{ x: "-100%" }}
                   whileHover={{ x: "200%" }}
                   transition={{ duration: 1.2, ease: "easeInOut" }}
@@ -184,12 +184,12 @@ const FeaturedMods = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-green-900/40">
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800/60 to-slate-700/60">
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                           >
-                            <Eye className="h-16 w-16 text-purple-400" />
+                            <Eye className="h-16 w-16 text-slate-400" />
                           </motion.div>
                         </div>
                       )}
@@ -201,8 +201,8 @@ const FeaturedMods = () => {
                       whileHover={{ scale: 1.15, rotate: -5 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 px-4 py-2 rounded-full backdrop-blur-sm shadow-lg border border-white/20">
-                        <span className="text-white text-sm font-bold tracking-wide">✨ Featured</span>
+                      <div className="bg-slate-800/90 px-4 py-2 rounded-full backdrop-blur-sm shadow-lg border border-slate-600/50">
+                        <span className="text-slate-200 text-sm font-bold tracking-wide">✨ Featured</span>
                       </div>
                     </motion.div>
                     
@@ -333,8 +333,8 @@ const FeaturedMods = () => {
                       disabled={isModInCart(mod.id)}
                       className={`w-full relative overflow-hidden border-0 font-semibold py-3 text-white transition-all duration-500 ${
                         isModInCart(mod.id) 
-                          ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-green-500 shadow-lg shadow-green-500/40' 
-                          : 'bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 hover:from-purple-500 hover:via-pink-500 hover:to-green-500 shadow-lg shadow-purple-500/40'
+                          ? 'bg-slate-700 hover:bg-slate-600 shadow-lg shadow-slate-800/40' 
+                          : 'bg-slate-800 hover:bg-slate-700 shadow-lg shadow-slate-900/40'
                       }`}
                     >
                       <motion.div
@@ -386,7 +386,7 @@ const FeaturedMods = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button className="bg-gradient-to-r from-purple-600 via-pink-600 to-green-600 hover:from-purple-500 hover:via-pink-500 hover:to-green-500 text-white border-0 px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
+              <Button className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-slate-800/40 transition-all duration-300">
                 View All Mods
               </Button>
             </motion.div>
