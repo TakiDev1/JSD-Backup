@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, User, Shield, ShieldCheck, ShieldX, MoreHorizontal, Edit, Trash, Check, X, RefreshCw, UserCheck } from "lucide-react";
+import AdminLayout from "@/components/admin/admin-layout";
 
 const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -195,8 +196,9 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-24">
-      <div className="flex flex-col space-y-8">
+    <AdminLayout>
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col space-y-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white">Manage Users</h1>
@@ -498,7 +500,9 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
+      </div>
+    </AdminLayout>
   );
 };
 

@@ -79,10 +79,55 @@ function Router() {
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/maintenance" component={MaintenancePage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
-      <AdminRoute path="/admin/mods" component={AdminMods} />
+      
+      {/* User Management */}
       <AdminRoute path="/admin/users" component={AdminUsers} />
-      <AdminRoute path="/admin/settings" component={AdminSettings} />
+      <AdminRoute path="/admin/users/create" component={AdminUsers} />
+      <AdminRoute path="/admin/users/roles" component={AdminUsers} />
+      <AdminRoute path="/admin/users/banned" component={AdminUsers} />
+      
+      {/* Product Management */}
+      <AdminRoute path="/admin/mods" component={AdminMods} />
+      <AdminRoute path="/admin/mods/create" component={AdminMods} />
+      <AdminRoute path="/admin/mods/featured" component={AdminMods} />
+      <AdminRoute path="/admin/mods/categories" component={AdminMods} />
+      <AdminRoute path="/admin/mods/reviews" component={AdminMods} />
+      
+      {/* Analytics */}
+      <AdminRoute path="/admin/analytics" component={AdminDashboard} />
+      <AdminRoute path="/admin/analytics/sales" component={AdminDashboard} />
+      <AdminRoute path="/admin/analytics/users" component={AdminDashboard} />
+      <AdminRoute path="/admin/analytics/performance" component={AdminDashboard} />
+      
+      {/* Order Management */}
+      <AdminRoute path="/admin/orders" component={AdminDashboard} />
+      <AdminRoute path="/admin/orders/pending" component={AdminDashboard} />
+      <AdminRoute path="/admin/orders/completed" component={AdminDashboard} />
+      <AdminRoute path="/admin/orders/refunds" component={AdminDashboard} />
+      
+      {/* Payment Management */}
+      <AdminRoute path="/admin/payments/settings" component={AdminSettings} />
+      <AdminRoute path="/admin/payments/stripe" component={AdminSettings} />
+      <AdminRoute path="/admin/payments/subscriptions" component={AdminSettings} />
+      <AdminRoute path="/admin/payments/webhooks" component={AdminSettings} />
+      
+      {/* Communications */}
       <AdminRoute path="/admin/notifications" component={AdminNotifications} />
+      <AdminRoute path="/admin/communications/templates" component={AdminNotifications} />
+      <AdminRoute path="/admin/communications/newsletter" component={AdminNotifications} />
+      <AdminRoute path="/admin/communications/discord" component={AdminNotifications} />
+      
+      {/* Site Settings */}
+      <AdminRoute path="/admin/settings" component={AdminSettings} />
+      <AdminRoute path="/admin/settings/appearance" component={AdminSettings} />
+      <AdminRoute path="/admin/settings/seo" component={AdminSettings} />
+      <AdminRoute path="/admin/settings/security" component={AdminSettings} />
+      <AdminRoute path="/admin/settings/maintenance" component={AdminSettings} />
+      
+      {/* Database */}
+      <AdminRoute path="/admin/database/backup" component={AdminSettings} />
+      <AdminRoute path="/admin/database/cleanup" component={AdminSettings} />
+      <AdminRoute path="/admin/database/logs" component={AdminSettings} />
       <Route component={NotFound} />
     </Switch>
   );
