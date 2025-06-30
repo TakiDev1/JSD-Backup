@@ -29,6 +29,7 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminAnalytics from "@/pages/admin/analytics";
 import UserManagement from "@/pages/admin/user-management";
 import ProductManagement from "@/pages/admin/product-management";
+import OrderManagement from "@/pages/admin/orders";
 import AdminNotifications from "@/pages/admin-notifications";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
@@ -82,13 +83,22 @@ function Router() {
       <Route path="/maintenance" component={MaintenancePage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       
+      {/* Analytics */}
+      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/revenue" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/users" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/reports" component={AdminAnalytics} />
+      
       {/* User Management */}
-      <AdminRoute path="/admin/users" component={AdminDashboard} />
-      <AdminRoute path="/admin/users/create" component={AdminDashboard} />
-      <AdminRoute path="/admin/users/roles" component={AdminDashboard} />
-      <AdminRoute path="/admin/users/banned" component={AdminDashboard} />
+      <AdminRoute path="/admin/users" component={UserManagement} />
+      <AdminRoute path="/admin/users/create" component={UserManagement} />
+      <AdminRoute path="/admin/users/roles" component={UserManagement} />
+      <AdminRoute path="/admin/users/banned" component={UserManagement} />
       
       {/* Product Management */}
+      <AdminRoute path="/admin/products" component={ProductManagement} />
+      <AdminRoute path="/admin/products/categories" component={ProductManagement} />
+      <AdminRoute path="/admin/products/create" component={ProductManagement} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/mods/create" component={AdminMods} />
       <AdminRoute path="/admin/mods/featured" component={AdminMods} />
@@ -96,16 +106,16 @@ function Router() {
       <AdminRoute path="/admin/mods/reviews" component={AdminMods} />
       
       {/* Analytics */}
-      <AdminRoute path="/admin/analytics" component={AdminDashboard} />
-      <AdminRoute path="/admin/analytics/sales" component={AdminDashboard} />
-      <AdminRoute path="/admin/analytics/users" component={AdminDashboard} />
-      <AdminRoute path="/admin/analytics/performance" component={AdminDashboard} />
+      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/sales" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/users" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/performance" component={AdminAnalytics} />
       
       {/* Order Management */}
-      <AdminRoute path="/admin/orders" component={AdminDashboard} />
-      <AdminRoute path="/admin/orders/pending" component={AdminDashboard} />
-      <AdminRoute path="/admin/orders/completed" component={AdminDashboard} />
-      <AdminRoute path="/admin/orders/refunds" component={AdminDashboard} />
+      <AdminRoute path="/admin/orders" component={OrderManagement} />
+      <AdminRoute path="/admin/orders/pending" component={OrderManagement} />
+      <AdminRoute path="/admin/orders/completed" component={OrderManagement} />
+      <AdminRoute path="/admin/orders/refunds" component={OrderManagement} />
       
       {/* Payment Management */}
       <AdminRoute path="/admin/payments/settings" component={AdminSettings} />
