@@ -148,7 +148,7 @@ const FeaturedMods = () => {
               }}
               className="perspective-1000"
             >
-              <Link to={`/mod/${mod.id}`}>
+              <Link to={`/mods/${mod.id}`}>
                 <Card className="group relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700 hover:border-slate-600 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-slate-800/50 cursor-pointer">
                 {/* Subtle dark glow effect */}
                 <motion.div
