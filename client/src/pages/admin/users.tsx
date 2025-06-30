@@ -199,7 +199,7 @@ const AdminUsers = () => {
     <AdminLayout>
       <div className="container mx-auto px-4">
         <div className="flex flex-col space-y-8">
-        <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white">Manage Users</h1>
             <p className="text-neutral-light">View and manage user accounts</p>

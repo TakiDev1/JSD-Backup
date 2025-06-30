@@ -25,7 +25,7 @@ import MaintenancePage from "@/pages/maintenance";
 import DebugCart from "@/pages/debug-cart";
 import AdminDashboard from "@/pages/admin/dashboard-new";
 import AdminMods from "@/pages/admin/mods";
-import AdminUsers from "@/pages/admin/users";
+// import AdminUsers from "@/pages/admin/users";
 import AdminSettings from "@/pages/admin/settings";
 import AdminNotifications from "@/pages/admin-notifications";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
@@ -81,10 +81,10 @@ function Router() {
       <AdminRoute path="/admin" component={AdminDashboard} />
       
       {/* User Management */}
-      <AdminRoute path="/admin/users" component={AdminUsers} />
-      <AdminRoute path="/admin/users/create" component={AdminUsers} />
-      <AdminRoute path="/admin/users/roles" component={AdminUsers} />
-      <AdminRoute path="/admin/users/banned" component={AdminUsers} />
+      <AdminRoute path="/admin/users" component={AdminDashboard} />
+      <AdminRoute path="/admin/users/create" component={AdminDashboard} />
+      <AdminRoute path="/admin/users/roles" component={AdminDashboard} />
+      <AdminRoute path="/admin/users/banned" component={AdminDashboard} />
       
       {/* Product Management */}
       <AdminRoute path="/admin/mods" component={AdminMods} />
