@@ -102,41 +102,7 @@ const CursorParticles = () => {
         />
       ))}
       
-      {/* Additional interactive elements */}
-      <motion.div
-        className="absolute w-3 h-3 rounded-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(45deg, #a855f7, #22c55e)',
-          x: mousePos.x - 6,
-          y: mousePos.y - 6,
-        }}
-        animate={{
-          rotate: 360,
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      />
-      
-      {/* Magnetic field effect */}
-      <motion.div
-        className="absolute w-20 h-20 rounded-full pointer-events-none border border-purple-500/20"
-        style={{
-          x: mousePos.x - 40,
-          y: mousePos.y - 40,
-        }}
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0.3, 0.1, 0.3],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+
     </div>
   );
 };
