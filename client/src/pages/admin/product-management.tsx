@@ -11,9 +11,11 @@ export default function ProductManagement() {
     queryKey: ['/api/admin/stats'],
   });
 
-  const { data: allMods, isLoading } = useQuery({
+  const { data: modsResponse, isLoading } = useQuery({
     queryKey: ['/api/mods'],
   });
+
+  const allMods = modsResponse?.mods || [];
 
   if (isLoading) {
     return (
@@ -33,9 +35,9 @@ export default function ProductManagement() {
     );
   }
 
-  const featuredMods = allMods?.filter((mod: any) => mod.featured) || [];
-  const subscriptionMods = allMods?.filter((mod: any) => mod.isSubscriptionOnly) || [];
-  const categories = [...new Set(allMods?.map((mod: any) => mod.category))];
+  const featuredMods = allMods.filter((mod: any) => mod.featured);
+  const subscriptionMods = allMods.filter((mod: any) => mod.isSubscriptionOnly);
+  const categories = Array.from(new Set(allMods.map((mod: any) => mod.category)));
 
   return (
     <AdminLayout>

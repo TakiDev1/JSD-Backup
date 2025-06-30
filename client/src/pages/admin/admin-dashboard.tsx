@@ -24,9 +24,11 @@ export default function AdminDashboard() {
     queryKey: ['/api/users'],
   });
 
-  const { data: allMods } = useQuery({
+  const { data: modsResponse } = useQuery({
     queryKey: ['/api/mods'],
   });
+
+  const allMods = modsResponse?.mods || [];
 
   const { data: recentPurchases } = useQuery({
     queryKey: ['/api/purchases'],

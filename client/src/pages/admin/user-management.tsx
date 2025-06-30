@@ -33,9 +33,10 @@ export default function UserManagement() {
     );
   }
 
-  const adminUsers = allUsers?.filter((user: any) => user.isAdmin) || [];
-  const bannedUsers = allUsers?.filter((user: any) => user.banned) || [];
-  const premiumUsers = allUsers?.filter((user: any) => user.stripeCustomerId) || [];
+  const users = allUsers || [];
+  const adminUsers = users.filter((user: any) => user.isAdmin);
+  const bannedUsers = users.filter((user: any) => user.banned);
+  const premiumUsers = users.filter((user: any) => user.stripeCustomerId);
 
   return (
     <AdminLayout>
@@ -128,12 +129,12 @@ export default function UserManagement() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                All Users ({allUsers?.length || 0})
+                All Users ({users.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {allUsers?.map((user: any) => (
+                {users.map((user: any) => (
                   <div key={user.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold">
