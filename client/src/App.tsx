@@ -30,6 +30,7 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminNotifications from "@/pages/admin-notifications";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
+import { DynamicBackground } from "@/components/shared/dynamic-background";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -95,14 +96,17 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <TooltipProvider>
-              <div className="min-h-screen flex flex-col bg-dark text-white font-body overflow-x-hidden">
+              <div className="min-h-screen flex flex-col bg-dark text-white font-body overflow-x-hidden relative">
+                <DynamicBackground />
                 <Navbar />
-                <main className="flex-1">
+                <main className="flex-1 relative z-10">
                   <Router />
                 </main>
                 <Footer />
               </div>
-              <CartDrawer />
+              <CartDrawer>
+                <></>
+              </CartDrawer>
               <Toaster />
             </TooltipProvider>
           </CartProvider>
