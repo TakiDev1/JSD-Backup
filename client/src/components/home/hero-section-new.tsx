@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown, Download, Users, Star, Zap, Sparkles, Rocket } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -13,148 +13,111 @@ export function HeroSection() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollY } = useScroll();
   
-  const { data: settings } = useQuery({
-    queryKey: ['/api/admin/settings'],
+  // Parallax transforms
+  const y1 = useTransform(scrollY, [0, 300], [0, -50]);
+  const y2 = useTransform(scrollY, [0, 300], [0, -30]);
+  const y3 = useTransform(scrollY, [0, 300], [0, -20]);
+
+  // Get site stats
+  const { data: siteSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
   });
 
-  const y1 = useTransform(scrollY, [0, 1000], [0, -200]);
-  const y2 = useTransform(scrollY, [0, 1000], [0, -150]);
-  const y3 = useTransform(scrollY, [0, 1000], [0, -100]);
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
-      const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
-      
-      mouseX.set(x * 50);
-      mouseY.set(y * 50);
-      
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
-
   const stats = [
-    { 
-      label: "Total Downloads", 
-      value: settings?.totalDownloads || "0",
+    {
       icon: Download,
-      color: "from-green-400 to-emerald-600",
+      value: siteSettings?.totalDownloads || "0",
+      label: "Downloads",
+      color: "from-green-500 to-emerald-600",
       accent: "text-green-400"
     },
-    { 
-      label: "Happy Users", 
-      value: settings?.happyUsers || "0",
+    {
       icon: Users,
-      color: "from-purple-400 to-violet-600",
+      value: siteSettings?.happyUsers || "1,000",
+      label: "Happy Users",
+      color: "from-purple-500 to-violet-600",
       accent: "text-purple-400"
     },
-    { 
-      label: "Mods Created", 
-      value: settings?.modsCreated || "0",
+    {
       icon: Star,
-      color: "from-yellow-400 to-orange-600",
-      accent: "text-yellow-400"
-    },
+      value: siteSettings?.modsCreated || "0",
+      label: "Mods Created",
+      color: "from-amber-500 to-yellow-600",
+      accent: "text-amber-400"
+    }
   ];
+
+  // Mouse tracking for background effects
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePosition({
+          x: (e.clientX - rect.left) / rect.width,
+          y: (e.clientY - rect.top) / rect.height,
+        });
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousemove', handleMouseMove);
+      return () => container.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, []);
 
   return (
     <section 
       ref={containerRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen overflow-hidden bg-black"
     >
-      {/* Floating Particles */}
-      <FloatingParticles 
-        count={80} 
-        colors={["#a855f7", "#22c55e", "#3b82f6", "#f59e0b", "#ef4444"]}
-        interactive={true}
-      />
-
-      {/* Dynamic background elements */}
+      {/* Interactive background with mouse tracking */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-black to-green-900/30" />
-        
-        {/* Animated gradient orbs */}
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl"
+          className="absolute inset-0"
           style={{
-            background: "radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, transparent 70%)",
-            x: springX,
-            y: springY,
+            background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(147, 51, 234, 0.3) 0%, rgba(34, 197, 94, 0.2) 50%, transparent 100%)`,
           }}
           animate={{
-            scale: [1, 1.3, 1.1, 1],
-            rotate: [0, 90, 180, 270, 360],
+            opacity: [0.5, 0.8, 0.5],
           }}
           transition={{
-            duration: 20,
+            duration: 4,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
         />
-        
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl"
-          style={{
-            background: "radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%)",
-            x: useTransform(springX, (x) => -x * 0.5),
-            y: useTransform(springY, (y) => -y * 0.5),
-          }}
-          animate={{
-            scale: [1, 1.2, 1.4, 1],
-            rotate: [360, 270, 180, 90, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-        />
+      </div>
 
-        {/* Electric arcs */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-          animate={{
-            rotate: [0, 360],
-          }}
-          transition={{
-            duration: 60,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-        >
-          {[...Array(8)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-32 bg-gradient-to-t from-transparent via-purple-500/30 to-transparent"
-              style={{
-                transformOrigin: "bottom center",
-                transform: `rotate(${i * 45}deg) translateY(-200px)`,
-              }}
-              animate={{
-                scaleY: [0, 1, 0],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </motion.div>
+      {/* Floating particles */}
+      <FloatingParticles count={80} colors={["#a855f7", "#22c55e", "#3b82f6"]} />
+
+      {/* Dynamic gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-64 h-64 rounded-full blur-3xl opacity-20"
+            style={{
+              background: i % 2 === 0 
+                ? "radial-gradient(circle, rgba(147, 51, 234, 0.6) 0%, transparent 70%)"
+                : "radial-gradient(circle, rgba(34, 197, 94, 0.6) 0%, transparent 70%)",
+              left: `${20 + (i * 15)}%`,
+              top: `${10 + (i * 12)}%`,
+            }}
+            animate={{
+              x: [0, 100, -50, 0],
+              y: [0, -80, 60, 0],
+              scale: [1, 1.2, 0.8, 1],
+            }}
+            transition={{
+              duration: 15 + i * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.5,
+            }}
+          />
+        ))}
       </div>
 
       <div className="container mx-auto px-4 z-10 relative">
@@ -166,6 +129,7 @@ export function HeroSection() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               className="mb-6"
+              style={{ y: y1 }}
             >
               <motion.div 
                 className="inline-flex items-center bg-gradient-to-r from-purple-600 via-green-600 to-purple-600 text-white px-4 py-2 text-sm font-medium rounded-full"
@@ -186,33 +150,38 @@ export function HeroSection() {
               </motion.div>
             </motion.div>
 
-            <TextReveal delay={0.2}>
-              <h1 className="text-6xl md:text-7xl font-black mb-6 leading-none">
-                <span className="bg-gradient-to-r from-white via-purple-200 to-green-200 bg-clip-text text-transparent">
-                  Drive
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-purple-400 via-green-400 to-purple-400 bg-clip-text text-transparent">
-                  Beyond
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-green-400 via-purple-400 to-white bg-clip-text text-transparent">
-                  Reality
-                </span>
-              </h1>
-            </TextReveal>
+            <div style={{ y: y1 }}>
+              <TextReveal delay={0.2}>
+                <h1 className="text-6xl md:text-7xl font-black mb-6 leading-none">
+                  <span className="bg-gradient-to-r from-white via-purple-200 to-green-200 bg-clip-text text-transparent">
+                    Drive
+                  </span>
+                  <br />
+                  <span className="bg-gradient-to-r from-purple-400 via-green-400 to-purple-400 bg-clip-text text-transparent">
+                    Beyond
+                  </span>
+                  <br />
+                  <span className="bg-gradient-to-r from-green-400 via-purple-400 to-white bg-clip-text text-transparent">
+                    Reality
+                  </span>
+                </h1>
+              </TextReveal>
+            </div>
 
-            <TextReveal delay={0.4}>
-              <p className="text-xl text-slate-300 mb-8 max-w-lg leading-relaxed">
-                Unlock the ultimate BeamNG.drive experience with premium mods that push the boundaries of virtual driving.
-              </p>
-            </TextReveal>
+            <div style={{ y: y2 }}>
+              <TextReveal delay={0.4}>
+                <p className="text-xl text-slate-300 mb-8 max-w-lg leading-relaxed">
+                  Unlock the ultimate BeamNG.drive experience with premium mods that push the boundaries of virtual driving.
+                </p>
+              </TextReveal>
+            </div>
 
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               className="flex flex-col sm:flex-row gap-4 mb-12"
+              style={{ y: y2 }}
             >
               <Link href="/mods">
                 <MagneticButton 
@@ -243,6 +212,7 @@ export function HeroSection() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
               className="grid grid-cols-3 gap-6"
+              style={{ y: y3 }}
             >
               {stats.map((stat, index) => (
                 <AnimatedCard
@@ -274,6 +244,7 @@ export function HeroSection() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               className="relative"
+              style={{ y: y2 }}
             >
               {/* Main Interactive Card */}
               <AnimatedCard 
