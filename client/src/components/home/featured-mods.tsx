@@ -148,7 +148,8 @@ const FeaturedMods = () => {
               }}
               className="perspective-1000"
             >
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700 hover:border-slate-600 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-slate-800/50">
+              <Link to={`/mod/${mod.id}`}>
+                <Card className="group relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700 hover:border-slate-600 transition-all duration-700 backdrop-blur-xl shadow-2xl hover:shadow-slate-800/50 cursor-pointer">
                 {/* Subtle dark glow effect */}
                 <motion.div
                   className="absolute -inset-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-xl opacity-0 group-hover:opacity-30 blur-lg transition-opacity duration-700"
@@ -327,14 +328,19 @@ const FeaturedMods = () => {
                     }}
                     whileTap={{ scale: 0.95 }}
                     className="relative overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Button
-                      onClick={() => handleAddToCart(mod)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleAddToCart(mod);
+                      }}
                       disabled={isModInCart(mod.id)}
                       className={`w-full relative overflow-hidden border-0 font-semibold py-3 text-white transition-all duration-500 ${
                         isModInCart(mod.id) 
-                          ? 'bg-slate-700 hover:bg-slate-600 shadow-lg shadow-slate-800/40' 
-                          : 'bg-slate-800 hover:bg-slate-700 shadow-lg shadow-slate-900/40'
+                          ? 'bg-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-900/40' 
+                          : 'bg-slate-950 hover:bg-slate-900 shadow-lg shadow-black/40'
                       }`}
                     >
                       <motion.div
@@ -370,6 +376,7 @@ const FeaturedMods = () => {
                   </motion.div>
                 </CardContent>
               </Card>
+              </Link>
             </motion.div>
           ))}
         </div>
