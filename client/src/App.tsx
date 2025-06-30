@@ -37,6 +37,7 @@ import CreateUser from "@/pages/admin/users/create";
 import CreateMod from "@/pages/admin/mods/create";
 import OrderManagementIndex from "@/pages/admin/orders/index";
 import AdminSettingsIndex from "@/pages/admin/settings/index";
+import AnalyticsIndex from "@/pages/admin/analytics/index";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -90,7 +91,7 @@ function Router() {
       <AdminRoute path="/admin" component={AdminDashboard} />
       
       {/* Analytics */}
-      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics" component={AnalyticsIndex} />
       <AdminRoute path="/admin/analytics/sales" component={SalesReport} />
       <AdminRoute path="/admin/analytics/users" component={UserAnalytics} />
       <AdminRoute path="/admin/analytics/performance" component={AdminAnalytics} />
@@ -112,7 +113,7 @@ function Router() {
       <AdminRoute path="/admin/mods/reviews" component={AdminMods} />
       
       {/* Order Management */}
-      <AdminRoute path="/admin/orders" component={OrderManagement} />
+      <AdminRoute path="/admin/orders" component={OrderManagementIndex} />
       <AdminRoute path="/admin/orders/pending" component={OrderManagement} />
       <AdminRoute path="/admin/orders/completed" component={OrderManagement} />
       <AdminRoute path="/admin/orders/refunds" component={OrderManagement} />
