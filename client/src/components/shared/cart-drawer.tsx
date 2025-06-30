@@ -17,11 +17,18 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ children }: CartDrawerProps = {}) {
-  const cart = useCart();
+  const { 
+    items, 
+    total, 
+    count, 
+    isLoading, 
+    removeItem, 
+    clearCart 
+  } = useCart();
   
-  const safeItems: CartItem[] = Array.isArray(cart.items) ? cart.items : [];
-  const total = safeItems.reduce((sum, item) => sum + (item.mod.discountPrice || item.mod.price), 0);
-  const safeCount = cart.itemCount || safeItems.length;
+  const safeItems: CartItem[] = Array.isArray(items) ? items : [];
+  const safeCount = typeof count === 'number' ? count : safeItems.length;
+  const safeTotal = typeof total === 'number' ? total : 0;
 
   return (
     <Sheet>
@@ -44,7 +51,7 @@ export function CartDrawer({ children }: CartDrawerProps = {}) {
         </SheetHeader>
 
         <div className="mt-8 flex-1 overflow-y-auto">
-          {cart.isLoading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">Loading cart...</div>
             </div>
@@ -118,7 +125,7 @@ export function CartDrawer({ children }: CartDrawerProps = {}) {
                   <Button 
                     variant="outline" 
                     className="w-full" 
-                    onClick={cart.clearCart}
+                    onClick={clearCart}
                     disabled={safeItems.length === 0}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
