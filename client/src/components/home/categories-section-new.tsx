@@ -186,7 +186,7 @@ const CategoriesSection = () => {
           viewport={{ once: true }}
         >
           {categoriesWithCounts.map((category, index) => {
-            const IconComponent = categoryIcons[category.value as keyof typeof categoryIcons];
+            const IconComponent = categoryIcons[category.value as keyof typeof categoryIcons] || Car;
             const theme = getThemeColors(index);
             
             return (
@@ -240,7 +240,7 @@ const CategoriesSection = () => {
                         </h3>
                         
                         <p className="text-slate-400 text-sm mb-3 line-clamp-2">
-                          {category.description}
+                          Explore {category.label.toLowerCase()} for BeamNG.drive
                         </p>
                         
                         <div className="flex items-center justify-between">
