@@ -1,5 +1,4 @@
-import { useCart } from "@/hooks/use-cart";
-import type { CartItem } from "@/hooks/use-cart";
+import { useCart, type CartItem } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

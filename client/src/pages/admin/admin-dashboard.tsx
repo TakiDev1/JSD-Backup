@@ -16,21 +16,29 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  }>({
     queryKey: ['/api/admin/stats'],
   });
 
-  const { data: allUsers } = useQuery({
+  const { data: allUsersResponse } = useQuery<{ users: any[] }>({
     queryKey: ['/api/users'],
   });
 
-  const { data: modsResponse } = useQuery({
+  const { data: modsResponse } = useQuery<{ mods: any[] }>({
     queryKey: ['/api/mods'],
   });
 
   const allMods = modsResponse?.mods || [];
+  const allUsers = allUsersResponse?.users || [];
 
-  const { data: recentPurchases } = useQuery({
+  const { data: recentPurchases } = useQuery<any[]>({
     queryKey: ['/api/purchases'],
   });
 

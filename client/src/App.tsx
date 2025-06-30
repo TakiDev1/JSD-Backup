@@ -89,13 +89,13 @@ function Router() {
       
       {/* Analytics */}
       <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/revenue" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/users" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/reports" component={AdminAnalytics} />
+      <AdminRoute path="/admin/analytics/sales" component={SalesReport} />
+      <AdminRoute path="/admin/analytics/users" component={UserAnalytics} />
+      <AdminRoute path="/admin/analytics/performance" component={AdminAnalytics} />
       
       {/* User Management */}
       <AdminRoute path="/admin/users" component={UserManagement} />
-      <AdminRoute path="/admin/users/create" component={UserManagement} />
+      <AdminRoute path="/admin/users/create" component={CreateUser} />
       <AdminRoute path="/admin/users/roles" component={UserManagement} />
       <AdminRoute path="/admin/users/banned" component={UserManagement} />
       
@@ -104,16 +104,10 @@ function Router() {
       <AdminRoute path="/admin/products/categories" component={ProductManagement} />
       <AdminRoute path="/admin/products/create" component={ProductManagement} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
-      <AdminRoute path="/admin/mods/create" component={AdminMods} />
+      <AdminRoute path="/admin/mods/create" component={CreateMod} />
       <AdminRoute path="/admin/mods/featured" component={AdminMods} />
       <AdminRoute path="/admin/mods/categories" component={AdminMods} />
       <AdminRoute path="/admin/mods/reviews" component={AdminMods} />
-      
-      {/* Analytics */}
-      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/sales" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/users" component={AdminAnalytics} />
-      <AdminRoute path="/admin/analytics/performance" component={AdminAnalytics} />
       
       {/* Order Management */}
       <AdminRoute path="/admin/orders" component={OrderManagement} />
@@ -163,7 +157,7 @@ function App() {
                 </main>
                 <Footer />
               </div>
-              <CartDrawer />
+              <CartDrawer>{null}</CartDrawer>
               <Toaster />
             </TooltipProvider>
           </CartProvider>

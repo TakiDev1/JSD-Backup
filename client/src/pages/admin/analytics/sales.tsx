@@ -4,11 +4,18 @@ import { DollarSign, TrendingUp, ShoppingCart, CreditCard, Calendar, BarChart3 }
 import AdminLayout from '@/components/admin/admin-layout';
 
 export default function SalesReport() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<{
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  }>({
     queryKey: ['/api/admin/stats'],
   });
 
-  const { data: purchases } = useQuery({
+  const { data: purchases } = useQuery<any[]>({
     queryKey: ['/api/purchases'],
   });
 
