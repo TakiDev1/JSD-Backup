@@ -6,6 +6,7 @@ import TestimonialsSection from "@/components/home/testimonials-section";
 import CallToAction from "@/components/home/call-to-action";
 import { SalesBanner, FloatingDealNotification, StickyDealBanner } from "@/components/shared/sales-banner";
 import { UrgentPopup } from "@/components/shared/urgent-popup";
+import CursorParticles from "@/components/shared/cursor-particles";
 import { useEffect, useState } from "react";
 
 const Home = () => {
@@ -55,6 +56,9 @@ const Home = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black">
+      {/* Interactive cursor particles */}
+      <CursorParticles />
+      
       {/* Remove top banner to avoid covering navigation */}
       <div className="pt-16 scroll-smooth">
         <HeroSection />
