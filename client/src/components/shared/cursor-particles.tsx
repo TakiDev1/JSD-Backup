@@ -76,24 +76,7 @@ const CursorParticles = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {/* Cursor trail */}
-      <motion.div
-        className="absolute w-6 h-6 rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(236, 72, 153, 0.4) 50%, transparent 70%)',
-          x: mousePos.x - 12,
-          y: mousePos.y - 12,
-        }}
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.6, 0.8, 0.6],
-        }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+
       
       {/* Floating particles */}
       {particles.map((particle) => (
