@@ -1255,6 +1255,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+
+  app.get("/api/admin/users/tracking", auth.isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsersWithTrackingInfo();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
   
   app.patch("/api/admin/users/:id", auth.isAdmin, async (req, res) => {
     try {

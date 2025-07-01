@@ -21,6 +21,7 @@ export interface IStorage {
   getUserByDiscordId(discordId: string): Promise<schema.User | undefined>;
   getUserByPatreonId(patreonId: string): Promise<schema.User | undefined>;
   getAllUsers(): Promise<schema.User[]>;
+  getAllUsersWithTrackingInfo(): Promise<any[]>;
   createUser(user: schema.InsertUser): Promise<schema.User>;
   updateUser(id: number, user: Partial<schema.InsertUser>): Promise<schema.User | undefined>;
   updateUserStripeInfo(id: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<schema.User | undefined>;
@@ -153,6 +154,37 @@ export class DatabaseStorage implements IStorage {
       .set({
         patreonId: patreonInfo.patreonId,
         patreonTier: patreonInfo.patreonTier
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserTrackingInfo(id: number, trackingInfo: {
+    lastIpAddress?: string;
+    registrationIpAddress?: string;
+    userAgent?: string;
+    deviceType?: string;
+    browser?: string;
+    operatingSystem?: string;
+    referrer?: string;
+    country?: string;
+    city?: string;
+    region?: string;
+    timezone?: string;
+  }): Promise<schema.User | undefined> {
+    const result = await db.update(users)
+      .set(trackingInfo)
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async incrementUserLogin(id: number): Promise<schema.User | undefined> {
+    const result = await db.update(users)
+      .set({
+        loginCount: sql`${users.loginCount} + 1`,
+        lastLogin: new Date()
       })
       .where(eq(users.id, id))
       .returning();
