@@ -133,6 +133,17 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   {
+    id: 'legal',
+    label: 'Legal & Policies',
+    icon: <FileText className="w-5 h-5" />,
+    children: [
+      { id: 'terms-of-service', label: 'Terms of Service', icon: <FileText className="w-4 h-4" />, path: '/admin/legal/terms' },
+      { id: 'privacy-policy', label: 'Privacy Policy', icon: <Shield className="w-4 h-4" />, path: '/admin/legal/privacy' },
+      { id: 'cookie-policy', label: 'Cookie Policy', icon: <Globe className="w-4 h-4" />, path: '/admin/legal/cookies' },
+      { id: 'refund-policy', label: 'Refund Policy', icon: <Banknote className="w-4 h-4" />, path: '/admin/legal/refunds' }
+    ]
+  },
+  {
     id: 'database',
     label: 'Database',
     icon: <Database className="w-5 h-5" />,

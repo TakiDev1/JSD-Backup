@@ -39,6 +39,7 @@ import CreateMod from "@/pages/admin/mods/create";
 import OrderManagementIndex from "@/pages/admin/orders/index";
 import AdminSettingsIndex from "@/pages/admin/settings/index";
 import AnalyticsIndex from "@/pages/admin/analytics/index";
+import LegalTerms from "@/pages/admin/legal-terms";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -138,6 +139,12 @@ function Router() {
       <AdminRoute path="/admin/settings/seo" component={AdminSettingsIndex} />
       <AdminRoute path="/admin/settings/security" component={AdminSettingsIndex} />
       <AdminRoute path="/admin/settings/maintenance" component={AdminSettingsIndex} />
+      
+      {/* Legal & Policies */}
+      <AdminRoute path="/admin/legal/terms" component={LegalTerms} />
+      <AdminRoute path="/admin/legal/privacy" component={LegalTerms} />
+      <AdminRoute path="/admin/legal/cookies" component={LegalTerms} />
+      <AdminRoute path="/admin/legal/refunds" component={LegalTerms} />
       
       {/* Database */}
       <AdminRoute path="/admin/database/backup" component={AdminSettings} />
