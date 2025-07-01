@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { 
+import {
   Play, 
   Download, 
   Star, 
@@ -14,9 +14,12 @@ import {
   Sparkles,
   Car,
   Gauge,
-  Trophy
+  Trophy,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import rugImg from "./images/rug.jpg";
+import carImg from "./images/car.jpg";
+  
 
 const HeroSection = () => {
   const [currentFeature, setCurrentFeature] = useState(0);
@@ -25,24 +28,16 @@ const HeroSection = () => {
     queryKey: ["/api/admin/settings"]
   }) as { data?: { totalDownloads?: string; happyUsers?: string; modsCreated?: string } };
 
-  const features = [
-    { 
-      icon: Car, 
-      title: "Premium Vehicles", 
-      description: "Hand-crafted vehicle mods with stunning detail",
-      gradient: "from-purple-600 to-purple-700"
+  const modGallery = [
+    {
+      image: rugImg,
+      title: "RUUUUUUUUUUUUUUUUUG",
+      description: "rug"
     },
-    { 
-      icon: Gauge, 
-      title: "Performance Tuned", 
-      description: "Optimized for maximum performance and realism",
-      gradient: "from-green-600 to-green-700"
-    },
-    { 
-      icon: Trophy, 
-      title: "Award Winning", 
-      description: "Community favorite mods with 5-star ratings",
-      gradient: "from-purple-600 to-green-600"
+    {
+      image: carImg,
+      title: "JSD 2023 Chrysler 300",
+      description: "CARRRRRRRRRRRRRRRRRRRR"
     }
   ];
 
@@ -54,10 +49,10 @@ const HeroSection = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFeature((prev) => (prev + 1) % features.length);
+      setCurrentFeature((prev) => (prev + 1) % modGallery.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [features.length]);
+  }, [modGallery.length]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -90,8 +85,8 @@ const HeroSection = () => {
               className="mb-6"
             >
               <Badge className="bg-gradient-to-r from-purple-600 via-green-600 to-purple-600 text-white px-4 py-2 text-sm font-medium">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Premium BeamNG.drive Marketplace
+                <Sparkles className="mr-4 h-8 w-15" />
+                Premium BeamNG.drive Mods
               </Badge>
             </motion.div>
 
@@ -102,15 +97,15 @@ const HeroSection = () => {
               className="text-6xl md:text-7xl font-black mb-6 leading-none"
             >
               <span className="bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
-                Drive
+                JSD
               </span>
               <br />
               <span className="bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Beyond
+                Mod
               </span>
               <br />
               <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Reality
+                Garage
               </span>
             </motion.h1>
 
@@ -136,10 +131,6 @@ const HeroSection = () => {
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="font-semibold px-8 py-4 text-lg border-2 border-slate-600 hover:border-primary text-white hover:bg-primary/10 backdrop-blur-sm">
-                <Zap className="mr-2 h-5 w-5" />
-                Watch Demo
-              </Button>
             </motion.div>
 
             {/* Stats Grid */}
@@ -181,38 +172,36 @@ const HeroSection = () => {
               <div className="relative h-96 w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/20"></div>
                 
-                {features.map((feature, index) => {
-                  const IconComponent = feature.icon;
-                  return (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: currentFeature === index ? 1 : 0,
-                        scale: currentFeature === index ? 1 : 0.8
-                      }}
-                      transition={{ duration: 0.5 }}
-                      className={`absolute inset-0 flex flex-col justify-center items-center p-8 text-center ${
-                        currentFeature === index ? 'z-10' : 'z-0'
-                      }`}
-                    >
-                      <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-2xl`}>
-                        <IconComponent className="h-12 w-12 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-white mb-4">
-                        {feature.title}
-                      </h3>
-                      <p className="text-slate-300 text-lg">
-                        {feature.description}
-                      </p>
-                    </motion.div>
-                  );
-                })}
+                {modGallery.map((mod, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ 
+                      opacity: currentFeature === index ? 1 : 0,
+                      scale: currentFeature === index ? 1 : 0.8
+                    }}
+                    transition={{ duration: 0.5 }}
+                    className={`absolute inset-0 flex flex-col justify-center items-center p-4 text-center ${
+                      currentFeature === index ? 'z-10' : 'z-0'
+                    }`}
+                  >
+                    <div className="w-110 h-100 rounded-xl overflow-hidden shadow-2xl mb-90 bg-slate-800 border border-slate-600">
+                      <img
+                        src={mod.image}
+                        alt={mod.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-3 mt-3">
+                      {mod.title}
+                    </h3>
+                  </motion.div>
+                ))}
               </div>
 
               {/* Feature Indicators */}
               <div className="flex justify-center mt-6 space-x-3">
-                {features.map((_, index) => (
+                {modGallery.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentFeature(index)}
@@ -234,7 +223,7 @@ const HeroSection = () => {
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-                className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full opacity-60 blur-sm"
+                className="absolute -bottom-0 -left-4 w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full opacity-60 blur-sm"
               />
             </motion.div>
           </div>

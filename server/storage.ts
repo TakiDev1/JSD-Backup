@@ -25,6 +25,20 @@ export interface IStorage {
   updateUser(id: number, user: Partial<schema.InsertUser>): Promise<schema.User | undefined>;
   updateUserStripeInfo(id: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<schema.User | undefined>;
   updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined>;
+  updateUserTrackingInfo(id: number, trackingInfo: {
+    lastIpAddress?: string;
+    registrationIpAddress?: string;
+    userAgent?: string;
+    deviceType?: string;
+    browser?: string;
+    operatingSystem?: string;
+    referrer?: string;
+    country?: string;
+    city?: string;
+    region?: string;
+    timezone?: string;
+  }): Promise<schema.User | undefined>;
+  incrementUserLogin(id: number): Promise<schema.User | undefined>;
   banUser(id: number, banned: boolean): Promise<schema.User | undefined>;
   
   // Site settings operations

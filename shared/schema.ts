@@ -22,6 +22,20 @@ export const users = pgTable("users", {
   patreonTier: text("patreon_tier"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   lastLogin: timestamp("last_login"),
+  // IP tracking and detailed user information
+  lastIpAddress: text("last_ip_address"),
+  registrationIpAddress: text("registration_ip_address"),
+  loginCount: integer("login_count").default(0),
+  totalSpent: doublePrecision("total_spent").default(0),
+  country: text("country"),
+  city: text("city"),
+  region: text("region"),
+  userAgent: text("user_agent"),
+  timezone: text("timezone"),
+  referrer: text("referrer"),
+  deviceType: text("device_type"),
+  browser: text("browser"),
+  operatingSystem: text("operating_system"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
