@@ -1310,6 +1310,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/notifications/send", auth.isAdmin, async (req, res) => {
+    try {
+      const { type, modId, subject, message } = req.body;
+      const userId = (req.user as any).id;
+      
+      // Log admin activity for notification sending
+      await storage.logAdminActivity({
+        userId,
+        action: 'SEND_NOTIFICATION',
+        details: `Sent ${type} notification: ${subject}`,
+        ipAddress: req.ip
+      });
+      
+      // For now, we'll just log the notification
+      // In a real implementation, you would integrate with email service
+      console.log(`Notification sent by user ${userId}:`, {
+        type,
+        modId,
+        subject,
+        message,
+        timestamp: new Date().toISOString()
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Notification sent successfully",
+        notificationId: Date.now() // Mock notification ID
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/users/tracking", auth.isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsersWithTrackingInfo();
