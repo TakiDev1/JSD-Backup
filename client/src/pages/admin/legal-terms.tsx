@@ -30,7 +30,8 @@ export default function LegalTerms() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: { key: string; value: string }) => {
-      return apiRequest('POST', '/api/admin/settings', data);
+      const response = await apiRequest('POST', '/api/admin/settings', data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });

@@ -155,9 +155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("Auth check - isAuthenticated():", req.isAuthenticated());
     console.log("Auth check - Session data:", req.session);
     
-    if (req.isAuthenticated()) {
+    if (req.isAuthenticated() && req.user) {
       const user = { ...req.user };
-      console.log("Auth check - User authenticated:", { id: user.id, username: user.username });
+      console.log("Auth check - User authenticated:", { id: (user as any).id, username: (user as any).username });
       
       // Don't send sensitive information to the client
       delete (user as any).password;

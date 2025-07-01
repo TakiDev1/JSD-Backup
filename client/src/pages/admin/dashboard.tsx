@@ -274,21 +274,22 @@ const AdminDashboard = () => {
                     { href: "/admin/mods", icon: Package, label: "Manage Mods" },
                     { href: "/admin/users", icon: Users, label: "Manage Users" },
                     { href: "/admin/notifications", icon: Mail, label: "Notifications" },
-                    { href: "/admin/settings", icon: Settings, label: "Settings" }
+                    { href: "/admin/legal/terms", icon: Settings, label: "Settings" }
                   ].map((action, index) => (
-                    <Link key={action.href} href={action.href}>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25"
-                      >
+                    <motion.div
+                      key={action.href}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 p-4 h-24 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25"
+                    >
+                      <Link href={action.href} className="absolute inset-0">
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
                           <action.icon className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform duration-300" />
                           <span className="text-sm font-medium text-center">{action.label}</span>
                         </div>
-                      </motion.div>
-                    </Link>
+                      </Link>
+                    </motion.div>
                   ))}
                 </div>
               </CardContent>
