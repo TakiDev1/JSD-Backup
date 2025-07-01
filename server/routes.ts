@@ -1281,6 +1281,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/settings", auth.isAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      res.json(settings);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/settings", auth.isAdmin, async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: 'UPDATE_SETTINGS',
+        details: `Updated setting ${key}`,
+        ipAddress: req.ip
+      });
+      
+      const setting = await storage.setSiteSetting(key, value);
+      
+      res.json(setting);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/users/tracking", auth.isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsersWithTrackingInfo();

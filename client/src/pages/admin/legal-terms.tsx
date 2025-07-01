@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { FileText, Save, Eye, Globe } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import * as React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -17,11 +18,15 @@ export default function LegalTerms() {
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
-    onSuccess: (data: any) => {
-      setTermsContent(data.termsOfService || "");
-      setPrivacyContent(data.privacyPolicy || "");
-    },
   });
+
+  // Update form data when settings load
+  React.useEffect(() => {
+    if (settings) {
+      setTermsContent((settings as any).termsOfService || "");
+      setPrivacyContent((settings as any).privacyPolicy || "");
+    }
+  }, [settings]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: { key: string; value: string }) => {

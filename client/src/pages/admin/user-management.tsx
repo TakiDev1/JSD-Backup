@@ -146,7 +146,7 @@ export default function UserManagement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-purple-200">Total Users</p>
-                      <p className="text-2xl font-bold text-white">{stats?.users || users.length}</p>
+                      <p className="text-2xl font-bold text-white">{(stats as any)?.users || users.length}</p>
                     </div>
                     <div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center">
                       <Users className="h-6 w-6 text-white" />
