@@ -149,6 +149,26 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(users.username);
   }
 
+  async getAllUsersWithTrackingInfo(): Promise<any[]> {
+    const allUsers = await db.select().from(users).orderBy(users.username);
+    
+    // Calculate total spent for each user
+    const usersWithStats = await Promise.all(
+      allUsers.map(async (user) => {
+        const userPurchases = await this.getPurchasesByUser(user.id);
+        const totalSpent = userPurchases.reduce((sum, purchase) => sum + purchase.price, 0);
+        
+        return {
+          ...user,
+          totalSpent,
+          loginCount: user.loginCount || 0
+        };
+      })
+    );
+    
+    return usersWithStats;
+  }
+
   async updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined> {
     const result = await db.update(users)
       .set({
