@@ -1343,6 +1343,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/notifications/history", auth.isAdmin, async (req, res) => {
+    try {
+      // Mock notification history for now
+      // In a real implementation, you would fetch from database
+      const mockHistory = [
+        {
+          id: 1,
+          modId: 26,
+          modTitle: "Test Mod Update",
+          version: "2.0.0",
+          recipientCount: 15,
+          successCount: 14,
+          failureCount: 1,
+          createdAt: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+        },
+        {
+          id: 2,
+          modId: 28,
+          modTitle: "JSD's hypersonic gtx",
+          version: "1.5.0",
+          recipientCount: 8,
+          successCount: 8,
+          failureCount: 0,
+          createdAt: new Date(Date.now() - 172800000).toISOString() // 2 days ago
+        }
+      ];
+      
+      res.json(mockHistory);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/users/tracking", auth.isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsersWithTrackingInfo();

@@ -30,6 +30,7 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import UserManagement from "@/pages/admin/user-management";
 import ProductManagement from "@/pages/admin/product-management";
 import OrderManagement from "@/pages/admin/orders";
+import AdminNotifications from "@/pages/admin-notifications";
 import SalesReport from "@/pages/admin/analytics/sales";
 import UserAnalytics from "@/pages/admin/analytics/users";
 import CreateUser from "@/pages/admin/users/create";
@@ -39,7 +40,7 @@ import OrderManagementIndex from "@/pages/admin/orders/index";
 import AdminSettingsIndex from "@/pages/admin/settings/index";
 import AnalyticsIndex from "@/pages/admin/analytics/index";
 import LegalTerms from "@/pages/admin/legal-terms";
-import AdminNotifications from "@/pages/admin/notifications";
+import NotificationsCenter from "@/pages/admin/notifications";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -128,7 +129,7 @@ function Router() {
       <AdminRoute path="/admin/payments/webhooks" component={AdminSettings} />
       
       {/* Communications */}
-      <AdminRoute path="/admin/notifications" component={AdminNotifications} />
+      <AdminRoute path="/admin/notifications" component={NotificationsCenter} />
       <AdminRoute path="/admin/communications/templates" component={AdminNotifications} />
       <AdminRoute path="/admin/communications/newsletter" component={AdminNotifications} />
       <AdminRoute path="/admin/communications/discord" component={AdminNotifications} />
