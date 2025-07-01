@@ -12,7 +12,7 @@ export default function UserManagement() {
   });
 
   const { data: allUsers, isLoading } = useQuery({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/admin/users'],
   });
 
   if (isLoading) {
