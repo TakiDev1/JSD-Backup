@@ -102,12 +102,7 @@ const sidebarItems: SidebarItem[] = [
     id: 'orders',
     label: 'Order Management',
     icon: <ShoppingCart className="w-5 h-5" />,
-    children: [
-      { id: 'all-orders', label: 'All Orders', icon: <List className="w-4 h-4" />, path: '/admin/orders' },
-      { id: 'pending-orders', label: 'Pending Orders', icon: <Calendar className="w-4 h-4" />, path: '/admin/orders/pending' },
-      { id: 'completed-orders', label: 'Completed Orders', icon: <Download className="w-4 h-4" />, path: '/admin/orders/completed' },
-      { id: 'refunds', label: 'Refunds', icon: <Banknote className="w-4 h-4" />, path: '/admin/orders/refunds' }
-    ]
+    path: '/admin/order-management'
   },
   {
     id: 'payments',
