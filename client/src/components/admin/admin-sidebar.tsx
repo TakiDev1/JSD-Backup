@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { 
   LayoutDashboard, 
   Users, 
@@ -35,8 +36,11 @@ import {
   SettingsIcon,
   Banknote,
   Webhook,
-  Zap
+  Zap,
+  X,
+  Menu
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SidebarItem {
   id: string;
@@ -44,6 +48,7 @@ interface SidebarItem {
   icon: React.ReactNode;
   path?: string;
   children?: SidebarItem[];
+  permissions?: string[];
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -51,17 +56,19 @@ const sidebarItems: SidebarItem[] = [
     id: 'dashboard',
     label: 'Dashboard',
     icon: <LayoutDashboard className="w-5 h-5" />,
-    path: '/admin'
+    path: '/admin',
+    permissions: ['view_dashboard']
   },
   {
     id: 'analytics',
     label: 'Analytics',
     icon: <BarChart3 className="w-5 h-5" />,
+    permissions: ['view_analytics'],
     children: [
-      { id: 'overview', label: 'Overview', icon: <Eye className="w-4 h-4" />, path: '/admin/analytics' },
-      { id: 'sales', label: 'Sales Report', icon: <DollarSign className="w-4 h-4" />, path: '/admin/analytics/sales' },
-      { id: 'users-analytics', label: 'User Analytics', icon: <Users className="w-4 h-4" />, path: '/admin/analytics/users' },
-      { id: 'performance', label: 'Performance', icon: <Activity className="w-4 h-4" />, path: '/admin/analytics/performance' }
+      { id: 'overview', label: 'Overview', icon: <Eye className="w-4 h-4" />, path: '/admin/analytics', permissions: ['view_analytics'] },
+      { id: 'sales', label: 'Sales Report', icon: <DollarSign className="w-4 h-4" />, path: '/admin/analytics/sales', permissions: ['view_analytics'] },
+      { id: 'users-analytics', label: 'User Analytics', icon: <Users className="w-4 h-4" />, path: '/admin/analytics/users', permissions: ['view_analytics'] },
+      { id: 'performance', label: 'Performance', icon: <Activity className="w-4 h-4" />, path: '/admin/analytics/performance', permissions: ['view_analytics'] }
     ]
   },
   {

@@ -15,8 +15,14 @@ import {
   Shield
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminDashboard() {
+  // Test permissions
+  const { data: permissions } = useQuery<{ permissions: string[] }>({
+    queryKey: ['/api/auth/user/permissions'],
+  });
+
   const { data: stats, isLoading: statsLoading } = useQuery<{
     users: number;
     mods: number;
@@ -255,6 +261,25 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+        {/* Debug Permissions */}
+        {permissions && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Current User Permissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {permissions.permissions.map((permission) => (
+                    <Badge key={permission} variant="secondary">
+                      {permission}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

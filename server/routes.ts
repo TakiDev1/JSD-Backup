@@ -7,7 +7,7 @@ import fs from "fs";
 import { storage } from "./storage";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { mods } from "@shared/schema";
+import { mods, userRoles, roles, permissions, rolePermissions } from "@shared/schema";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { notifyModUpdateToAllOwners } from "./notifications";
@@ -196,6 +196,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else {
       console.log("Auth check - User not authenticated");
       res.status(401).json({ message: "Not authenticated" });
+    }
+  });
+
+  // Get current user permissions
+  app.get("/api/auth/user/permissions", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = await storage.getUser((req.user as any).id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // If user is admin, they have all permissions
+      if (user.isAdmin) {
+        return res.json({
+          isAdmin: true,
+          permissions: [
+            'view_dashboard',
+            'view_analytics', 
+            'view_users',
+            'manage_users',
+            'view_mods',
+            'manage_mods',
+            'view_roles',
+            'manage_roles',
+            'manage_content',
+            'manage_system'
+          ]
+        });
+      }
+
+      // Get user roles
+      const userRoleData = await db
+        .select({
+          roleId: schema.roles.id,
+          roleName: schema.roles.name
+        })
+        .from(schema.userRoles)
+        .innerJoin(schema.roles, eq(schema.userRoles.roleId, schema.roles.id))
+        .where(eq(schema.userRoles.userId, user.id));
+
+      // Get permissions for each role
+      const allPermissions = new Set<string>();
+      for (const role of userRoleData) {
+        const rolePermissions = await db
+          .select({
+            permissionName: schema.permissions.name
+          })
+          .from(schema.rolePermissions)
+          .innerJoin(schema.permissions, eq(schema.rolePermissions.permissionId, schema.permissions.id))
+          .where(eq(schema.rolePermissions.roleId, role.roleId));
+        
+        rolePermissions.forEach(perm => {
+          if (perm.permissionName) {
+            allPermissions.add(perm.permissionName);
+          }
+        });
+      }
+
+      res.json({
+        isAdmin: false,
+        permissions: Array.from(allPermissions)
+      });
+    } catch (error) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
     }
   });
   
