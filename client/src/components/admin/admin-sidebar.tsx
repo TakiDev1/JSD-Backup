@@ -138,6 +138,16 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   {
+    id: 'support',
+    label: 'Support Management',
+    icon: <MessageSquare className="w-5 h-5" />,
+    children: [
+      { id: 'support-tickets', label: 'Support Tickets', icon: <MessageSquare className="w-4 h-4" />, path: '/admin/support' },
+      { id: 'support-analytics', label: 'Support Analytics', icon: <BarChart3 className="w-4 h-4" />, path: '/admin/support/analytics' },
+      { id: 'faq-management', label: 'FAQ Management', icon: <FileText className="w-4 h-4" />, path: '/admin/support/faq' }
+    ]
+  },
+  {
     id: 'legal',
     label: 'Legal & Policies',
     icon: <FileText className="w-5 h-5" />,

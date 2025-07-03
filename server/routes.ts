@@ -2213,6 +2213,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Support Tickets API Routes
+  
+  // Get all support tickets (admin only)
+  app.get("/api/admin/support-tickets", isAdminWithPermission("support.view"), async (req, res) => {
+    try {
+      const tickets = await db.query.supportTickets.findMany({
+        with: {
+          user: {
+            columns: {
+              id: true,
+              username: true,
+            },
+          },
+          assignedToUser: {
+            columns: {
+              id: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: [desc(schema.supportTickets.createdAt)],
+      });
+      res.json(tickets);
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      res.status(500).json({ error: 'Failed to fetch support tickets' });
+    }
+  });
+
+  // Create a new support ticket (admin only)
+  app.post("/api/admin/support-tickets", isAdminWithPermission("support.create"), async (req, res) => {
+    try {
+      const validatedData = schema.insertSupportTicketSchema.parse(req.body);
+      
+      const [ticket] = await db.insert(schema.supportTickets)
+        .values({
+          ...validatedData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Create Support Ticket",
+        details: `Created support ticket: ${ticket.title}`,
+        ipAddress: req.ip
+      });
+
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error('Error creating support ticket:', error);
+      res.status(500).json({ error: 'Failed to create support ticket' });
+    }
+  });
+
+  // Update a support ticket (admin only)
+  app.patch("/api/admin/support-tickets/:id", isAdminWithPermission("support.update"), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const [updatedTicket] = await db.update(schema.supportTickets)
+        .set({
+          ...updateData,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.supportTickets.id, ticketId))
+        .returning();
+
+      if (!updatedTicket) {
+        return res.status(404).json({ error: 'Support ticket not found' });
+      }
+
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Update Support Ticket",
+        details: `Updated support ticket: ${updatedTicket.title}`,
+        ipAddress: req.ip
+      });
+
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error('Error updating support ticket:', error);
+      res.status(500).json({ error: 'Failed to update support ticket' });
+    }
+  });
+
+  // Delete a support ticket (admin only)
+  app.delete("/api/admin/support-tickets/:id", isAdminWithPermission("support.delete"), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      
+      const [deletedTicket] = await db.delete(schema.supportTickets)
+        .where(eq(schema.supportTickets.id, ticketId))
+        .returning();
+
+      if (!deletedTicket) {
+        return res.status(404).json({ error: 'Support ticket not found' });
+      }
+
+      // Log admin activity
+      await storage.logAdminActivity({
+        userId: (req.user as any).id,
+        action: "Delete Support Ticket",
+        details: `Deleted support ticket: ${deletedTicket.title}`,
+        ipAddress: req.ip
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting support ticket:', error);
+      res.status(500).json({ error: 'Failed to delete support ticket' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -42,6 +42,7 @@ import AnalyticsIndex from "@/pages/admin/analytics/index";
 import LegalTerms from "@/pages/admin/legal-terms";
 import NotificationsCenter from "@/pages/admin/notifications";
 import RoleManagement from "@/pages/admin/role-management";
+import SupportTickets from "@/pages/admin/support-tickets";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -135,6 +136,10 @@ function Router() {
       <AdminRoute path="/admin/communications/templates" component={AdminNotifications} />
       <AdminRoute path="/admin/communications/newsletter" component={AdminNotifications} />
       <AdminRoute path="/admin/communications/discord" component={AdminNotifications} />
+      
+      {/* Support Management */}
+      <AdminRoute path="/admin/support" component={SupportTickets} />
+      <AdminRoute path="/admin/support/tickets" component={SupportTickets} />
       
       {/* Site Settings */}
       <AdminRoute path="/admin/settings" component={AdminSettingsIndex} />

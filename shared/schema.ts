@@ -446,3 +446,41 @@ export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
 
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+
+// Support Tickets table
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  priority: varchar("priority", { length: 20 }).default("medium"),
+  status: varchar("status", { length: 20 }).default("open"),
+  category: varchar("category", { length: 50 }).default("general"),
+  userId: integer("user_id").references(() => users.id),
+  assignedTo: integer("assigned_to").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+});
+
+// Zod schemas for support tickets
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Support tickets relations
+export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+  }),
+  assignedToUser: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+  }),
+}));
+
+// Export types for support tickets
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
