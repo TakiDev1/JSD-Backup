@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Package, MapPin, DollarSign, User, Calendar, Monitor } from "lucide-react";
 import { motion } from "framer-motion";
+import AdminLayout from "@/components/admin/admin-layout";
 
 interface Order {
   id: number;
@@ -42,21 +43,19 @@ export default function OrderManagement() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <Card className="bg-red-900/20 border-red-500/50">
-            <CardContent className="p-6">
-              <p className="text-red-400">Error loading orders: {(error as Error).message}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AdminLayout>
+        <Card className="bg-red-900/20 border-red-500/50">
+          <CardContent className="p-6">
+            <p className="text-red-400">Error loading orders: {(error as Error).message}</p>
+          </CardContent>
+        </Card>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -237,6 +236,6 @@ export default function OrderManagement() {
           </Card>
         </motion.div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
