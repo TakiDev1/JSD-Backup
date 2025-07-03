@@ -30,6 +30,10 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import UserManagement from "@/pages/admin/user-management";
 import UserRolesPage from "@/pages/admin/user-roles";
 import ProductManagement from "@/pages/admin/product-management";
+import AllMods from "@/pages/admin/products/all-mods";
+import CreateModPage from "@/pages/admin/products/create-mod";
+import FeaturedMods from "@/pages/admin/products/featured-mods";
+import Categories from "@/pages/admin/products/categories";
 
 import AdminNotifications from "@/pages/admin-notifications";
 import SalesReport from "@/pages/admin/analytics/sales";
@@ -112,6 +116,12 @@ function Router() {
       <AdminRoute path="/admin/roles" component={RoleManagement} />
       
       {/* Product Management */}
+      <AdminRoute path="/admin/products/all-mods" component={AllMods} />
+      <AdminRoute path="/admin/products/create-mod" component={CreateModPage} />
+      <AdminRoute path="/admin/products/featured-mods" component={FeaturedMods} />
+      <AdminRoute path="/admin/products/categories" component={Categories} />
+      
+      {/* Legacy routes for backward compatibility */}
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/mods/create" component={CreateMod} />
       <AdminRoute path="/admin/mods/featured" component={AdminMods} />

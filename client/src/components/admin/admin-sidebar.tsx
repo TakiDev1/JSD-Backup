@@ -92,10 +92,10 @@ const sidebarItems: SidebarItem[] = [
     label: 'Product Management',
     icon: <Package className="w-5 h-5" />,
     children: [
-      { id: 'all-mods', label: 'All Mods', icon: <List className="w-4 h-4" />, path: '/admin/mods' },
-      { id: 'create-mod', label: 'Create Mod', icon: <PackagePlus className="w-4 h-4" />, path: '/admin/mods/create' },
-      { id: 'featured-mods', label: 'Featured Mods', icon: <PackageSearch className="w-4 h-4" />, path: '/admin/mods/featured' },
-      { id: 'mod-categories', label: 'Categories', icon: <Palette className="w-4 h-4" />, path: '/admin/mods/categories' }
+      { id: 'all-mods', label: 'All Mods', icon: <List className="w-4 h-4" />, path: '/admin/products/all-mods' },
+      { id: 'create-mod', label: 'Create Mod', icon: <PackagePlus className="w-4 h-4" />, path: '/admin/products/create-mod' },
+      { id: 'featured-mods', label: 'Featured Mods', icon: <PackageSearch className="w-4 h-4" />, path: '/admin/products/featured-mods' },
+      { id: 'mod-categories', label: 'Categories', icon: <Palette className="w-4 h-4" />, path: '/admin/products/categories' }
     ]
   },
   {

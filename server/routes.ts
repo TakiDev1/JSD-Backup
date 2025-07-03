@@ -12,7 +12,7 @@ import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { notifyModUpdateToAllOwners } from "./notifications";
 import { z } from "zod";
-import { eq, sql, asc, desc } from "drizzle-orm";
+import { eq, sql, asc, desc, like, or } from "drizzle-orm";
 import {
   insertModSchema,
   insertModVersionSchema
@@ -498,6 +498,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin mod routes
+  app.get("/api/admin/mods", auth.isAdmin, async (req, res) => {
+    try {
+      const { category, search, sortBy = 'createdAt', sortOrder = 'desc', page = 1, limit = 10 } = req.query;
+      
+      const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+      
+      let query = db
+        .select({
+          id: schema.mods.id,
+          title: schema.mods.title,
+          description: schema.mods.description,
+          price: schema.mods.price,
+          discountPrice: schema.mods.discountPrice,
+          category: schema.mods.category,
+          tags: schema.mods.tags,
+          isFeatured: schema.mods.isFeatured,
+          isSubscriptionOnly: schema.mods.isSubscriptionOnly,
+          downloadCount: schema.mods.downloadCount,
+          averageRating: schema.mods.averageRating,
+          createdAt: schema.mods.createdAt,
+          version: schema.mods.version
+        })
+        .from(schema.mods);
+      
+      // Apply filters
+      if (category) {
+        query = query.where(eq(schema.mods.category, category as string));
+      }
+      
+      if (search) {
+        query = query.where(
+          or(
+            like(schema.mods.title, `%${search}%`),
+            like(schema.mods.description, `%${search}%`)
+          )
+        );
+      }
+      
+      // Apply sorting
+      const sortColumn = schema.mods[sortBy as keyof typeof schema.mods] || schema.mods.createdAt;
+      if (sortOrder === 'desc') {
+        query = query.orderBy(desc(sortColumn));
+      } else {
+        query = query.orderBy(asc(sortColumn));
+      }
+      
+      // Apply pagination
+      const mods = await query.limit(parseInt(limit as string)).offset(offset);
+      
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(schema.mods);
+      
+      res.json({
+        mods,
+        pagination: {
+          total: count,
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          totalPages: Math.ceil(count / parseInt(limit as string))
+        }
+      });
+    } catch (error: any) {
+      console.error("[GET /api/admin/mods] Error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/mods", auth.isAdmin, async (req, res) => {
+    try {
+      const { version, fileSize, changelog, ...modData } = req.body;
+      
+      // Create the mod first using storage
+      const validatedModData = insertModSchema.parse(modData);
+      const mod = await storage.createMod(validatedModData);
+      
+      // Create the initial version if version info is provided
+      if (version) {
+        const versionData = {
+          modId: mod.id,
+          version: version,
+          filePath: mod.downloadUrl || '',
+          fileSize: fileSize ? parseFloat(fileSize) * 1024 * 1024 : 0, // Convert MB to bytes
+          changelog: changelog || 'Initial release',
+          isLatest: true
+        };
+        
+        await storage.createModVersion(versionData);
+        console.log(`[POST /api/admin/mods] Created version ${version} for mod ${mod.id}`);
+      }
+      
+      res.status(201).json(mod);
+    } catch (error: any) {
+      console.error("[POST /api/admin/mods] Error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/mods/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const validatedData = insertModSchema.partial().parse(req.body);
+      const mod = await storage.updateMod(parseInt(req.params.id), validatedData);
+      
+      if (!mod) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      res.json(mod);
+    } catch (error: any) {
+      console.error(`[PATCH /api/admin/mods/${req.params.id}] Error:`, error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/mods/:id", auth.isAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteMod(parseInt(req.params.id));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Mod not found" });
+      }
+      
+      res.json({ success });
+    } catch (error: any) {
+      console.error(`[DELETE /api/admin/mods/${req.params.id}] Error:`, error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Legacy mod routes for backward compatibility
   app.post("/api/mods", auth.isAdmin, async (req, res) => {
     try {
       const { version, fileSize, changelog, ...modData } = req.body;
