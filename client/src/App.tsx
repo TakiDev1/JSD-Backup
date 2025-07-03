@@ -41,6 +41,7 @@ import AdminSettingsIndex from "@/pages/admin/settings/index";
 import AnalyticsIndex from "@/pages/admin/analytics/index";
 import LegalTerms from "@/pages/admin/legal-terms";
 import NotificationsCenter from "@/pages/admin/notifications";
+import RoleManagement from "@/pages/admin/role-management";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -105,6 +106,7 @@ function Router() {
       <AdminRoute path="/admin/users/create" component={CreateUser} />
       <AdminRoute path="/admin/users/roles" component={UserManagement} />
       <AdminRoute path="/admin/users/banned" component={UserManagement} />
+      <AdminRoute path="/admin/roles" component={RoleManagement} />
       
       {/* Product Management */}
       <AdminRoute path="/admin/products" component={ProductManagement} />

@@ -235,6 +235,58 @@ const ModDetailsPage = () => {
     window.location.href = `/api/mods/${id}/download`;
   };
 
+  // Handle share
+  const handleShare = async () => {
+    if (!mod) return;
+
+    const url = window.location.href;
+    const title = mod.title;
+    const text = `Check out this BeamNG mod: ${mod.title}`;
+
+    // Check if Web Share API is supported
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: text,
+          url: url,
+        });
+        toast({
+          title: "Shared successfully",
+          description: "Mod shared successfully!",
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error);
+          // Fallback to clipboard
+          fallbackShare(url);
+        }
+      }
+    } else {
+      // Fallback to clipboard
+      fallbackShare(url);
+    }
+  };
+
+  // Fallback share function - copy to clipboard
+  const fallbackShare = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied",
+        description: "Mod link copied to clipboard!",
+      });
+    } catch (error) {
+      // Final fallback - show URL in prompt
+      console.error('Clipboard not supported:', error);
+      toast({
+        title: "Share Link",
+        description: "Copy this link to share: " + url,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-24 min-h-screen flex items-center justify-center">
@@ -441,7 +493,7 @@ const ModDetailsPage = () => {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="flex-1" title="Share">
+                <Button variant="outline" size="icon" className="flex-1" title="Share" onClick={handleShare}>
                   <Share2 className="h-4 w-4" />
                 </Button>
                 {isAuthenticated && (

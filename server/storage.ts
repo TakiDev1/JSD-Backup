@@ -10,7 +10,11 @@ import {
   cartItems,
   adminActivityLog,
   subscriptionPlans,
-  subscriptionBenefits
+  subscriptionBenefits,
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles
 } from "@shared/schema";
 
 // Define interface for storage operations
@@ -99,6 +103,32 @@ export interface IStorage {
   createSubscriptionBenefit(benefit: schema.InsertSubscriptionBenefit): Promise<schema.SubscriptionBenefit>;
   updateSubscriptionBenefit(id: number, benefit: Partial<schema.InsertSubscriptionBenefit>): Promise<schema.SubscriptionBenefit | undefined>;
   deleteSubscriptionBenefit(id: number): Promise<boolean>;
+
+  // Role management operations
+  getRoles(): Promise<schema.Role[]>;
+  getRole(id: number): Promise<schema.Role | undefined>;
+  createRole(role: schema.InsertRole): Promise<schema.Role>;
+  updateRole(id: number, role: Partial<schema.InsertRole>): Promise<schema.Role | undefined>;
+  deleteRole(id: number): Promise<boolean>;
+  
+  // Permission operations
+  getPermissions(): Promise<schema.Permission[]>;
+  getPermissionsByCategory(category: string): Promise<schema.Permission[]>;
+  
+  // Role permission operations
+  getRolePermissions(roleId: number): Promise<schema.Permission[]>;
+  assignPermissionsToRole(roleId: number, permissionIds: number[]): Promise<boolean>;
+  removePermissionsFromRole(roleId: number, permissionIds: number[]): Promise<boolean>;
+  
+  // User role operations
+  getUserRoles(userId: number): Promise<schema.Role[]>;
+  getUserPermissions(userId: number): Promise<schema.Permission[]>;
+  assignRolesToUser(userId: number, roleIds: number[], assignedBy: number): Promise<boolean>;
+  removeRolesFromUser(userId: number, roleIds: number[]): Promise<boolean>;
+  
+  // Permission checking
+  userHasPermission(userId: number, permissionName: string): Promise<boolean>;
+  userHasAnyPermission(userId: number, permissionNames: string[]): Promise<boolean>;
 }
 
 // Implement storage with PostgreSQL via drizzle
@@ -531,6 +561,196 @@ export class DatabaseStorage implements IStorage {
   async deleteSubscriptionBenefit(id: number): Promise<boolean> {
     const result = await db.delete(subscriptionBenefits).where(eq(subscriptionBenefits.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Role management operations
+  async getRoles(): Promise<schema.Role[]> {
+    return await db.select().from(roles).orderBy(roles.name);
+  }
+
+  async getRole(id: number): Promise<schema.Role | undefined> {
+    const result = await db.select().from(roles).where(eq(roles.id, id));
+    return result[0];
+  }
+
+  async createRole(role: schema.InsertRole): Promise<schema.Role> {
+    const result = await db.insert(roles).values(role).returning();
+    return result[0];
+  }
+
+  async updateRole(id: number, role: Partial<schema.InsertRole>): Promise<schema.Role | undefined> {
+    const result = await db.update(roles).set({
+      ...role,
+      updatedAt: new Date()
+    }).where(eq(roles.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteRole(id: number): Promise<boolean> {
+    // Don't allow deletion of system roles
+    const roleToDelete = await this.getRole(id);
+    if (roleToDelete?.isSystem) {
+      return false;
+    }
+    
+    // Remove all user assignments and role permissions first
+    await db.delete(userRoles).where(eq(userRoles.roleId, id));
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+    
+    const result = await db.delete(roles).where(eq(roles.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Permission operations
+  async getPermissions(): Promise<schema.Permission[]> {
+    return await db.select().from(permissions).orderBy(permissions.category, permissions.action);
+  }
+
+  async getPermissionsByCategory(category: string): Promise<schema.Permission[]> {
+    return await db.select().from(permissions).where(eq(permissions.category, category)).orderBy(permissions.action);
+  }
+
+  // Role permission operations
+  async getRolePermissions(roleId: number): Promise<schema.Permission[]> {
+    const result = await db.select({
+      id: permissions.id,
+      name: permissions.name,
+      description: permissions.description,
+      category: permissions.category,
+      action: permissions.action,
+      createdAt: permissions.createdAt
+    })
+    .from(rolePermissions)
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(rolePermissions.roleId, roleId))
+    .orderBy(permissions.category, permissions.action);
+    
+    return result;
+  }
+
+  async assignPermissionsToRole(roleId: number, permissionIds: number[]): Promise<boolean> {
+    try {
+      // Remove existing permissions first
+      await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+      
+      // Add new permissions
+      if (permissionIds.length > 0) {
+        const assignments = permissionIds.map(permissionId => ({
+          roleId,
+          permissionId
+        }));
+        await db.insert(rolePermissions).values(assignments);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error assigning permissions to role:', error);
+      return false;
+    }
+  }
+
+  async removePermissionsFromRole(roleId: number, permissionIds: number[]): Promise<boolean> {
+    try {
+      await db.delete(rolePermissions)
+        .where(and(
+          eq(rolePermissions.roleId, roleId),
+          sql`${rolePermissions.permissionId} = ANY(${permissionIds})`
+        ));
+      return true;
+    } catch (error) {
+      console.error('Error removing permissions from role:', error);
+      return false;
+    }
+  }
+
+  // User role operations
+  async getUserRoles(userId: number): Promise<schema.Role[]> {
+    const result = await db.select({
+      id: roles.id,
+      name: roles.name,
+      description: roles.description,
+      isSystem: roles.isSystem,
+      createdAt: roles.createdAt,
+      updatedAt: roles.updatedAt
+    })
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(eq(userRoles.userId, userId))
+    .orderBy(roles.name);
+    
+    return result;
+  }
+
+  async getUserPermissions(userId: number): Promise<schema.Permission[]> {
+    const result = await db.select({
+      id: permissions.id,
+      name: permissions.name,
+      description: permissions.description,
+      category: permissions.category,
+      action: permissions.action,
+      createdAt: permissions.createdAt
+    })
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .innerJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(userRoles.userId, userId))
+    .orderBy(permissions.category, permissions.action);
+    
+    // Remove duplicates
+    const uniquePermissions = result.filter((permission, index, self) =>
+      index === self.findIndex(p => p.id === permission.id)
+    );
+    
+    return uniquePermissions;
+  }
+
+  async assignRolesToUser(userId: number, roleIds: number[], assignedBy: number): Promise<boolean> {
+    try {
+      // Remove existing roles first
+      await db.delete(userRoles).where(eq(userRoles.userId, userId));
+      
+      // Add new roles
+      if (roleIds.length > 0) {
+        const assignments = roleIds.map(roleId => ({
+          userId,
+          roleId,
+          assignedBy
+        }));
+        await db.insert(userRoles).values(assignments);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error assigning roles to user:', error);
+      return false;
+    }
+  }
+
+  async removeRolesFromUser(userId: number, roleIds: number[]): Promise<boolean> {
+    try {
+      await db.delete(userRoles)
+        .where(and(
+          eq(userRoles.userId, userId),
+          sql`${userRoles.roleId} = ANY(${roleIds})`
+        ));
+      return true;
+    } catch (error) {
+      console.error('Error removing roles from user:', error);
+      return false;
+    }
+  }
+
+  // Permission checking
+  async userHasPermission(userId: number, permissionName: string): Promise<boolean> {
+    const userPermissions = await this.getUserPermissions(userId);
+    return userPermissions.some(permission => permission.name === permissionName);
+  }
+
+  async userHasAnyPermission(userId: number, permissionNames: string[]): Promise<boolean> {
+    const userPermissions = await this.getUserPermissions(userId);
+    const userPermissionNames = userPermissions.map(p => p.name);
+    return permissionNames.some(permName => userPermissionNames.includes(permName));
   }
 }
 

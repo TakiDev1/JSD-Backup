@@ -11,7 +11,8 @@ import {
   Activity,
   Star,
   TrendingUp,
-  Calendar
+  Calendar,
+  Shield
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -242,9 +243,9 @@ export default function AdminDashboard() {
                   <Users className="w-5 h-5" />
                   <span className="text-sm">Manage Users</span>
                 </Button>
-                <Button variant="outline" className="h-16 flex flex-col gap-2">
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="text-sm">View Orders</span>
+                <Button variant="outline" className="h-16 flex flex-col gap-2" onClick={() => window.location.href = '/admin/roles'}>
+                  <Shield className="w-5 h-5" />
+                  <span className="text-sm">Role Management</span>
                 </Button>
                 <Button variant="outline" className="h-16 flex flex-col gap-2">
                   <TrendingUp className="w-5 h-5" />

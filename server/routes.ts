@@ -57,6 +57,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   const auth = setupAuth(app);
 
+  // Permission-based middleware
+  const isAdminWithPermission = (permissionName: string) => {
+    return async (req: any, res: any, next: any) => {
+      // First check if user is authenticated and admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!req.user || (!req.user.isAdmin && !req.user.is_admin)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      try {
+        // Check if user has the specific permission
+        const hasPermission = await storage.userHasPermission(req.user.id, permissionName);
+        
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            error: `Permission '${permissionName}' required`,
+            required_permission: permissionName
+          });
+        }
+
+        next();
+      } catch (error) {
+        console.error('Error checking permission:', error);
+        res.status(500).json({ error: 'Permission check failed' });
+      }
+    };
+  };
+
   // Auth routes
   // Discord authentication routes
   if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
@@ -2002,6 +2033,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Failed to initialize site settings:', error);
     }
   })();
+
+  // Role Management API Routes
+  // Get all roles
+  app.get("/api/admin/roles", isAdminWithPermission("roles.view"), async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({ error: 'Failed to fetch roles' });
+    }
+  });
+
+  // Get all permissions
+  app.get("/api/admin/permissions", isAdminWithPermission("roles.view"), async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      res.status(500).json({ error: 'Failed to fetch permissions' });
+    }
+  });
+
+  // Get permissions by category
+  app.get("/api/admin/permissions/:category", isAdminWithPermission("roles.view"), async (req, res) => {
+    try {
+      const { category } = req.params;
+      const permissions = await storage.getPermissionsByCategory(category);
+      res.json(permissions);
+    } catch (error) {
+      console.error('Error fetching permissions by category:', error);
+      res.status(500).json({ error: 'Failed to fetch permissions' });
+    }
+  });
+
+  // Get role with permissions
+  app.get("/api/admin/roles/:id", isAdminWithPermission("roles.view"), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      if (isNaN(roleId)) {
+        return res.status(400).json({ error: 'Invalid role ID' });
+      }
+
+      const role = await storage.getRole(roleId);
+      if (!role) {
+        return res.status(404).json({ error: 'Role not found' });
+      }
+
+      const permissions = await storage.getRolePermissions(roleId);
+      res.json({ ...role, permissions });
+    } catch (error) {
+      console.error('Error fetching role:', error);
+      res.status(500).json({ error: 'Failed to fetch role' });
+    }
+  });
+
+  // Create new role
+  app.post("/api/admin/roles", isAdminWithPermission("roles.create"), async (req, res) => {
+    try {
+      const { name, description, permissionIds } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: 'Role name is required' });
+      }
+
+      // Create the role
+      const role = await storage.createRole({
+        name,
+        description: description || null,
+        isSystem: false
+      });
+
+      // Assign permissions if provided
+      if (permissionIds && Array.isArray(permissionIds) && permissionIds.length > 0) {
+        await storage.assignPermissionsToRole(role.id, permissionIds);
+      }
+
+      res.status(201).json(role);
+    } catch (error) {
+      console.error('Error creating role:', error);
+      res.status(500).json({ error: 'Failed to create role' });
+    }
+  });
+
+  // Update role
+  app.put("/api/admin/roles/:id", isAdminWithPermission("roles.edit"), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      if (isNaN(roleId)) {
+        return res.status(400).json({ error: 'Invalid role ID' });
+      }
+
+      const { name, description, permissionIds } = req.body;
+      
+      // Update role details
+      const updatedRole = await storage.updateRole(roleId, {
+        name,
+        description: description || null
+      });
+
+      if (!updatedRole) {
+        return res.status(404).json({ error: 'Role not found' });
+      }
+
+      // Update permissions if provided
+      if (permissionIds && Array.isArray(permissionIds)) {
+        await storage.assignPermissionsToRole(roleId, permissionIds);
+      }
+
+      res.json(updatedRole);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      res.status(500).json({ error: 'Failed to update role' });
+    }
+  });
+
+  // Delete role
+  app.delete("/api/admin/roles/:id", isAdminWithPermission("roles.delete"), async (req, res) => {
+    try {
+      const roleId = parseInt(req.params.id);
+      if (isNaN(roleId)) {
+        return res.status(400).json({ error: 'Invalid role ID' });
+      }
+
+      const deleted = await storage.deleteRole(roleId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Role not found or cannot be deleted' });
+      }
+
+      res.json({ message: 'Role deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      res.status(500).json({ error: 'Failed to delete role' });
+    }
+  });
+
+  // Get user roles
+  app.get("/api/admin/users/:id/roles", isAdminWithPermission("users.view"), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+
+      const roles = await storage.getUserRoles(userId);
+      res.json(roles);
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+      res.status(500).json({ error: 'Failed to fetch user roles' });
+    }
+  });
+
+  // Assign roles to user
+  app.post("/api/admin/users/:id/roles", isAdminWithPermission("roles.assign"), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+
+      const { roleIds } = req.body;
+      if (!Array.isArray(roleIds)) {
+        return res.status(400).json({ error: 'Role IDs must be an array' });
+      }
+
+      const currentUserId = (req.user as any).id;
+      const success = await storage.assignRolesToUser(userId, roleIds, currentUserId);
+      
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to assign roles' });
+      }
+
+      res.json({ message: 'Roles assigned successfully' });
+    } catch (error) {
+      console.error('Error assigning roles to user:', error);
+      res.status(500).json({ error: 'Failed to assign roles to user' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

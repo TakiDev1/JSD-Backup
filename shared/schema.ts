@@ -339,3 +339,110 @@ export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema
 
 export type SubscriptionBenefit = typeof subscriptionBenefits.$inferSelect;
 export type InsertSubscriptionBenefit = z.infer<typeof insertSubscriptionBenefitSchema>;
+
+// Role management schema
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isSystem: boolean("is_system").default(false), // System roles can't be deleted
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Permissions schema
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  category: text("category").notNull(), // e.g., "users", "orders", "mods", "settings"
+  action: text("action").notNull(), // e.g., "view", "create", "edit", "delete"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Role permissions (many-to-many)
+export const rolePermissions = pgTable("role_permissions", {
+  roleId: integer("role_id").notNull(),
+  permissionId: integer("permission_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.roleId, table.permissionId] }),
+}));
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  createdAt: true,
+});
+
+// User roles (many-to-many)
+export const userRoles = pgTable("user_roles", {
+  userId: integer("user_id").notNull(),
+  roleId: integer("role_id").notNull(),
+  assignedBy: integer("assigned_by").notNull(), // Who assigned this role
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.roleId] }),
+}));
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  createdAt: true,
+});
+
+// Relations for role management
+export const roleRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+}));
+
+export const permissionRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolePermissionRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));
+
+export const userRoleRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+  assignedByUser: one(users, {
+    fields: [userRoles.assignedBy],
+    references: [users.id],
+  }),
+}));
+
+// Export types for role management
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;

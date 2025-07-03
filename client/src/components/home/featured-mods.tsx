@@ -185,13 +185,7 @@ const FeaturedMods = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800/60 to-slate-700/60">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                          >
-                            <Eye className="h-16 w-16 text-slate-400" />
-                          </motion.div>
+                        <div className="w-full h-full bg-gradient-to-br from-slate-800/60 to-slate-700/60">
                         </div>
                       )}
                     </motion.div>
