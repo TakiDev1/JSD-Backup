@@ -7,11 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
-import { Users, UserPlus, Shield, Ban, Crown, Mail, Calendar, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { Users, UserPlus, Shield, Ban, Crown, Mail, Calendar, ChevronLeft, ChevronRight, Edit, UserCheck } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
+
+interface Role {
+  id: number;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+}
 
 interface User {
   id: number;
@@ -23,6 +31,7 @@ interface User {
   createdAt: string;
   lastLogin?: string;
   discordId?: string;
+  roles?: Role[];
 }
 
 interface EditUserData {
@@ -36,6 +45,7 @@ export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState<EditUserData>({});
+  const [roleAssignmentUser, setRoleAssignmentUser] = useState<User | null>(null);
   const usersPerPage = 9;
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -46,6 +56,11 @@ export default function UserManagement() {
 
   const { data: allUsers, isLoading } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
+  });
+
+  // Fetch available roles
+  const { data: roles = [] } = useQuery<Role[]>({
+    queryKey: ['/api/admin/roles'],
   });
 
   const updateUserMutation = useMutation({
@@ -66,6 +81,35 @@ export default function UserManagement() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update user information.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Role assignment mutation
+  const assignUserRolesMutation = useMutation({
+    mutationFn: async (data: { userId: number; roleIds: number[] }) => {
+      const response = await apiRequest("POST", `/api/admin/users/${data.userId}/roles`, {
+        roleIds: data.roleIds,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to assign roles to user");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setRoleAssignmentUser(null);
+      toast({
+        title: "Success",
+        description: "User roles updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -267,23 +311,51 @@ export default function UserManagement() {
                       )}
                     </div>
                     
-                    <div className="flex items-center justify-between text-xs text-slate-400">
+                    {/* Display current roles */}
+                    {user.roles && user.roles.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-xs text-slate-400 mb-1">Roles:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.map((role) => (
+                            <Badge
+                              key={role.id}
+                              variant="secondary"
+                              className="text-xs bg-purple-900/50 text-purple-300"
+                            >
+                              {role.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between text-xs text-slate-400 mt-3">
                       <span className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
                         {new Date(user.createdAt).toLocaleDateString()}
                       </span>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditUser(user)}
-                            className="text-white border-slate-600 hover:bg-slate-700 h-7 px-2 text-xs"
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                        </DialogTrigger>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRoleAssignmentUser(user)}
+                          className="text-purple-400 border-purple-400 hover:bg-purple-400/10 h-7 px-2 text-xs"
+                        >
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Roles
+                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                              className="text-white border-slate-600 hover:bg-slate-700 h-7 px-2 text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                          </DialogTrigger>
                         <DialogContent className="bg-slate-900 border-slate-700">
                           <DialogHeader>
                             <DialogTitle className="text-white">Edit User: {editingUser?.username}</DialogTitle>
@@ -343,6 +415,7 @@ export default function UserManagement() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -392,6 +465,62 @@ export default function UserManagement() {
           </Card>
         </div>
       </div>
+      
+      {/* Role Assignment Dialog */}
+      <Dialog open={!!roleAssignmentUser} onOpenChange={() => setRoleAssignmentUser(null)}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Manage Roles - {roleAssignmentUser?.username}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {roles.map((role) => (
+                <div key={role.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`user-role-${role.id}`}
+                    defaultChecked={roleAssignmentUser?.roles?.some(r => r.id === role.id)}
+                    onCheckedChange={(checked) => {
+                      if (!roleAssignmentUser) return;
+                      const currentRoleIds = roleAssignmentUser.roles?.map(r => r.id) || [];
+                      const newRoleIds = checked
+                        ? [...currentRoleIds, role.id]
+                        : currentRoleIds.filter(id => id !== role.id);
+                      assignUserRolesMutation.mutate({
+                        userId: roleAssignmentUser.id,
+                        roleIds: newRoleIds
+                      });
+                    }}
+                  />
+                  <Label
+                    htmlFor={`user-role-${role.id}`}
+                    className="text-slate-300 cursor-pointer flex items-center gap-2"
+                  >
+                    <Shield className="w-4 h-4" />
+                    {role.name}
+                    {role.isSystem && (
+                      <Badge variant="outline" className="text-xs">
+                        System
+                      </Badge>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setRoleAssignmentUser(null)}
+              className="border-slate-600 text-slate-300"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

@@ -71,9 +71,14 @@ const sidebarItems: SidebarItem[] = [
     children: [
       { id: 'all-users', label: 'All Users', icon: <List className="w-4 h-4" />, path: '/admin/users' },
       { id: 'create-user', label: 'Create User', icon: <UserPlus className="w-4 h-4" />, path: '/admin/users/create' },
-      { id: 'user-roles', label: 'User Roles', icon: <UserCog className="w-4 h-4" />, path: '/admin/users/roles' },
       { id: 'banned-users', label: 'Banned Users', icon: <Shield className="w-4 h-4" />, path: '/admin/users/banned' }
     ]
+  },
+  {
+    id: 'roles',
+    label: 'Role Management',
+    icon: <Shield className="w-5 h-5" />,
+    path: '/admin/roles'
   },
   {
     id: 'products',
