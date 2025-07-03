@@ -31,25 +31,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 flex relative">
-      {/* Mobile Menu Button */}
-      {isMobile && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-purple-800/30 px-4 py-3 md:hidden">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-white hover:bg-purple-800/20"
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">
-              Admin Panel
-            </h1>
-            <div className="w-10" />
-          </div>
-        </div>
-      )}
+      {/* Mobile Menu Button - Header removed per user request */}
 
       {/* Desktop Sidebar */}
       <div className={`hidden md:block ${isMobile ? 'hidden' : ''}`}>
@@ -89,7 +71,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         className="flex-1 overflow-hidden"
         animate={{ 
           marginLeft: isMobile ? 0 : (isCollapsed ? sidebarWidth : sidebarWidth),
-          paddingTop: isMobile ? 60 : 0
+          paddingTop: 0
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >

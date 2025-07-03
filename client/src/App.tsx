@@ -28,6 +28,7 @@ import AdminMods from "@/pages/admin/mods";
 import AdminSettings from "@/pages/admin/settings";
 import AdminAnalytics from "@/pages/admin/analytics";
 import UserManagement from "@/pages/admin/user-management";
+import UserRolesPage from "@/pages/admin/user-roles";
 import ProductManagement from "@/pages/admin/product-management";
 import OrderManagement from "@/pages/admin/orders";
 import AdminNotifications from "@/pages/admin-notifications";
@@ -105,7 +106,7 @@ function Router() {
       <AdminRoute path="/admin/users" component={UserManagement} />
       <AdminRoute path="/admin/users/tracking" component={UserTracking} />
       <AdminRoute path="/admin/users/create" component={CreateUser} />
-      <AdminRoute path="/admin/users/roles" component={UserManagement} />
+      <AdminRoute path="/admin/users/roles" component={UserRolesPage} />
       <AdminRoute path="/admin/users/banned" component={UserManagement} />
       <AdminRoute path="/admin/roles" component={RoleManagement} />
       

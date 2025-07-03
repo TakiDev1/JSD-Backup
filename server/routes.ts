@@ -2255,6 +2255,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user roles
+  app.put("/api/admin/users/:id/roles", isAdminWithPermission("roles.assign"), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+
+      const { roleIds } = req.body;
+      if (!Array.isArray(roleIds)) {
+        return res.status(400).json({ error: 'Role IDs must be an array' });
+      }
+
+      const currentUserId = (req.user as any).id;
+      
+      // First, remove all existing roles
+      await storage.removeRolesFromUser(userId, []);
+      
+      // Then assign new roles
+      const success = await storage.assignRolesToUser(userId, roleIds, currentUserId);
+      
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to update roles' });
+      }
+
+      res.json({ message: 'Roles updated successfully' });
+    } catch (error) {
+      console.error('Error updating user roles:', error);
+      res.status(500).json({ error: 'Failed to update user roles' });
+    }
+  });
+
   // Assign roles to user
   app.post("/api/admin/users/:id/roles", isAdminWithPermission("roles.assign"), async (req, res) => {
     try {
@@ -2279,6 +2311,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error assigning roles to user:', error);
       res.status(500).json({ error: 'Failed to assign roles to user' });
+    }
+  });
+
+  // Bulk role assignment
+  app.post("/api/admin/bulk-role-assignment", isAdminWithPermission("roles.assign"), async (req, res) => {
+    try {
+      const { userIds, roleId, action } = req.body;
+      
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'User IDs must be a non-empty array' });
+      }
+      
+      if (!roleId || isNaN(parseInt(roleId))) {
+        return res.status(400).json({ error: 'Valid role ID is required' });
+      }
+      
+      if (!action || !['assign', 'remove'].includes(action)) {
+        return res.status(400).json({ error: 'Action must be "assign" or "remove"' });
+      }
+
+      const currentUserId = (req.user as any).id;
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const userId of userIds) {
+        try {
+          if (action === 'assign') {
+            // Get current user roles
+            const currentRoles = await storage.getUserRoles(userId);
+            const currentRoleIds = currentRoles.map(role => role.id);
+            
+            // Add new role if not already assigned
+            if (!currentRoleIds.includes(parseInt(roleId))) {
+              await storage.assignRolesToUser(userId, [...currentRoleIds, parseInt(roleId)], currentUserId);
+            }
+          } else {
+            // Remove role
+            const currentRoles = await storage.getUserRoles(userId);
+            const updatedRoleIds = currentRoles
+              .filter(role => role.id !== parseInt(roleId))
+              .map(role => role.id);
+            
+            await storage.removeRolesFromUser(userId, [parseInt(roleId)]);
+          }
+          successCount++;
+        } catch (error) {
+          console.error(`Error updating roles for user ${userId}:`, error);
+          errorCount++;
+        }
+      }
+
+      res.json({ 
+        message: `Bulk role ${action} completed`,
+        success: successCount,
+        errors: errorCount
+      });
+    } catch (error) {
+      console.error('Error in bulk role assignment:', error);
+      res.status(500).json({ error: 'Failed to perform bulk role assignment' });
+    }
+  });
+
+  // Get all users with their roles
+  app.get("/api/admin/users-with-roles", isAdminWithPermission("users.view"), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const usersWithRoles = await Promise.all(
+        users.map(async (user) => {
+          const roles = await storage.getUserRoles(user.id);
+          return {
+            ...user,
+            roles
+          };
+        })
+      );
+      
+      res.json(usersWithRoles);
+    } catch (error) {
+      console.error('Error fetching users with roles:', error);
+      res.status(500).json({ error: 'Failed to fetch users with roles' });
     }
   });
 
