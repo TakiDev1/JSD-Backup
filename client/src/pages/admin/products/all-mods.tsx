@@ -30,7 +30,7 @@ interface Mod {
   discountPrice?: number;
   category: string;
   tags: string[];
-  featured: boolean;
+  isFeatured: boolean;
   isSubscriptionOnly: boolean;
   downloads: number;
   rating: number;
@@ -47,9 +47,11 @@ export default function AllMods() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: mods, isLoading } = useQuery<Mod[]>({
+  const { data, isLoading } = useQuery({
     queryKey: ['/api/admin/mods'],
   });
+
+  const mods = data?.mods || [];
 
   const deleteMod = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/mods/${id}`),
@@ -79,7 +81,7 @@ export default function AllMods() {
                          mod.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || mod.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'featured' && mod.featured) ||
+                         (statusFilter === 'featured' && mod.isFeatured) ||
                          (statusFilter === 'subscription' && mod.isSubscriptionOnly);
     return matchesSearch && matchesCategory && matchesStatus;
   }) || [];
