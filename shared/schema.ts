@@ -114,6 +114,7 @@ export const purchases = pgTable("purchases", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   price: doublePrecision("price").notNull(),
   status: text("status").default("completed"),
+  customerIpAddress: text("customer_ip_address"),
   purchaseDate: timestamp("purchase_date").notNull().defaultNow(),
 });
 

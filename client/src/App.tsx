@@ -30,7 +30,7 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import UserManagement from "@/pages/admin/user-management";
 import UserRolesPage from "@/pages/admin/user-roles";
 import ProductManagement from "@/pages/admin/product-management";
-import OrderManagement from "@/pages/admin/orders";
+
 import AdminNotifications from "@/pages/admin-notifications";
 import SalesReport from "@/pages/admin/analytics/sales";
 import UserAnalytics from "@/pages/admin/analytics/users";
@@ -38,6 +38,7 @@ import CreateUser from "@/pages/admin/users/create";
 import UserTracking from "@/pages/admin/user-tracking";
 import CreateMod from "@/pages/admin/mods/create";
 import OrderManagementIndex from "@/pages/admin/orders/index";
+import AdminOrderManagement from "@/pages/admin/order-management";
 import AdminSettingsIndex from "@/pages/admin/settings/index";
 import AnalyticsIndex from "@/pages/admin/analytics/index";
 import LegalTerms from "@/pages/admin/legal-terms";
@@ -111,10 +112,6 @@ function Router() {
       <AdminRoute path="/admin/roles" component={RoleManagement} />
       
       {/* Product Management */}
-      <AdminRoute path="/admin/products" component={ProductManagement} />
-      <AdminRoute path="/admin/product-management" component={ProductManagement} />
-      <AdminRoute path="/admin/products/categories" component={ProductManagement} />
-      <AdminRoute path="/admin/products/create" component={ProductManagement} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
       <AdminRoute path="/admin/mods/create" component={CreateMod} />
       <AdminRoute path="/admin/mods/featured" component={AdminMods} />
@@ -122,10 +119,7 @@ function Router() {
       <AdminRoute path="/admin/mods/reviews" component={AdminMods} />
       
       {/* Order Management */}
-      <AdminRoute path="/admin/orders" component={OrderManagementIndex} />
-      <AdminRoute path="/admin/orders/pending" component={OrderManagement} />
-      <AdminRoute path="/admin/orders/completed" component={OrderManagement} />
-      <AdminRoute path="/admin/orders/refunds" component={OrderManagement} />
+      <AdminRoute path="/admin/orders" component={AdminOrderManagement} />
       
       {/* Payment Management */}
       <AdminRoute path="/admin/payments/settings" component={AdminSettings} />

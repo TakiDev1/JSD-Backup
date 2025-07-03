@@ -18,6 +18,7 @@ import {
   insertModVersionSchema
 } from "@shared/schema";
 import passport from "passport";
+import { getClientIP } from "./ip-tracker";
 
 // Setup file uploads
 const upload = multer({
@@ -1135,6 +1136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       const { transactionId } = req.body;
       
+      // Get client IP address
+      const customerIpAddress = getClientIP(req);
+      
       // Get cart items
       const cartItems = await storage.getCartItems(userId);
       
@@ -1157,7 +1161,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId,
             modId: item.modId,
             transactionId,
-            price
+            price,
+            customerIpAddress
           });
         })
       );
@@ -2029,6 +2034,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin endpoint to get all orders with IP tracking
+  app.get("/api/admin/orders", auth.isAdmin, async (req, res) => {
+    try {
+      const orders = await storage.getAllPurchases();
+      
+      // Get user details for each order
+      const ordersWithUsers = await Promise.all(
+        orders.map(async (order) => {
+          const user = await storage.getUser(order.userId);
+          const mod = await storage.getMod(order.modId);
+          return {
+            ...order,
+            user: {
+              id: user?.id,
+              username: user?.username,
+              email: user?.email
+            },
+            mod: {
+              id: mod?.id,
+              title: mod?.title
+            }
+          };
+        })
+      );
+      
+      res.json(ordersWithUsers);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Individual site setting update for backward compatibility
   app.post("/api/admin/settings", auth.isAdmin, async (req, res) => {
     try {
