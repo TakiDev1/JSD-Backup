@@ -54,8 +54,12 @@ export default function ProductManagement() {
     queryKey: ['/api/admin/stats'],
   });
 
-  const { data: modsResponse, isLoading } = useQuery<{ mods: any[] }>({
+  const { data: modsResponse, isLoading } = useQuery<{ mods: any[]; pagination: any }>({
     queryKey: ['/api/mods'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/mods");
+      return response.json();
+    },
   });
 
   const allMods = modsResponse?.mods || [];
