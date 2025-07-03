@@ -174,9 +174,11 @@ const sidebarItems: SidebarItem[] = [
 interface AdminSidebarProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
+  isMobile?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function AdminSidebar({ isCollapsed, setIsCollapsed }: AdminSidebarProps) {
+export default function AdminSidebar({ isCollapsed, setIsCollapsed, isMobile, onMobileClose }: AdminSidebarProps) {
   const [location] = useLocation();
   const [openDropdowns, setOpenDropdowns] = useState<string[]>(['dashboard']);
 

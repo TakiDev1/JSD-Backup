@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import AdminSidebar from './admin-sidebar-mobile';
+import AdminSidebar from './admin-sidebar';
 import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {
