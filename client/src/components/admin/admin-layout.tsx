@@ -31,12 +31,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 flex relative">
-      {/* Mobile Menu Button - Header removed per user request */}
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-50 md:hidden bg-slate-800/50 backdrop-blur-sm hover:bg-slate-700/50"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      )}
 
       {/* Desktop Sidebar */}
-      <div className={`hidden md:block ${isMobile ? 'hidden' : ''}`}>
+      {!isMobile && (
         <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      </div>
+      )}
 
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
@@ -70,13 +80,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <motion.main 
         className="flex-1 overflow-hidden"
         animate={{ 
-          marginLeft: isMobile ? 0 : (isCollapsed ? sidebarWidth : sidebarWidth),
+          marginLeft: isMobile ? 0 : (isCollapsed ? 64 : 256),
           paddingTop: 0
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <div className="h-full overflow-y-auto">
-          <div className={`${isMobile ? 'p-4' : 'p-6'} min-h-full`}>
+          <div className={`${isMobile ? 'p-4 pt-16' : 'p-6'} min-h-full`}>
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
