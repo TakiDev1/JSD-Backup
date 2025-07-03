@@ -114,24 +114,18 @@ const getAllSidebarItems = (): SidebarItem[] => [
     icon: <Package className="w-5 h-5" />,
     permissions: permissionMappings.products,
     children: [
-      { id: 'all-mods', label: 'All Mods', icon: <List className="w-4 h-4" />, path: '/admin/mods', permissions: ['view_mods'] },
-      { id: 'create-mod', label: 'Create Mod', icon: <PackagePlus className="w-4 h-4" />, path: '/admin/mods/create', permissions: ['manage_mods'] },
-      { id: 'featured-mods', label: 'Featured Mods', icon: <PackageSearch className="w-4 h-4" />, path: '/admin/mods/featured', permissions: ['manage_mods'] },
-      { id: 'mod-categories', label: 'Categories', icon: <Palette className="w-4 h-4" />, path: '/admin/mods/categories', permissions: ['manage_mods'] },
-      { id: 'mod-reviews', label: 'Reviews', icon: <MessageSquare className="w-4 h-4" />, path: '/admin/mods/reviews', permissions: ['manage_mods'] }
+      { id: 'all-mods', label: 'All Mods', icon: <List className="w-4 h-4" />, path: '/admin/products/all-mods', permissions: ['view_mods'] },
+      { id: 'create-mod', label: 'Create Mod', icon: <PackagePlus className="w-4 h-4" />, path: '/admin/products/create-mod', permissions: ['manage_mods'] },
+      { id: 'featured-mods', label: 'Featured Mods', icon: <PackageSearch className="w-4 h-4" />, path: '/admin/products/featured-mods', permissions: ['manage_mods'] },
+      { id: 'mod-categories', label: 'Categories', icon: <Palette className="w-4 h-4" />, path: '/admin/products/categories', permissions: ['manage_mods'] }
     ]
   },
   {
     id: 'orders',
     label: 'Order Management',
     icon: <ShoppingCart className="w-5 h-5" />,
-    permissions: permissionMappings.orders,
-    children: [
-      { id: 'all-orders', label: 'All Orders', icon: <List className="w-4 h-4" />, path: '/admin/orders', permissions: permissionMappings.orders },
-      { id: 'pending-orders', label: 'Pending Orders', icon: <Calendar className="w-4 h-4" />, path: '/admin/orders/pending', permissions: permissionMappings.orders },
-      { id: 'completed-orders', label: 'Completed Orders', icon: <Download className="w-4 h-4" />, path: '/admin/orders/completed', permissions: permissionMappings.orders },
-      { id: 'refunds', label: 'Refunds', icon: <Banknote className="w-4 h-4" />, path: '/admin/orders/refunds', permissions: permissionMappings.orders }
-    ]
+    path: '/admin/order-management',
+    permissions: permissionMappings.orders
   },
   {
     id: 'payments',

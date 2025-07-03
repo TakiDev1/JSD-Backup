@@ -271,10 +271,10 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { href: "/admin/mods", icon: Package, label: "Manage Mods" },
+                    { href: "/admin/products/all-mods", icon: Package, label: "Manage Mods" },
                     { href: "/admin/users", icon: Users, label: "Manage Users" },
                     { href: "/admin/notifications", icon: Mail, label: "Notifications" },
-                    { href: "/admin/legal/terms", icon: Settings, label: "Settings" }
+                    { href: "/admin/settings", icon: Settings, label: "Settings" }
                   ].map((action, index) => (
                     <motion.div
                       key={action.href}
