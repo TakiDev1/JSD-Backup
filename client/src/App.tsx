@@ -112,6 +112,7 @@ function Router() {
       
       {/* Product Management */}
       <AdminRoute path="/admin/products" component={ProductManagement} />
+      <AdminRoute path="/admin/product-management" component={ProductManagement} />
       <AdminRoute path="/admin/products/categories" component={ProductManagement} />
       <AdminRoute path="/admin/products/create" component={ProductManagement} />
       <AdminRoute path="/admin/mods" component={AdminMods} />
