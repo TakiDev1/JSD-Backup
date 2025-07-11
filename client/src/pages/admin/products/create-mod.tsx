@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,20 @@ export default function CreateMod() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Fetch available mod locker folders
+  const { data: availableFolders = [] } = useQuery<string[]>({
+    queryKey: ['/api/admin/mod-locker/folders'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/mod-locker/folders', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch folders');
+      }
+      return response.json();
+    },
+  });
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,7 +58,8 @@ export default function CreateMod() {
     downloadUrl: '',
     changelog: '',
     requirements: '',
-    version: '1.0.0'
+    version: '1.0.0',
+    lockerFolder: ''
   });
   
   const [newTag, setNewTag] = useState('');
@@ -133,6 +148,7 @@ export default function CreateMod() {
       ...formData,
       price: parseFloat(formData.price),
       discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : null,
+      lockerFolder: formData.lockerFolder === 'default' ? null : formData.lockerFolder,
     };
 
     createMod.mutate(modData);
@@ -243,6 +259,26 @@ export default function CreateMod() {
                       className="bg-slate-700/50 border-slate-600 text-white mt-1"
                     />
                   </div>
+                  
+                  <div>
+                    <Label htmlFor="lockerFolder" className="text-slate-300">Mod Locker Folder</Label>
+                    <Select value={formData.lockerFolder} onValueChange={(value) => handleInputChange('lockerFolder', value)}>
+                      <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white mt-1">
+                        <SelectValue placeholder="Select mod locker folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default (No folder)</SelectItem>
+                        {availableFolders.map((folder: string) => (
+                          <SelectItem key={folder} value={folder}>
+                            {folder}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Select which mod folder to distribute when generating IP-locked installers
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -320,6 +356,20 @@ export default function CreateMod() {
                       rows={3}
                       className="bg-slate-700/50 border-slate-600 text-white mt-1"
                     />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="lockerFolder" className="text-slate-300">Mod Locker Folder</Label>
+                    <Input
+                      id="lockerFolder"
+                      value={formData.lockerFolder}
+                      onChange={(e) => handleInputChange('lockerFolder', e.target.value)}
+                      placeholder="e.g., JSD_IS300, unlocked, my-mod-v2..."
+                      className="bg-slate-700/50 border-slate-600 text-white mt-1"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Folder name in the mod locker server (leave empty for default)
+                    </p>
                   </div>
                 </CardContent>
               </Card>

@@ -69,13 +69,16 @@ export const mods = pgTable("mods", {
   tags: json("tags").$type<string[]>().default([]),
   features: json("features").$type<string[]>().default([]),
   isFeatured: boolean("is_featured").default(false),
+  featured: boolean("featured").default(false), // Add featured column
   // Removed isPublished field as it's no longer needed
   downloadCount: integer("download_count").default(0),
   averageRating: doublePrecision("average_rating").default(0),
+  reviewCount: integer("review_count").default(0), // Add reviewCount column
   isSubscriptionOnly: boolean("is_subscription_only").default(false),
   version: text("version").default("1.0.0"),
   releaseNotes: text("release_notes"),
   changelog: text("changelog").default(""),
+  lockerFolder: text("locker_folder"), // Maps to mod locker folder name
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -153,17 +156,70 @@ export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLog)
   timestamp: true,
 });
 
+// Reviews schema
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  modId: integer("mod_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isVerifiedPurchase: boolean("is_verified_purchase").default(false),
+  helpfulCount: integer("helpful_count").default(0), // Change from isHelpful to helpfulCount
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Review helpful votes table
+export const reviewHelpfulVotes = pgTable("review_helpful_votes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  reviewId: integer("review_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReviewHelpfulVoteSchema = createInsertSchema(reviewHelpfulVotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Mod downloads tracking
+export const modDownloads = pgTable("mod_downloads", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  modId: integer("mod_id").notNull(),
+  downloadedAt: timestamp("downloaded_at").notNull().defaultNow(),
+  reviewRequested: boolean("review_requested").default(false),
+  reviewReminderSent: boolean("review_reminder_sent").default(false),
+});
+
+export const insertModDownloadSchema = createInsertSchema(modDownloads).omit({
+  id: true,
+  downloadedAt: true,
+});
+
 // Define table relationships
 export const usersRelations = relations(users, ({ many }) => ({
   purchases: many(purchases),
   cartItems: many(cartItems),
   adminLogs: many(adminActivityLog),
+  reviews: many(reviews),
+  modDownloads: many(modDownloads),
+  reviewHelpfulVotes: many(reviewHelpfulVotes),
 }));
 
 export const modsRelations = relations(mods, ({ many }) => ({
   versions: many(modVersions),
   purchases: many(purchases),
   cartItems: many(cartItems),
+  reviews: many(reviews),
+  downloads: many(modDownloads),
 }));
 
 export const modVersionsRelations = relations(modVersions, ({ one }) => ({
@@ -199,6 +255,29 @@ export const adminActivityLogRelations = relations(adminActivityLog, ({ one }) =
   user: one(users, {
     fields: [adminActivityLog.userId],
     references: [users.id],
+  }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one, many }) => ({
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
+  mod: one(mods, {
+    fields: [reviews.modId],
+    references: [mods.id],
+  }),
+  helpfulVotes: many(reviewHelpfulVotes),
+}));
+
+export const reviewHelpfulVotesRelations = relations(reviewHelpfulVotes, ({ one }) => ({
+  user: one(users, {
+    fields: [reviewHelpfulVotes.userId],
+    references: [users.id],
+  }),
+  review: one(reviews, {
+    fields: [reviewHelpfulVotes.reviewId],
+    references: [reviews.id],
   }),
 }));
 
@@ -435,19 +514,6 @@ export const userRoleRelations = relations(userRoles, ({ one }) => ({
   }),
 }));
 
-// Export types for role management
-export type Role = typeof roles.$inferSelect;
-export type InsertRole = z.infer<typeof insertRoleSchema>;
-
-export type Permission = typeof permissions.$inferSelect;
-export type InsertPermission = z.infer<typeof insertPermissionSchema>;
-
-export type RolePermission = typeof rolePermissions.$inferSelect;
-export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
-
-export type UserRole = typeof userRoles.$inferSelect;
-export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
-
 // Support Tickets table
 export const supportTickets = pgTable("support_tickets", {
   id: serial("id").primaryKey(),
@@ -485,3 +551,13 @@ export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
 // Export types for support tickets
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+// Export types for reviews
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+
+export type ReviewHelpfulVote = typeof reviewHelpfulVotes.$inferSelect;
+export type InsertReviewHelpfulVote = z.infer<typeof insertReviewHelpfulVoteSchema>;
+
+export type ModDownload = typeof modDownloads.$inferSelect;
+export type InsertModDownload = z.infer<typeof insertModDownloadSchema>;

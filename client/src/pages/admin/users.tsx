@@ -357,7 +357,7 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
-      
+      {/* End container mx-auto px-4 */}
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-dark-card text-white">
@@ -500,8 +500,6 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-        </div>
-      </div>
     </AdminLayout>
   );
 };

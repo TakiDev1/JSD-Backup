@@ -1,0 +1,43 @@
+{
+"sdd_gt3rs_innerfenders": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Inner Fenders",
+        "value":235,
+    },
+
+    "slotType" : "sdd_gt3rs_innerfenders",
+
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["sdd_gt3rs_tubs", ["sdd_gt3rs_body","sdd_gt3rs_tubs"]],
+    ],
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        //--INNER FENDERS--
+        {"nodeMaterial":"|NM_METAL"},
+        {"frictionCoef":0.5},
+        {"collision":true},
+        {"selfCollision":true},
+
+        {"nodeWeight":4.5},
+        {"group":"sdd_gt3rs_tubs"},
+        ["f19rr", -0.83, -1.70, 0.19],
+        ["f19ll", 0.83, -1.70, 0.19],
+    ],
+},
+"sdd_gt3rs_innerfenders_R": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Rear Inner Fenders",
+        "value":235,
+    },
+
+    "slotType" : "sdd_gt3rs_innerfenders_R",
+
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["sdd_gt3rs_tubs_R", ["sdd_gt3rs_body"]],
+    ],
+},
+}

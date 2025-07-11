@@ -1,0 +1,231 @@
+{
+  "sdd_gt3rs_blights2": {
+    "name": "sdd_gt3rs_blights2",
+    "mapTo": "sdd_gt3rs_blights2",
+    "class": "Material",
+    "persistentId": "e34dfa29-548e-4a09-a419-5581bc48d377",
+    "Stages": [
+      {
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/squares_005_emm_white.dds",
+        "metallicFactor": 0.513999999,
+        "normalMap": "/vehicles/sdd_gt3rs/textures/squares_005_nrml_eb7cefc2-2924-46e2-b52c-f5e7afedcd63.dds",
+        "roughnessFactor": 0.48300001
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  },
+  "sdd_gt3rs_blights2_on": {
+    "name": "sdd_gt3rs_blights2_on",
+    "mapTo": "sdd_gt3rs_blights2_on",
+    "class": "Material",
+    "persistentId": "0bddf561-b23b-40ed-9ad8-34b424adab7a",
+    "Stages": [
+      {
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/squares_005_emm_red.dds",
+        "emissiveFactor": [
+          5.90196085,
+          0,
+          0
+        ],
+        "emissiveMap": "/vehicles/sdd_gt3rs/textures/squares_005_emm_red.dds"
+      },
+      {
+        "emissiveFactor": null
+      },
+      {
+        "emissiveFactor": null
+      },
+      {
+        "emissiveFactor": null
+      }
+    ],
+    "version": 1.5
+  },
+  "sdd_gt3rs_brakedisc": {
+    "name": "sdd_gt3rs_brakedisc",
+    "mapTo": "sdd_gt3rs_brakedisc",
+    "class": "Material",
+    "persistentId": "44d5332c-57b1-4266-9511-a068bb9df7f1",
+    "Stages": [
+      {
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/brakes_s_lod0.dds",
+        "normalMap": "/vehicles/sdd_gt3rs/textures/brakes_s_lod0_nm.dds",
+        "roughnessFactor": 0.783999979,
+        "roughnessMap": "/vehicles/sdd_gt3rs/textures/brakes_dirt.dds"
+      },
+      {
+        "roughnessFactor": null
+      },
+      {
+        "roughnessFactor": null
+      },
+      {
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  },
+  "sdd_gt3rs_brakelogo": {
+    "name": "sdd_gt3rs_brakelogo",
+    "mapTo": "sdd_gt3rs_brakelogo",
+    "class": "Material",
+    "persistentId": "d429296d-9a51-4a63-aabb-a18b1ee2a897",
+    "Stages": [
+      {
+        "colorMap": "/vehicles/sdd_gt3rs/textures/porsche-1-logo-png-transparent_brake.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 126,
+    "alphaTest": true
+  },
+  "sdd_gt3rs_speed": {
+    "name": "sdd_gt3rs_speed",
+    "mapTo": "sdd_gt3rs_speed",
+    "class": "Material",
+    "persistentId": "98ceb3e7-1a16-4a1e-8069-6301bf9840df",
+    "Stages": [
+      {
+        "colorMap": "@sdd_gt3rs_speed",
+        "emissive": true
+      },
+      {
+        "emissive": null
+      },
+      {
+        "emissive": null
+      },
+      {
+        "emissive": null
+      }
+    ],
+    "translucent": true,
+    "translucentBlendOp": "Add"
+  },
+  "sdd_gt3rs_stripe": {
+    "name": "sdd_gt3rs_stripe",
+    "mapTo": "sdd_gt3rs_stripe",
+    "class": "Material",
+    "persistentId": "31286f03-9a86-46bb-ae1e-d8ffa5371b53",
+    "Stages": [
+      {
+        "ambientOcclusionMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_aodata.dds",
+        "baseColorMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_bcolor.dds",
+        "clearCoatFactor": null,
+        "colorPaletteMapUseUV": null,
+        "instanceDiffuse": null,
+        "metallicFactor": 1,
+        "metallicMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_mdata.dds",
+        "normalMap": "vehicles/common/RRpbrPaint/RR_Paint_PBR_n.dds",
+        "opacityMap": "/vehicles/sdd_gt3rs/textures/sdd_gt3rs_stripe_op.png",
+        "roughnessMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_rdata.dds"
+      },
+      {
+        "ambientOcclusionMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_aodata.dds",
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/sdd_gt3rs_stripe.png",
+        "clearCoatFactor": 1,
+        "clearCoatMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_ccdata.dds",
+        "colorPaletteMap": "/vehicles/common/RRpbrPaint/RR_Paint_PBR_skin_metallic_uv2color.dds",
+        "colorPaletteMapUseUV": 1,
+        "instanceDiffuse": true,
+        "metallicFactor": 1,
+        "opacityMap": "/vehicles/sdd_gt3rs/textures/sdd_gt3rs_stripe_op.png"
+      },
+      {
+        "clearCoatFactor": null,
+        "colorPaletteMapUseUV": null,
+        "instanceDiffuse": null,
+        "metallicFactor": null
+      },
+      {
+        "clearCoatFactor": null,
+        "colorPaletteMapUseUV": null,
+        "instanceDiffuse": null,
+        "metallicFactor": null
+      }
+    ],
+    "activeLayers": 2,
+    "alphaRef": 191,
+    "alphaTest": true,
+    "doubleSided": true,
+    "dynamicCubemap": true,
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "sdd_gt3rs_turboseat": {
+    "name": "sdd_gt3rs_turboseat",
+    "mapTo": "sdd_gt3rs_turboseat",
+    "class": "Material",
+    "persistentId": "9bea5155-7d87-416c-85fe-b978f93a1a6b",
+    "Stages": [
+      {
+        "colorMap": "/vehicles/sdd_gt3rs/textures/porsche-911-turbo-s-992.png"
+      },
+      {},
+      {},
+      {}
+    ],
+    "alphaRef": 108,
+    "alphaTest": true
+  },
+  "sdd_gt3rs_yellow": {
+    "name": "sdd_gt3rs_yellow",
+    "mapTo": "sdd_gt3rs_yellow",
+    "class": "Material",
+    "persistentId": "e9f74300-2f53-4a71-9d60-1b9376a99662",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          1,
+          0.690063,
+          0,
+          1
+        ],
+        "clearCoatFactor": 1,
+        "clearCoatRoughnessFactor": 0.256000012,
+        "metallicFactor": 0.492000014,
+        "roughnessFactor": 0.681999981
+      },
+      {
+        "baseColorFactor": null,
+        "clearCoatFactor": null,
+        "clearCoatRoughnessFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "baseColorFactor": null,
+        "clearCoatFactor": null,
+        "clearCoatRoughnessFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "baseColorFactor": null,
+        "clearCoatFactor": null,
+        "clearCoatRoughnessFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  }
+}

@@ -1,0 +1,38 @@
+{
+"sdd_gt3rs_licenseplate_F": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front License Plate",
+        "value":0,
+    },
+    "slotType" : "sdd_gt3rs_licenseplate_F",
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["licenseplate", ["sdd_gt3rs_bumper_F"],[],{"pos":{"x":0.0, "y":-2.22, "z":0.35}, "rot":{"x":0, "y":0, "z":0}, "scale":{"x":1, "y":1, "z":1}}],
+    ],
+},
+"sdd_gt3rs_licenseplate_R": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Rear License Plate",
+        "value":0,
+    },
+    "slotType" : "sdd_gt3rs_licenseplate_R",
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["licenseplate", ["sdd_gt3rs_bumper_R"],[],{"pos":{"x":0.0, "y":2.38, "z":0.57}, "rot":{"x":08, "y":0, "z":180}, "scale":{"x":1, "y":1, "z":1}}],
+    ],
+},
+"sdd_gt3rs_licenseplate_R_alt": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Rear License Plate",
+        "value":0,
+    },
+    "slotType" : "sdd_gt3rs_licenseplate_R_alt",
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["licenseplate", ["sdd_gt3rs_bumper_R"],[],{"pos":{"x":0.0, "y":2.39, "z":0.53}, "rot":{"x":08, "y":0, "z":180}, "scale":{"x":1, "y":1, "z":1}}],
+    ],
+},
+}

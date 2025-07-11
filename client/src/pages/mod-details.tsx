@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
 import Rating from "@/components/shared/rating";
+import ReviewsSystem from "@/components/reviews/ReviewsSystem";
 import { ShoppingCart, Star, Download, Calendar, Package, Clock, Tag, Heart, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
@@ -84,6 +85,16 @@ const ModDetailsPage = () => {
   const { toast } = useToast();
   // Review dialog and AR preview removed
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Check if we should auto-open reviews tab from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('review') === 'true') {
+      setActiveTab('reviews');
+      // Clean up URL without page reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // Fetch mod details and versions
   const { data: modDetails, isLoading, error } = useModDetails(id);
@@ -332,6 +343,7 @@ const ModDetailsPage = () => {
             <TabsList className="w-full">
               <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
               <TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger>
+              <TabsTrigger value="reviews" className="flex-1">Reviews</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
@@ -386,6 +398,10 @@ const ModDetailsPage = () => {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="reviews" className="mt-6">
+              <ReviewsSystem modId={id} />
             </TabsContent>
           </Tabs>
         </div>

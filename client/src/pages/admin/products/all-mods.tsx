@@ -21,6 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useLocation } from 'wouter';
 
 interface Mod {
   id: number;
@@ -35,6 +36,7 @@ interface Mod {
   downloads: number;
   rating: number;
   createdAt: string;
+  lockerFolder?: string;
   author: {
     username: string;
   };
@@ -46,8 +48,9 @@ export default function AllMods() {
   const [statusFilter, setStatusFilter] = useState('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ mods: Mod[] }>({
     queryKey: ['/api/admin/mods'],
   });
 
@@ -115,7 +118,10 @@ export default function AllMods() {
               Manage all mods in your marketplace
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-purple-600 to-green-600 text-white hover:from-purple-700 hover:to-green-700">
+          <Button 
+            className="bg-gradient-to-r from-purple-600 to-green-600 text-white hover:from-purple-700 hover:to-green-700"
+            onClick={() => setLocation('/admin/products/create')}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add New Mod
           </Button>
@@ -151,7 +157,7 @@ export default function AllMods() {
                 <div>
                   <p className="text-sm text-slate-400">Featured Mods</p>
                   <p className="text-2xl font-bold text-white">
-                    {mods?.filter(m => m.featured).length || 0}
+                    {mods?.filter(m => m.isFeatured).length || 0}
                   </p>
                 </div>
               </div>
@@ -250,6 +256,7 @@ export default function AllMods() {
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Mod</th>
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Category</th>
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Price</th>
+                      <th className="text-left py-3 px-4 text-slate-300 font-medium">Locker Folder</th>
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Status</th>
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Downloads</th>
                       <th className="text-left py-3 px-4 text-slate-300 font-medium">Actions</th>
@@ -287,8 +294,21 @@ export default function AllMods() {
                           </div>
                         </td>
                         <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            {mod.lockerFolder ? (
+                              <Badge variant="outline" className="text-blue-400 border-blue-400/50 bg-blue-500/10">
+                                {mod.lockerFolder}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-400 border-slate-600">
+                                default
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
                           <div className="flex gap-2">
-                            {mod.featured && (
+                            {mod.isFeatured && (
                               <Badge className="bg-yellow-500/20 text-yellow-400">Featured</Badge>
                             )}
                             {mod.isSubscriptionOnly && (
@@ -305,6 +325,7 @@ export default function AllMods() {
                               size="sm"
                               variant="ghost"
                               className="text-slate-400 hover:text-white"
+                              onClick={() => window.open(`/mods/${mod.id}`, '_blank')}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -312,6 +333,7 @@ export default function AllMods() {
                               size="sm"
                               variant="ghost"
                               className="text-slate-400 hover:text-white"
+                              onClick={() => setLocation(`/admin/products/edit/${mod.id}`)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -319,9 +341,9 @@ export default function AllMods() {
                               size="sm"
                               variant="ghost"
                               className="text-yellow-400 hover:text-yellow-300"
-                              onClick={() => toggleFeatured.mutate({ id: mod.id, featured: !mod.featured })}
+                              onClick={() => toggleFeatured.mutate({ id: mod.id, featured: !mod.isFeatured })}
                             >
-                              <Star className={`w-4 h-4 ${mod.featured ? 'fill-current' : ''}`} />
+                              <Star className={`w-4 h-4 ${mod.isFeatured ? 'fill-current' : ''}`} />
                             </Button>
                             <Button
                               size="sm"

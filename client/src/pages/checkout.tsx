@@ -15,6 +15,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckoutProgress } from "@/components/shared/checkout-progress";
+import { completePurchase } from "@/lib/cart";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -106,7 +107,7 @@ const CheckoutForm = ({ cartItems, cartTotal, onSuccess }: any) => {
           description: "Thank you for your purchase!",
         });
         
-        onSuccess();
+        onSuccess(paymentIntent.id);
       }
     } catch (err: any) {
       setPaymentError(err.message || "An unexpected error occurred.");
@@ -353,10 +354,22 @@ const CheckoutPage = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
+      const paymentIntentId = urlParams.get('payment_intent');
+      if (paymentIntentId) {
+        // Complete the purchase if we have a payment intent ID
+        completePurchase(paymentIntentId).catch(error => {
+          console.error("Error completing purchase from URL:", error);
+          toast({
+            title: "Purchase Error",
+            description: "There was an issue completing your purchase. Please contact support.",
+            variant: "destructive",
+          });
+        });
+      }
       setIsSuccess(true);
       clearCartMutation.mutate();
     }
-  }, []);
+  }, [toast]);
 
   // Create PaymentIntent on page load
   useEffect(() => {
@@ -406,11 +419,23 @@ const CheckoutPage = () => {
   }, [cartItems, completedSteps]);
 
   // Handle checkout success
-  const handleCheckoutSuccess = () => {
-    setCompletedSteps(prev => [...prev, 2, 3]);
-    setCurrentStep(3);
-    setIsSuccess(true);
-    clearCartMutation.mutate();
+  const handleCheckoutSuccess = async (paymentIntentId: string) => {
+    try {
+      // Complete the purchase and create records in the database
+      await completePurchase(paymentIntentId);
+      
+      setCompletedSteps(prev => [...prev, 2, 3]);
+      setCurrentStep(3);
+      setIsSuccess(true);
+      clearCartMutation.mutate();
+    } catch (error) {
+      console.error("Error completing purchase:", error);
+      toast({
+        title: "Purchase Error",
+        description: "There was an issue completing your purchase. Please contact support.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isAuthenticated) {

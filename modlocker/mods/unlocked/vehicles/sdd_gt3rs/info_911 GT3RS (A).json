@@ -1,0 +1,46 @@
+{
+  "0-100 km/h":2.9,
+  "0-100 mph":6.7,
+  "0-200 km/h":10.4,
+  "0-300 km/h":37.2,
+  "0-60 mph":2.8,
+  "100-0 km/h":27.4,
+  "100-200 km/h":7.4,
+  "60-0 mph":83.3,
+  "60-100 mph":3.9,
+  "BoundingBox":[
+    [
+      -0.73,
+      -2.12,
+      -0.17
+    ],
+    [
+      1.39,
+      2.33,
+      1.21
+    ]
+  ],
+  "Braking G":1.434,
+  "Config Type":"Race",
+  "Configuration":"911 GT3RS (A)",
+  "Description":"911 GT3RS. Equipped with an upgraded turbocharged Flat-6 engine,race tires, race suspension",
+  "Drivetrain":"RWD",
+  "Fuel Type":"Gasoline",
+  "Induction Type":"Turbo",
+  "Off-Road Score":25,
+  "Performance Class":"9",
+  "Population":20,
+  "Power":461,
+  "PowerPeakRPM":"6050 - 6900",
+  "Propulsion":"ICE",
+  "Top Speed":87.49381396,
+  "Torque":575,
+  "TorquePeakRPM":"2550 - 5200",
+  "Transmission":"Automatic",
+  "Value":95000,
+  "Weight":1600,
+  "Weight/Power":3.470715835,
+  "defaultPaintName1":"White Glassflake",
+  "defaultPaintName2":"Electric Blue",
+  "defaultPaintName3":"Electric Blue"
+}

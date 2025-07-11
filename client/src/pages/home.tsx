@@ -55,11 +55,22 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-black via-purple-900/20 to-black">
+    <div className="relative min-h-screen">
+      {/* Unified seamless background gradient that flows through all sections */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black via-purple-900/30 to-black"></div>
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-green-900/20"></div>
+      
+      {/* Animated background elements */}
+      <div className="fixed inset-0 opacity-30">
+        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-green-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div>
+      
       <CursorParticles />
       
       {/* Remove top banner to avoid covering navigation */}
-      <div className="pt-16 scroll-smooth">
+      <div className="pt-16 scroll-smooth relative z-10">
         <HeroSection />
         <FeaturedMods />
         <TestimonialsSection />

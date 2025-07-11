@@ -82,12 +82,6 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   {
-    id: 'roles',
-    label: 'Role Management',
-    icon: <Shield className="w-5 h-5" />,
-    path: '/admin/roles'
-  },
-  {
     id: 'products',
     label: 'Product Management',
     icon: <Package className="w-5 h-5" />,
@@ -103,40 +97,6 @@ const sidebarItems: SidebarItem[] = [
     label: 'Order Management',
     icon: <ShoppingCart className="w-5 h-5" />,
     path: '/admin/order-management'
-  },
-  {
-    id: 'payments',
-    label: 'Payment Management',
-    icon: <CreditCard className="w-5 h-5" />,
-    children: [
-      { id: 'payment-settings', label: 'Payment Settings', icon: <SettingsIcon className="w-4 h-4" />, path: '/admin/payments/settings' },
-      { id: 'stripe-config', label: 'Stripe Configuration', icon: <CreditCard className="w-4 h-4" />, path: '/admin/payments/stripe' },
-      { id: 'subscriptions', label: 'Subscriptions', icon: <Zap className="w-4 h-4" />, path: '/admin/payments/subscriptions' },
-      { id: 'webhooks', label: 'Webhooks', icon: <Webhook className="w-4 h-4" />, path: '/admin/payments/webhooks' }
-    ]
-  },
-  {
-    id: 'communications',
-    label: 'Communications',
-    icon: <Mail className="w-5 h-5" />,
-    children: [
-      { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/admin/notifications' },
-      { id: 'email-templates', label: 'Email Templates', icon: <Mail className="w-4 h-4" />, path: '/admin/communications/templates' },
-      { id: 'newsletter', label: 'Newsletter', icon: <FileText className="w-4 h-4" />, path: '/admin/communications/newsletter' },
-      { id: 'discord-integration', label: 'Discord Integration', icon: <MessageSquare className="w-4 h-4" />, path: '/admin/communications/discord' }
-    ]
-  },
-  {
-    id: 'settings',
-    label: 'Site Settings',
-    icon: <Settings className="w-5 h-5" />,
-    children: [
-      { id: 'general-settings', label: 'General Settings', icon: <SettingsIcon className="w-4 h-4" />, path: '/admin/settings' },
-      { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4" />, path: '/admin/settings/appearance' },
-      { id: 'seo-settings', label: 'SEO Settings', icon: <Globe className="w-4 h-4" />, path: '/admin/settings/seo' },
-      { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" />, path: '/admin/settings/security' },
-      { id: 'maintenance', label: 'Maintenance Mode', icon: <Activity className="w-4 h-4" />, path: '/admin/settings/maintenance' }
-    ]
   },
   {
     id: 'support',

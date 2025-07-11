@@ -43,12 +43,8 @@ const DiscordSection = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-br from-black via-purple-900/30 to-black relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-10 right-10 w-32 h-32 bg-green-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <section className="py-20 relative overflow-hidden">
+      {/* Remove individual background - now using unified system */}
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">

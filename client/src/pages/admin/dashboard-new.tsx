@@ -1,19 +1,67 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, ShoppingCart, DollarSign, Activity, TrendingUp, Eye, Download, Bell, Settings, BarChart3, CreditCard } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Users, Package, ShoppingCart, DollarSign, Activity, TrendingUp, Eye, Download, Bell, Settings, BarChart3, CreditCard, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin/admin-layout";
 
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: stats, isLoading } = useQuery({
+  type Stats = {
+    users: number;
+    mods: number;
+    purchases: number;
+    revenue: number;
+    activeUsers: number;
+    pendingReviews: number;
+  };
+
+  const { data: stats, isLoading } = useQuery<Stats>({
     queryKey: ['/api/admin/stats'],
     enabled: !!user && user.isAdmin,
   });
+
+  const { data: settings } = useQuery<Record<string, string>>({
+    queryKey: ['/api/admin/settings'],
+    enabled: !!user && user.isAdmin,
+  });
+
+  const updateMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceMode: boolean) => {
+      const settingsArray = [{
+        key: 'maintenanceMode',
+        value: maintenanceMode.toString()
+      }];
+      return apiRequest('POST', '/api/admin/settings', { settings: settingsArray });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Maintenance Mode Updated",
+        description: "The maintenance mode setting has been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update maintenance mode",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleMaintenanceToggle = (checked: boolean) => {
+    updateMaintenanceMutation.mutate(checked);
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -166,6 +214,44 @@ export default function AdminDashboard() {
         </p>
       </motion.div>
 
+      {/* Maintenance Mode Toggle */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="mb-8"
+      >
+        <Card className="bg-white border border-gray-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <Label className="text-lg font-semibold text-gray-900">Maintenance Mode</Label>
+                  <p className="text-sm text-gray-600">
+                    Enable to show maintenance page to all users except admins
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={settings?.maintenanceMode === 'true'}
+                onCheckedChange={handleMaintenanceToggle}
+                disabled={updateMaintenanceMutation.isPending}
+              />
+            </div>
+            {settings?.maintenanceMode === 'true' && (
+              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800 font-medium">
+                  ⚠️ Maintenance mode is currently enabled. Regular users will see a maintenance page.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Stats Grid */}
       <motion.div 
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
@@ -239,6 +325,50 @@ export default function AdminDashboard() {
             </motion.div>
           ))}
         </div>
+      </motion.div>
+
+      {/* Maintenance Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="mb-8"
+      >
+        <Card className="bg-white border border-gray-200 shadow-lg">
+          <CardHeader className="p-6">
+            <CardTitle className="text-lg font-bold text-gray-900">
+              Maintenance Mode
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">
+                  Toggle maintenance mode for the site.
+                </p>
+              </div>
+              <div>
+                <Label className="mr-2" htmlFor="maintenance-mode">
+                  {settings?.maintenanceMode === 'true' ? 'Enabled' : 'Disabled'}
+                </Label>
+                <Switch
+                  id="maintenance-mode"
+                  checked={settings?.maintenanceMode === 'true'}
+                  onCheckedChange={handleMaintenanceToggle}
+                  className="bg-gray-200 border-transparent rounded-full relative inline-flex items-center h-6 w-11 focus:outline-none"
+                >
+                  <span className="sr-only">Enable maintenance mode</span>
+                  <span
+                    aria-hidden="true"
+                    className={`${
+                      settings?.maintenanceMode === 'true' ? 'translate-x-6' : 'translate-x-1'
+                    } pointer-events-none inline-block w-4 h-4 rounded-full bg-white shadow ring-0 transition-transform duration-200`}
+                  />
+                </Switch>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
     </AdminLayout>
   );

@@ -1,0 +1,119 @@
+{
+  "sdd_gt3rs_dakar_tire": {
+    "name": "sdd_gt3rs_dakar_tire",
+    "mapTo": "sdd_gt3rs_dakar_tire",
+    "class": "Material",
+    "persistentId": "34abf9f0-a5f8-44b0-b820-c9740209da78",
+    "Stages": [
+      {
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/untitled_sdd_gt3rs_dakar_tire_BaseColor.png",
+        "metallicFactor": 0.726999998,
+        "roughnessMap": "/vehicles/sdd_gt3rs/textures/untitled_sdd_gt3rs_dakar_tire_Roughness.png"
+      },
+      {
+        "metallicFactor": null
+      },
+      {
+        "metallicFactor": null
+      },
+      {
+        "metallicFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  },
+  "sdd_gt3rs_engine": {
+    "name": "sdd_gt3rs_engine",
+    "mapTo": "sdd_gt3rs_engine",
+    "class": "Material",
+    "persistentId": "34148843-5d25-4e83-a87e-69c8b5a44ac1",
+    "Stages": [
+      {
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/pcars_mechanics.dds",
+        "metallicFactor": 1,
+        "normalMap": "/vehicles/sdd_gt3rs/textures/pcars_mechanics_nm.dds",
+        "roughnessFactor": 0.552999973
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  },
+  "sdd_gt3rs_leather2": {
+    "name": "sdd_gt3rs_leather2",
+    "mapTo": "sdd_gt3rs_leather2",
+    "class": "Material",
+    "persistentId": "f5ce557b-d897-40ff-920a-b1f63bef5782",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.348273993,
+          0.348273993,
+          0.348273993,
+          1
+        ],
+        "metallicFactor": 0.574000001,
+        "normalMap": "/vehicles/sdd_gt3rs/textures/LeatherSeatsBMP_nm.dds",
+        "roughnessFactor": 0.825999975
+      },
+      {
+        "baseColorFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "baseColorFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "baseColorFactor": null,
+        "metallicFactor": null,
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  },
+  "sdd_gt3rs_turboshield": {
+    "name": "sdd_gt3rs_turboshield",
+    "mapTo": "sdd_gt3rs_turboshield",
+    "class": "Material",
+    "persistentId": "a32c7f44-7244-4f3a-8406-1b31352f2cdc",
+    "Stages": [
+      {
+        "ambientOcclusionMap": "/vehicles/sdd_gt3rs/textures/Turboisolation_AO.png",
+        "baseColorMap": "/vehicles/sdd_gt3rs/textures/Turboisolation_albedo.png",
+        "metallicFactor": 0.930999994,
+        "normalMap": "/vehicles/sdd_gt3rs/textures/Turboisolation_nm_fixed.png",
+        "roughnessFactor": 0.446999997
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      },
+      {
+        "metallicFactor": null,
+        "roughnessFactor": null
+      }
+    ],
+    "dynamicCubemap": true,
+    "version": 1.5
+  }
+}

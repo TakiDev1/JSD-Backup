@@ -1,0 +1,17 @@
+{
+"sdd_gt3rs_stripe": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"GT3RS Stripe",
+        "value":330,
+    },
+    "slotType" : "sdd_gt3rs_stripe",
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["sdd_gt3rs_stripe_door_L", ["sdd_gt3rs_door_L"]],
+		 ["sdd_gt3rs_stripe_door_R", ["sdd_gt3rs_door_R"]],
+		 ["sdd_gt3rs_stripe_body", ["sdd_gt3rs_body"]],
+
+    ],
+},
+}

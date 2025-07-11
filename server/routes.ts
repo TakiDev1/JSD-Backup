@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
 import * as schema from "@shared/schema";
@@ -12,7 +13,7 @@ import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { notifyModUpdateToAllOwners } from "./notifications";
 import { z } from "zod";
-import { eq, sql, asc, desc, like, or } from "drizzle-orm";
+import { eq, sql, asc, desc, like, or, and, gte, lte, ilike } from "drizzle-orm";
 import {
   insertModSchema,
   insertModVersionSchema
@@ -504,6 +505,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
       
+      // Build filters array for where clause
+      const filters = [];
+      if (category) {
+        filters.push(eq(schema.mods.category, category as string));
+      }
+      if (search) {
+        filters.push(
+          or(
+            like(schema.mods.title, `%${search}%`),
+            like(schema.mods.description, `%${search}%`)
+          )
+        );
+      }
+
+      // Only allow sorting by specific columns to avoid passing invalid values
+      const allowedSortColumns: Record<string, any> = {
+        id: schema.mods.id,
+        title: schema.mods.title,
+        description: schema.mods.description,
+        price: schema.mods.price,
+        discountPrice: schema.mods.discountPrice,
+        category: schema.mods.category,
+        tags: schema.mods.tags,
+        isFeatured: schema.mods.isFeatured,
+        isSubscriptionOnly: schema.mods.isSubscriptionOnly,
+        downloadCount: schema.mods.downloadCount,
+        averageRating: schema.mods.averageRating,
+        createdAt: schema.mods.createdAt,
+        version: schema.mods.version
+      };
+      const sortColumn = allowedSortColumns[sortBy as string] || schema.mods.createdAt;
+
+      // Build the query
       let query = db
         .select({
           id: schema.mods.id,
@@ -521,30 +555,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           version: schema.mods.version
         })
         .from(schema.mods);
-      
+
       // Apply filters
-      if (category) {
-        query = query.where(eq(schema.mods.category, category as string));
+      if (filters.length > 0) {
+        query = query.where(and(...filters));
       }
-      
-      if (search) {
-        query = query.where(
-          or(
-            like(schema.mods.title, `%${search}%`),
-            like(schema.mods.description, `%${search}%`)
-          )
-        );
-      }
-      
+
       // Apply sorting
-      const sortColumn = schema.mods[sortBy as keyof typeof schema.mods] || schema.mods.createdAt;
       if (sortOrder === 'desc') {
         query = query.orderBy(desc(sortColumn));
       } else {
         query = query.orderBy(asc(sortColumn));
       }
-      
-      // Apply pagination
+
+      // Apply pagination and execute
       const mods = await query.limit(parseInt(limit as string)).offset(offset);
       
       // Get total count
@@ -885,11 +909,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Mod not found" });
       }
       
-      console.log(`[Download] Mod found: ${mod.title}, downloadUrl: "${mod.downloadUrl}"`);
+      console.log(`[Download] Mod found: ${mod.title}, downloadUrl: "${mod.downloadUrl}", lockerFolder: "${mod.lockerFolder}"`);
       
       // Allow download if user has purchased the mod or has a subscription for subscription-only mods
       if (!purchase && (!user?.stripeSubscriptionId || !mod.isSubscriptionOnly)) {
         return res.status(403).json({ message: "You need to purchase this mod first" });
+      }
+      
+      // Track the download before proceeding
+      try {
+        await db.insert(schema.modDownloads)
+          .values({
+            userId,
+            modId,
+            downloadedAt: new Date(),
+            reviewRequested: false,
+            reviewReminderSent: false
+          });
+
+        // Increment download count
+        await db.update(schema.mods)
+          .set({ 
+            downloadCount: sql`${schema.mods.downloadCount} + 1`
+          })
+          .where(eq(schema.mods.id, modId));
+
+        console.log(`[Download] Tracked download for user ${userId}, mod ${modId}`);
+      } catch (trackingError) {
+        console.error(`[Download] Error tracking download:`, trackingError);
+        // Don't fail the download if tracking fails
+      }
+      
+      // Check if mod has a locker folder configured
+      if (mod.lockerFolder && mod.lockerFolder.trim() !== '') {
+        console.log(`[Download] Mod uses locker folder: ${mod.lockerFolder}`);
+        
+        // Generate a license key for the mod locker
+        const licenseKey = `${crypto.randomUUID()}`;
+        
+        // Add license to modlocker database
+        try {
+          const modlockerDBPath = path.join(process.cwd(), "modlocker", "licenseDB.json");
+          let licenseDB: { [key: string]: any } = {};
+          
+          if (fs.existsSync(modlockerDBPath)) {
+            const licenseDBContent = fs.readFileSync(modlockerDBPath, 'utf8');
+            licenseDB = JSON.parse(licenseDBContent);
+          }
+          
+          // Add the new license with mod folder and name
+          licenseDB[licenseKey] = {
+            issuedAt: Date.now(),
+            modFolder: mod.lockerFolder,
+            modName: mod.title,
+            userId: userId,
+            modId: modId
+          };
+          
+          fs.writeFileSync(modlockerDBPath, JSON.stringify(licenseDB, null, 2));
+          
+          console.log(`[Download] License created: ${licenseKey} for mod folder: ${mod.lockerFolder}`);
+          
+          // Redirect to modlocker download endpoint
+          const modlockerPort = process.env.MODLOCKER_PORT || 3000;
+          const modlockerHost = process.env.MODLOCKER_HOST || 'http://localhost';
+          const modlockerUrl = `${modlockerHost}:${modlockerPort}/mods/download/${licenseKey}`;
+          
+          console.log(`[Download] Redirecting to modlocker: ${modlockerUrl}`);
+          res.redirect(modlockerUrl);
+          return;
+        } catch (lockerError) {
+          console.error(`[Download] Error creating modlocker license:`, lockerError);
+          return res.status(500).json({ message: "Failed to prepare mod download. Please try again." });
+        }
       }
       
       // First try to get the latest version file
@@ -925,8 +1017,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-
-  // Reviews system removed
 
   // Cart routes - completely rewritten for reliability
   app.get("/api/cart", auth.isAuthenticated, async (req, res) => {
@@ -1989,7 +2079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
-  });
+ });
   
   // Get a specific subscription plan
   app.get("/api/subscription/plans/:id", async (req, res) => {
@@ -2008,6 +2098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subscription/plans", auth.isAdmin, async (req, res) => {
     try {
       // Validate the request body
+
       const validatedData = schema.insertSubscriptionPlanSchema.parse(req.body);
       const plan = await storage.createSubscriptionPlan(validatedData);
       
@@ -2679,6 +2770,420 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // Get available mod locker folders
+  app.get("/api/admin/mod-locker/folders", auth.isAdmin, async (req, res) => {
+    try {
+      const modLockerPath = path.join(process.cwd(), "modlocker", "mods");
+      
+      if (!fs.existsSync(modLockerPath)) {
+        return res.json([]);
+      }
+      
+      const folders = fs.readdirSync(modLockerPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name)
+        .filter(name => !name.startsWith('.') && name !== 'node_modules'); // Filter out hidden and system folders
+      
+      res.json(folders);
+    } catch (error: any) {
+      console.error("Error reading mod locker folders:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Enhanced search endpoint with comprehensive filtering
+  app.get("/api/mods/search", async (req, res) => {
+    try {
+      const {
+        q: query,
+        category,
+        minPrice,
+        maxPrice,
+        minRating,
+        sortBy = "newest",
+        featured,
+        premium,
+        page = 1,
+        limit = 12,
+      } = req.query;
+
+      const conditions = [];
+      
+      if (query) {
+        conditions.push(
+          or(
+            ilike(schema.mods.title, `%${query}%`),
+            ilike(schema.mods.description, `%${query}%`)
+          )
+        );
+      }
+
+      if (category && category !== "All Categories") {
+        conditions.push(eq(schema.mods.category, category as string));
+      }
+
+      if (minPrice) {
+        conditions.push(gte(schema.mods.price, parseFloat(minPrice as string)));
+      }
+
+      if (maxPrice) {
+        conditions.push(lte(schema.mods.price, parseFloat(maxPrice as string)));
+      }
+
+      if (minRating) {
+        conditions.push(gte(schema.mods.averageRating, parseFloat(minRating as string)));
+      }
+
+      if (featured === "true") {
+        conditions.push(eq(schema.mods.featured, true));
+      }
+
+      if (premium === "true") {
+        conditions.push(eq(schema.mods.isSubscriptionOnly, true));
+      }
+
+      let orderBy;
+      switch (sortBy) {
+        case "price-low":
+          orderBy = asc(schema.mods.price);
+          break;
+        case "price-high":
+          orderBy = desc(schema.mods.price);
+          break;
+        case "rating":
+          orderBy = desc(schema.mods.averageRating);
+          break;
+        case "popular":
+          orderBy = desc(schema.mods.downloadCount);
+          break;
+        case "oldest":
+          orderBy = asc(schema.mods.createdAt);
+          break;
+        default:
+          orderBy = desc(schema.mods.createdAt);
+      }
+
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+
+      const mods = await db.select()
+        .from(schema.mods)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(orderBy)
+        .limit(limitNum)
+        .offset((pageNum - 1) * limitNum);
+
+      const [totalResult] = await db.select({ count: sql<number>`count(*)` })
+        .from(schema.mods)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+      const total = totalResult?.count || 0;
+
+      res.json({
+        mods,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+          total,
+          pageSize: limitNum,
+        },
+      });
+    } catch (error) {
+      console.error("Error searching mods:", error);
+      res.status(500).json({ message: "Failed to search mods" });
+    }
+  });
+
+  // Reviews API endpoints
+  app.get("/api/reviews/featured", async (req, res) => {
+    try {
+      const reviews = await db.select({
+        id: schema.reviews.id,
+        rating: schema.reviews.rating,
+        title: schema.reviews.title,
+        content: schema.reviews.content,
+        isVerifiedPurchase: schema.reviews.isVerifiedPurchase,
+        createdAt: schema.reviews.createdAt,
+        user: {
+          discordUsername: schema.users.discordUsername,
+          discordAvatar: schema.users.discordAvatar,
+        },
+        mod: {
+          title: schema.mods.title,
+        },
+      })
+      .from(schema.reviews)
+      .leftJoin(schema.users, eq(schema.reviews.userId, schema.users.id))
+      .leftJoin(schema.mods, eq(schema.reviews.modId, schema.mods.id))
+      .where(gte(schema.reviews.rating, 4))
+      .orderBy(desc(schema.reviews.createdAt))
+      .limit(20);
+
+      res.json({ reviews });
+    } catch (error) {
+      console.error("Error fetching featured reviews:", error);
+      res.status(500).json({ message: "Failed to fetch featured reviews" });
+    }
+  });
+
+  app.get("/api/mods/:id/reviews", async (req, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const sortBy = req.query.sortBy as string || "newest";
+      const rating = req.query.rating ? parseInt(req.query.rating as string) : undefined;
+
+      let orderBy;
+      switch (sortBy) {
+        case "oldest":
+          orderBy = asc(schema.reviews.createdAt);
+          break;
+        case "highest":
+          orderBy = desc(schema.reviews.rating);
+          break;
+        case "lowest":
+          orderBy = asc(schema.reviews.rating);
+          break;
+        case "helpful":
+          orderBy = desc(schema.reviews.helpfulCount);
+          break;
+        default:
+          orderBy = desc(schema.reviews.createdAt);
+      }
+
+      const conditions = [eq(schema.reviews.modId, modId)];
+      if (rating) {
+        conditions.push(eq(schema.reviews.rating, rating));
+      }
+
+      const reviews = await db.select({
+        id: schema.reviews.id,
+        rating: schema.reviews.rating,
+        title: schema.reviews.title,
+        content: schema.reviews.content,
+        isVerifiedPurchase: schema.reviews.isVerifiedPurchase,
+        helpfulCount: schema.reviews.helpfulCount,
+        createdAt: schema.reviews.createdAt,
+        user: {
+          discordUsername: schema.users.discordUsername,
+          discordAvatar: schema.users.discordAvatar,
+        },
+      })
+      .from(schema.reviews)
+      .leftJoin(schema.users, eq(schema.reviews.userId, schema.users.id))
+      .where(and(...conditions))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+      const [totalResult] = await db.select({ count: sql<number>`count(*)` })
+        .from(schema.reviews)
+        .where(and(...conditions));
+
+      const total = totalResult?.count || 0;
+
+      res.json({
+        reviews,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          total,
+          limit,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching mod reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/mods/:id/reviews", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const modId = parseInt(req.params.id);
+      const { rating, title, content } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+
+      if (!title || title.trim().length === 0) {
+        return res.status(400).json({ message: "Review title is required" });
+      }
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "Review content is required" });
+      }
+
+      // Check if user has already reviewed this mod
+      const existingReview = await db.select()
+        .from(schema.reviews)
+        .where(and(
+          eq(schema.reviews.userId, userId),
+          eq(schema.reviews.modId, modId)
+        ))
+        .limit(1);
+
+      if (existingReview.length > 0) {
+        return res.status(400).json({ message: "You have already reviewed this mod" });
+      }
+
+      // Check if this is a verified purchase
+      const purchase = await db.select()
+        .from(schema.purchases)
+        .where(and(
+          eq(schema.purchases.userId, userId),
+          eq(schema.purchases.modId, modId)
+        ))
+        .limit(1);
+
+      const user = await db.select()
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+
+      const mod = await db.select()
+        .from(schema.mods)
+        .where(eq(schema.mods.id, modId))
+        .limit(1);
+
+      const isVerifiedPurchase = purchase.length > 0 || 
+        (user[0]?.stripeSubscriptionId && mod[0]?.isSubscriptionOnly);
+
+      // Create the review
+      const [review] = await db.insert(schema.reviews)
+        .values({
+          userId,
+          modId,
+          rating,
+          title: title.trim(),
+          content: content.trim(),
+          isVerifiedPurchase,
+          helpfulCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // Update mod's average rating
+      const [avgResult] = await db.select({
+        avgRating: sql<number>`avg(${schema.reviews.rating})`,
+        reviewCount: sql<number>`count(*)`,
+      })
+      .from(schema.reviews)
+      .where(eq(schema.reviews.modId, modId));
+
+      await db.update(schema.mods)
+        .set({ 
+          averageRating: avgResult.avgRating ? parseFloat(avgResult.avgRating.toString()) : 0,
+          reviewCount: avgResult.reviewCount || 0,
+        })
+        .where(eq(schema.mods.id, modId));
+
+      res.status(201).json({ message: "Review submitted successfully", review });
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(500).json({ message: "Failed to submit review" });
+    }
+  });
+
+  app.post("/api/reviews/:id/helpful", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const reviewId = parseInt(req.params.id);
+
+      // Check if user has already marked this review as helpful
+      const existingVote = await db.select()
+        .from(schema.reviewHelpfulVotes)
+        .where(and(
+          eq(schema.reviewHelpfulVotes.userId, userId),
+          eq(schema.reviewHelpfulVotes.reviewId, reviewId)
+        ))
+        .limit(1);
+
+      if (existingVote.length > 0) {
+        return res.status(400).json({ message: "You have already marked this review as helpful" });
+      }
+
+      // Add helpful vote
+      await db.insert(schema.reviewHelpfulVotes)
+        .values({
+          userId,
+          reviewId,
+          createdAt: new Date(),
+        });
+
+      // Update review helpful count
+      await db.update(schema.reviews)
+        .set({ 
+          helpfulCount: sql`${schema.reviews.helpfulCount} + 1`
+        })
+        .where(eq(schema.reviews.id, reviewId));
+
+      res.json({ message: "Review marked as helpful" });
+    } catch (error) {
+      console.error("Error marking review as helpful:", error);
+      res.status(500).json({ message: "Failed to mark review as helpful" });
+    }
+  });
+
+  app.post("/api/mods/:id/track-download", auth.isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const modId = parseInt(req.params.id);
+
+      // Check if user has already downloaded this mod recently
+      const recentDownload = await db.select()
+        .from(schema.modDownloads)
+        .where(and(
+          eq(schema.modDownloads.userId, userId),
+          eq(schema.modDownloads.modId, modId),
+          gte(schema.modDownloads.downloadedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // 7 days ago
+        ))
+        .limit(1);
+
+      let shouldRequestReview = false;
+
+      if (recentDownload.length === 0) {
+        // Track new download
+        await db.insert(schema.modDownloads)
+          .values({
+            userId,
+            modId,
+            downloadedAt: new Date(),
+            reviewRequested: false,
+            reviewReminderSent: false,
+          });
+
+        // Check if user should be asked for review
+        const [totalDownloads] = await db.select({ count: sql<number>`count(*)` })
+          .from(schema.modDownloads)
+          .where(and(
+            eq(schema.modDownloads.userId, userId),
+            eq(schema.modDownloads.modId, modId)
+          ));
+
+        const existingReview = await db.select()
+          .from(schema.reviews)
+          .where(and(
+            eq(schema.reviews.userId, userId),
+            eq(schema.reviews.modId, modId)
+          ))
+          .limit(1);
+
+        // Request review if user has downloaded 2+ times and hasn't reviewed yet
+        shouldRequestReview = totalDownloads.count >= 2 && existingReview.length === 0;
+      }
+
+      res.json({ shouldRequestReview });
+    } catch (error) {
+      console.error("Error tracking download:", error);
+      res.status(500).json({ message: "Failed to track download" });
+    }
+  });
+
+  // Create and return the HTTP server
+  const server = createServer(app);
+  return server;
 }

@@ -32,6 +32,7 @@ import UserRolesPage from "@/pages/admin/user-roles";
 import ProductManagement from "@/pages/admin/product-management";
 import AllMods from "@/pages/admin/products/all-mods";
 import CreateModPage from "@/pages/admin/products/create-mod";
+import EditModPage from "@/pages/admin/products/edit-mod";
 import FeaturedMods from "@/pages/admin/products/featured-mods";
 import Categories from "@/pages/admin/products/categories";
 
@@ -117,7 +118,9 @@ function Router() {
       
       {/* Product Management */}
       <AdminRoute path="/admin/products/all-mods" component={AllMods} />
+      <AdminRoute path="/admin/products/create" component={CreateModPage} />
       <AdminRoute path="/admin/products/create-mod" component={CreateModPage} />
+      <AdminRoute path="/admin/products/edit/:id" component={EditModPage} />
       <AdminRoute path="/admin/products/featured-mods" component={FeaturedMods} />
       <AdminRoute path="/admin/products/categories" component={Categories} />
       
@@ -130,6 +133,7 @@ function Router() {
       
       {/* Order Management */}
       <AdminRoute path="/admin/orders" component={AdminOrderManagement} />
+      <AdminRoute path="/admin/order-management" component={AdminOrderManagement} />
       
       {/* Payment Management */}
       <AdminRoute path="/admin/payments/settings" component={AdminSettings} />

@@ -56,16 +56,8 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Modern gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-900/30 to-black"></div>
+      {/* Remove individual background - now using unified system */}
       
-      {/* Animated mesh gradient */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute top-0 -right-4 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
-      </div>
-
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{

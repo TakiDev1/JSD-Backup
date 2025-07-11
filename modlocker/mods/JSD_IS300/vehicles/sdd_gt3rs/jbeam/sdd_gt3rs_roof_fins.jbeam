@@ -1,0 +1,16 @@
+{
+"sdd_gt3rs_rooffins": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Roof Fins",
+        "value":235,
+    },
+
+    "slotType" : "sdd_gt3rs_rooffins",
+
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["sdd_gt3rs_roof_fins", ["sdd_gt3rs_body"]],
+    ],
+},
+}

@@ -5,8 +5,17 @@ import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, Users, DollarSign, Download, Eye, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+type AdminStats = {
+  revenue: number;
+  users: number;
+  mods: number;
+  purchases: number;
+  activeUsers: number;
+  pendingReviews: number;
+};
+
 export default function AdminAnalytics() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
   });
 

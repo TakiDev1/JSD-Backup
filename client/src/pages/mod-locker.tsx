@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ReviewRequestPopup from "@/components/reviews/ReviewRequestPopup";
 import { 
   Lock, 
   Download, 
@@ -45,6 +46,13 @@ const ModLockerPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedMod, setSelectedMod] = useState<LockerMod | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  
+  // Review request popup state
+  const [reviewPopup, setReviewPopup] = useState({
+    isOpen: false,
+    modTitle: "",
+    modId: 0
+  });
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -82,8 +90,82 @@ const ModLockerPage = () => {
     setIsDetailsOpen(true);
   };
 
-  const handleDownload = (modId: number) => {
-    window.location.href = `/api/mods/${modId}/download`;
+  const handleDownload = async (modId: number, modTitle: string) => {
+    try {
+      // Check if user has opted out of review requests for this mod
+      const neverRemind = localStorage.getItem(`neverRemindReview_${modId}`);
+      if (neverRemind === "true") {
+        // Just do the download without popup
+        performDownload(modId);
+        return;
+      }
+
+      // Track the download first
+      const trackResponse = await fetch(`/api/mods/${modId}/track-download`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (trackResponse.ok) {
+        const trackData = await trackResponse.json();
+        
+        // Show review request popup if recommended
+        if (trackData.shouldRequestReview) {
+          setReviewPopup({
+            isOpen: true,
+            modTitle,
+            modId
+          });
+        }
+      }
+
+      // Perform the actual download
+      performDownload(modId);
+      
+    } catch (error) {
+      console.error('Download tracking error:', error);
+      // Still proceed with download even if tracking fails
+      performDownload(modId);
+    }
+  };
+
+  const performDownload = async (modId: number) => {
+    try {
+      // Generate installer through mod locker integration
+      const response = await fetch('/api/mod-locker/generate-installer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ modId })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate installer');
+      }
+
+      const data = await response.json();
+      
+      // Download the installer
+      window.location.href = data.downloadUrl;
+    } catch (error: any) {
+      console.error('Download error:', error);
+      // Fallback to direct download if mod locker fails
+      window.location.href = `/api/mods/${modId}/download`;
+    }
+  };
+
+  const closeReviewPopup = () => {
+    setReviewPopup({
+      isOpen: false,
+      modTitle: "",
+      modId: 0
+    });
   };
 
   const needsUpgrade = !hasSubscription && subscriptionMods.length > 0;
@@ -352,7 +434,7 @@ const ModLockerPage = () => {
                       <CardFooter className="p-6 pt-0 flex gap-3">
                         <Button 
                           className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-green-500/25"
-                          onClick={() => handleDownload(mod.id)}
+                          onClick={() => handleDownload(mod.id, mod.title)}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Download
@@ -503,7 +585,7 @@ const ModLockerPage = () => {
                       <CardFooter className="p-6 pt-0 flex gap-3">
                         <Button 
                           className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/25"
-                          onClick={() => handleDownload(mod.id)}
+                          onClick={() => handleDownload(mod.id, mod.title)}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Download
@@ -571,7 +653,7 @@ const ModLockerPage = () => {
                 <Button 
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold"
                   onClick={() => {
-                    handleDownload(selectedMod.mod.id);
+                    handleDownload(selectedMod.mod.id, selectedMod.mod.title);
                     setIsDetailsOpen(false);
                   }}
                 >
@@ -590,6 +672,14 @@ const ModLockerPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Review Request Popup */}
+      <ReviewRequestPopup
+        isOpen={reviewPopup.isOpen}
+        onClose={closeReviewPopup}
+        modTitle={reviewPopup.modTitle}
+        modId={reviewPopup.modId}
+      />
     </div>
   );
 };

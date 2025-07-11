@@ -1,0 +1,278 @@
+{
+    "etk_DSE_drivemodes_stock_ICE": {
+        "information":{
+            "authors":"Diamondback",
+            "name":"Stock Drive Modes",
+            "value":250,
+        },
+        "slotType" : "etk_DSE_drivemodes",
+        "slots":[
+            ["type", "default", "description"],
+            ["etk_DSE_drivemodes_default","etk_DSE_drivemodes_default_comfort", "Default Mode"],
+            ["etk_DSE_drivemodes_sport_plus","", "Sport+ Mode"],
+        ]
+
+        "controller": [
+            ["fileName"],
+            ["adaptiveBrakeLights"],
+            ["postCrashBrake", {"brakeThreshold": 60}],
+            ["driveModes"]
+        ],
+
+        "driveModes": {
+            "enabledModes":["comfort", "sport", "off"]
+            "defaultMode": "comfort"
+            "defaultSettings": [
+                ["type"]
+                //ESC & TCS
+                ["controller", {"controllerName":"tractionControl", "isEnabled":true}]
+                ["controller", {"controllerName":"yawControl", "isEnabled":true}]
+                ["controller", {"controllerName":"motorTorqueControl", "tractionControl": "default", "yawControl": "default"}]
+                ["controller", {"controllerName":"brakeControl", "tractionControl": "default", "yawControl": "default"}]
+
+                //AWD
+                ["controller", {"controllerName":"electronicSplitShaftLock", "isEnabled":true, "minimumLock":"default"}]
+
+                //Suspension
+                ["controller", {"controllerName":"adaptiveFrontDamper", "damperMode":"regular"}]
+                ["controller", {"controllerName":"adaptiveRearDamper", "damperMode":"regular"}]
+                ["controller", {"controllerName":"adaptiveFrontSwayBar", "torsionBarMode":"regular"}]
+                ["controller", {"controllerName":"adaptiveRearSwayBar", "torsionBarMode":"regular"}]
+
+                //Engine & Transmission
+                ["exhaust" {"name": "mainEngine", "mufflingOffset": 0, "gainOffset": 0}]
+                ["controller", {"controllerName":"twoStepLaunch", "isEnabled":true, "launchRPM":2000}]
+                ["transmission", {"defaultForwardMode": "D"}]
+
+                //Misc
+                ["controller", {"controllerName":"adaptiveBrakeLights", "isEnabled":true}]
+            ],
+            "modes": {
+                "comfort": {
+                    "name": "Comfort",
+                    "order": 10,
+                    "settings": [
+                        ["type"]
+                        //ESC & TCS
+                        ["controller", {"controllerName":"tractionControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"yawControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"motorTorqueControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.12,
+                            "tractionControl.wheelGroupSettings.mainEngine.minimumThrottleLimit": 0.1,
+
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.05,
+                            "yawControl.yawAvThreshold": 0.5
+                        }],
+                        ["controller", {"controllerName":"brakeControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.10,
+
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.08,
+                            "yawControl.yawAvThreshold": 0.6
+                        }],
+                        ["controller", {"controllerName":"awdControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.05,
+                        }],
+                        ["controller", {"controllerName":"diffControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.openRearDiffOversteerThresholdMin":0.02,
+                            "yawControl.openRearDiffOversteerThresholdMax":0.1,
+
+                            "yawControl.lockableFrontDiffOversteerThresholdMin":0.02,
+                            "yawControl.lockableFrontDiffOversteerThresholdMax":0.1,
+                            "yawControl.lockableRearDiffOversteerThresholdMin":0.02,
+                            "yawControl.lockableRearDiffOversteerThresholdMax":0.1,
+                        }],
+
+                        //AWD
+                        ["controller", {"controllerName":"electronicSplitShaftLock", "isEnabled":true, "minimumLock":0.0, "avDiffThreshold": 16}]
+
+                        //Diffs
+                        ["controller", {"controllerName":"lockRear", "isEnabled":true, "avDiffThreshold":3}]
+
+                        //Suspension
+                        ["controller", {"controllerName":"adaptiveFrontDamper", "damperMode":"regular"}]
+                        ["controller", {"controllerName":"adaptiveRearDamper", "damperMode":"regular"}]
+
+                        ["controller", {"controllerName":"adaptiveFrontSwayBar", "torsionBarMode":"regular"}]
+                        ["controller", {"controllerName":"adaptiveRearSwayBar", "torsionBarMode":"regular"}]
+
+                        //Engine & Transmission
+                        ["controller", {"controllerName":"twoStepLaunch", "isEnabled":true, "launchRPM":2000}]
+                        ["exhaust", {"name": "mainEngine", "mufflingOffset": 0, "gainOffset": 0}],
+
+                        //UI
+                        ["simpleControlButton", {"buttonId":"dse", "uiName":"DSE","icon":"powertrain_esc","color":"238BE6", "offColor":"343434", "offColorElectric":"dseWarningPulse"}]
+                    ],
+                },
+                "sport": {
+                    "name": "Sport",
+                    "order": 20,
+                    "settings": [
+                        ["type"]
+                        //ESC & TCS
+                        ["controller", {"controllerName":"tractionControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"yawControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"motorTorqueControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.18,
+                            "tractionControl.wheelGroupSettings.mainEngine.minimumThrottleLimit": 0.2,
+
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.1,
+                            "yawControl.yawAvThreshold": 0.6
+                        }],
+                        ["controller", {"controllerName":"brakeControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.15,
+
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.12,
+                            "yawControl.yawAvThreshold": 0.7
+                        }],
+                        ["controller", {"controllerName":"awdControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.07,
+                        }],
+                        ["controller", {"controllerName":"diffControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.openRearDiffOversteerThresholdMin":0.05,
+                            "yawControl.openRearDiffOversteerThresholdMax":0.1,
+
+                            "yawControl.lockableFrontDiffOversteerThresholdMin":0.05,
+                            "yawControl.lockableFrontDiffOversteerThresholdMax":0.15,
+                            "yawControl.lockableRearDiffOversteerThresholdMin":0.05,
+                            "yawControl.lockableRearDiffOversteerThresholdMax":0.15,
+                        }],
+
+                        //AWD
+                        ["controller", {"controllerName":"electronicSplitShaftLock", "isEnabled":true, "minimumLock":0.05, "avDiffThreshold": 23}]
+
+                        //Diffs
+                        ["controller", {"controllerName":"lockRear", "isEnabled":true, "avDiffThreshold":4}]
+
+                        //Suspension
+                        ["controller", {"controllerName":"adaptiveFrontDamper", "damperMode":"hard"}]
+                        ["controller", {"controllerName":"adaptiveRearDamper", "damperMode":"hard"}]
+
+                        ["controller", {"controllerName":"adaptiveFrontSwayBar", "torsionBarMode":"regular"}]
+                        ["controller", {"controllerName":"adaptiveRearSwayBar", "torsionBarMode":"regular"}]
+
+                        //Engine & Transmission
+                        ["controller", {"controllerName":"twoStepLaunch", "isEnabled":true, "launchRPM":2200}]
+                        ["transmission", {"defaultForwardMode": "S"}]
+
+                        //UI
+                        ["simpleControlButton", {"buttonId":"dse", "uiName":"DSE","icon":"powertrain_esc","color":"DA0C0C", "offColor":"343434", "offColorElectric":"dseWarningPulse"}]
+                    ],
+                },
+                "sport+": {
+                    "name": "Sport+",
+                    "order": 30,
+                    "settings": [
+                        ["type"]
+                        //ESC & TCS
+                        ["controller", {"controllerName":"tractionControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"yawControl", "isEnabled":true}]
+                        ["controller", {"controllerName":"motorTorqueControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.2,
+                            "tractionControl.wheelGroupSettings.mainEngine.minimumThrottleLimit": 0.2,
+
+                            "yawControl.isEnabled":false,
+                        }],
+                        ["controller", {"controllerName":"brakeControl",
+                            "tractionControl.isEnabled":true,
+                            "tractionControl.wheelGroupSettings.mainEngine.slipThreshold": 0.15,
+
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.2,
+                            "yawControl.yawAvThreshold": 0.7
+                        }],
+                        ["controller", {"controllerName":"awdControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.slipAngleThreshold": 0.1,
+                        }],
+                        ["controller", {"controllerName":"diffControl",
+                            "yawControl.isEnabled":true,
+                            "yawControl.openRearDiffOversteerThresholdMin":0.05,
+                            "yawControl.openRearDiffOversteerThresholdMax":0.1,
+
+                            "yawControl.lockableFrontDiffOversteerThresholdMin":0.05,
+                            "yawControl.lockableFrontDiffOversteerThresholdMax":0.2,
+                            "yawControl.lockableRearDiffOversteerThresholdMin":0.05,
+                            "yawControl.lockableRearDiffOversteerThresholdMax":0.2,
+                        }],
+
+                        //AWD
+                        ["controller", {"controllerName":"electronicSplitShaftLock", "isEnabled":true, "minimumLock":0.05, "avDiffThreshold": 27}]
+
+                        //Diffs
+                        ["controller", {"controllerName":"lockRear", "isEnabled":true, "avDiffThreshold":4}]
+
+                        //Suspension
+                        ["controller", {"controllerName":"adaptiveFrontDamper", "damperMode":"hard"}]
+                        ["controller", {"controllerName":"adaptiveRearDamper", "damperMode":"hard"}]
+
+                        ["controller", {"controllerName":"adaptiveFrontSwayBar", "torsionBarMode":"hard"}]
+                        ["controller", {"controllerName":"adaptiveRearSwayBar", "torsionBarMode":"hard"}]
+
+                        //Engine & Transmission
+                        ["controller", {"controllerName":"twoStepLaunch", "isEnabled":true, "launchRPM":2500}]
+                        ["exhaust", {"name": "mainEngine", "mufflingOffset": -0.2, "gainOffset": 1.5}],
+                        ["transmission", {"defaultForwardMode": "S"}]
+
+                        //Misc
+                        ["controller", {"controllerName":"adaptiveBrakeLights", "isEnabled":false}]
+
+                        //UI
+                        ["simpleControlButton", {"buttonId":"dse", "uiName":"DSE","icon":"powertrain_esc","color":"8ED500", "offColor":"343434", "offColorElectric":"dseWarningPulse"}]
+                    ],
+                },
+                "off": {
+                    "name": "ESC & TC Off",
+                    "order": 50,
+                    "settings": [
+                        ["type"]
+                        //ESC & TCS
+                        ["controller", {"controllerName":"tractionControl", "isEnabled":false}]
+                        ["controller", {"controllerName":"yawControl", "isEnabled":false}]
+                        ["controller", {"controllerName":"motorTorqueControl"}],
+                        ["controller", {"controllerName":"brakeControl"}],
+                        ["controller", {"controllerName":"awdControl"}],
+                        ["controller", {"controllerName":"diffControl"}],
+
+                        //AWD
+                        ["controller", {"controllerName":"electronicSplitShaftLock", "isEnabled":true, "minimumLock":0, "avDiffThreshold": 27}]
+
+                        //Diffs
+                        ["controller", {"controllerName":"lockRear", "isEnabled":true, "avDiffThreshold":4}]
+
+                        //Suspension
+                        ["controller", {"controllerName":"adaptiveFrontDamper", "damperMode":"hard"}]
+                        ["controller", {"controllerName":"adaptiveRearDamper", "damperMode":"hard"}]
+
+                        ["controller", {"controllerName":"adaptiveFrontSwayBar", "torsionBarMode":"hard"}]
+                        ["controller", {"controllerName":"adaptiveRearSwayBar", "torsionBarMode":"hard"}]
+
+                        //Engine & Transmission
+                        ["controller", {"controllerName":"twoStepLaunch", "isEnabled":false}]
+                        ["exhaust", {"name": "mainEngine", "mufflingOffset": -0.2, "gainOffset": 1.5}],
+                        ["transmission", {"defaultForwardMode": "S"}],
+
+                        //Misc
+                        ["controller", {"controllerName":"adaptiveBrakeLights", "isEnabled":false}]
+
+                        //UI & Gauges
+                        ["simpleControlButton", {"buttonId":"dse", "uiName":"DSE","icon":"powertrain_esc","color":"999999", "offColor":"343434", "offColorElectric":"dseWarningPulse"}]
+
+                    ],
+                }
+            },
+        },
+    },
+}

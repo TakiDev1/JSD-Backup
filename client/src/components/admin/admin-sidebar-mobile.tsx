@@ -152,19 +152,6 @@ const getAllSidebarItems = (): SidebarItem[] => [
     ]
   },
   {
-    id: 'settings',
-    label: 'Site Settings',
-    icon: <Settings className="w-5 h-5" />,
-    permissions: permissionMappings.settings,
-    children: [
-      { id: 'general-settings', label: 'General Settings', icon: <SettingsIcon className="w-4 h-4" />, path: '/admin/settings', permissions: permissionMappings.settings },
-      { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4" />, path: '/admin/settings/appearance', permissions: permissionMappings.settings },
-      { id: 'seo-settings', label: 'SEO Settings', icon: <Globe className="w-4 h-4" />, path: '/admin/settings/seo', permissions: permissionMappings.settings },
-      { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" />, path: '/admin/settings/security', permissions: permissionMappings.settings },
-      { id: 'maintenance', label: 'Maintenance Mode', icon: <Activity className="w-4 h-4" />, path: '/admin/settings/maintenance', permissions: permissionMappings.settings }
-    ]
-  },
-  {
     id: 'support',
     label: 'Support Management',
     icon: <MessageSquare className="w-5 h-5" />,
