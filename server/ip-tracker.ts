@@ -58,7 +58,7 @@ export async function trackUserActivity(req: Request, res: Response, next: NextF
       const userAgent = req.headers['user-agent'] || '';
       const { deviceType, browser, operatingSystem } = parseUserAgent(userAgent);
       
-      // Fix the referrer type issue
+      // Fix the referrer type issue by properly handling string | string[] | undefined
       const refererHeader = req.headers.referer || req.headers.referrer;
       const referrer = Array.isArray(refererHeader) ? refererHeader[0] : (refererHeader || '');
       

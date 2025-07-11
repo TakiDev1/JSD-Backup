@@ -215,23 +215,23 @@ const AdminUsers = () => {
         <Card className="bg-dark-card border-dark-lighter/50">
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-              <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+              <Tabs defaultValue="all" className="w-full md:w-auto" onValueChange={setActiveTab}>
                 <TabsList className="w-full md:w-auto">
                   <TabsTrigger value="all">All Users</TabsTrigger>
                   <TabsTrigger value="admin">Admins</TabsTrigger>
                   <TabsTrigger value="premium">Premium</TabsTrigger>
                   <TabsTrigger value="banned">Banned</TabsTrigger>
                 </TabsList>
-                
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Search users..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full max-w-xs"
-                  />
-                </div>
               </Tabs>
+              
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full max-w-xs"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -356,8 +356,11 @@ const AdminUsers = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
+        {/* End flex flex-col space-y-8 */}
       </div>
       {/* End container mx-auto px-4 */}
+      
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-dark-card text-white">

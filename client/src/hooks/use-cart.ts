@@ -4,28 +4,39 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { getCart, addToCart, removeFromCart, clearCart, calculateCartTotal, CartItem } from "@/lib/cart";
 
+// Export CartItem type so it can be used in other files
+export type { CartItem } from "@/lib/cart";
+
 interface CartContextType {
   cartItems: CartItem[];
+  items: CartItem[];  // Add alias for backward compatibility
   isLoading: boolean;
   cartTotal: number;
+  total: number;      // Add alias for backward compatibility
   cartCount: number;
+  count: number;      // Add alias for backward compatibility
   addItem: (modId: number) => Promise<CartItem | null>;
   removeItem: (modId: number) => Promise<void>;
   clearCart: () => Promise<void>;
   isModInCart: (modId: number) => boolean;
+  isInCart: (modId: number) => boolean;  // Add alias for backward compatibility
   isPending: boolean;
   refreshCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType>({
   cartItems: [],
+  items: [],
   isLoading: false,
   cartTotal: 0,
+  total: 0,
   cartCount: 0,
+  count: 0,
   addItem: async (_modId: number) => null,
   removeItem: async (_modId: number) => {},
   clearCart: async () => {},
   isModInCart: (_modId: number) => false,
+  isInCart: (_modId: number) => false,
   isPending: false,
   refreshCart: async () => {},
 });
@@ -174,9 +185,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value: CartContextType = {
     cartItems,
+    items: cartItems, // Backward compatibility alias
     isLoading,
     cartTotal,
+    total: cartTotal, // Backward compatibility alias
     cartCount,
+    count: cartCount, // Backward compatibility alias
     addItem: async (modId: number) => {
       try {
         return await addItemMutation.mutateAsync(modId);
@@ -199,6 +213,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     },
     isModInCart,
+    isInCart: isModInCart, // Backward compatibility alias
     isPending,
     refreshCart: async () => {
       console.log("[use-cart] Manual cart refresh requested");

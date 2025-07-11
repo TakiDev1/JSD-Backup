@@ -151,35 +151,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Login the user
-      req.login(user, (err) => {
+      // Convert null to undefined for TypeScript compatibility
+      const convertedUser = {
+        ...user,
+        isAdmin: user.isAdmin ?? false,
+        isPremium: user.isPremium ?? false,
+        isBanned: user.isBanned ?? false,
+        email: user.email ?? undefined,
+      };
+      
+      req.login(convertedUser, (err) => {
         if (err) {
-          console.error("Login error during req.login:", err);
-          return res.status(500).json({ message: "Login error" });
+          return res.status(500).json({ message: 'Login failed' });
         }
-        
-        console.log("User authenticated in req.login:", req.isAuthenticated());
-        console.log("Session ID after login:", req.sessionID);
-        
-        // Don't send sensitive information to the client
-        const safeUser = { ...user };
-        delete (safeUser as any).password;
-        
-        // Update last login time
-        storage.updateUser(user.id, { lastLogin: new Date() })
-          .catch(err => console.error("Failed to update last login time:", err));
-        
-        // Force save the session to ensure it's stored properly
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error("Error saving session:", saveErr);
-          }
-          console.log("Session saved successfully, user authenticated:", req.isAuthenticated());
-          return res.status(200).json(safeUser);
-        });
+        res.json({ message: 'Login successful', user: convertedUser });
       });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "An error occurred during login" });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
   
@@ -305,8 +294,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUser(user.id, { password: hashedPassword });
       }
       
+      // Convert null to undefined for TypeScript compatibility
+      const convertedUser = {
+        ...user,
+        isAdmin: user.isAdmin ?? true,
+        isPremium: user.isPremium ?? false,
+        isBanned: user.isBanned ?? false,
+        email: user.email ?? undefined,
+      };
+      
       // Login the user
-      req.login(user, (err) => {
+      req.login(convertedUser, (err) => {
         if (err) {
           console.error("Admin login error during req.login:", err);
           return res.status(500).json({ message: "Login error" });
@@ -325,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Don't send password back to client
         // Create a user object without password
-        const userWithoutPassword = { ...user };
+        const userWithoutPassword = { ...convertedUser };
         delete (userWithoutPassword as any).password;
         
         // Make sure isAdmin is set
@@ -372,8 +370,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: false,
       });
       
+      // Convert null to undefined for TypeScript compatibility
+      const convertedUser = {
+        ...user,
+        isAdmin: user.isAdmin ?? false,
+        isPremium: user.isPremium ?? false,
+        isBanned: user.isBanned ?? false,
+        email: user.email ?? undefined,
+      };
+      
       // Login the user
-      req.login(user, (err) => {
+      req.login(convertedUser, (err) => {
         if (err) {
           console.error("Registration login error during req.login:", err);
           return res.status(500).json({ message: "Login error" });
@@ -383,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("New user session ID after registration:", req.sessionID);
         
         // Don't send sensitive information to the client
-        const safeUser = { ...user };
+        const safeUser = { ...convertedUser };
         delete (safeUser as any).password;
         
         // Force save the session to ensure it's stored properly
@@ -558,31 +565,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Apply filters
       if (filters.length > 0) {
-        query = query.where(and(...filters));
+        query = query.where(and(...filters)) as typeof query;
       }
 
       // Apply sorting
       if (sortOrder === 'desc') {
-        query = query.orderBy(desc(sortColumn));
+        query = query.orderBy(desc(sortColumn)) as typeof query;
       } else {
-        query = query.orderBy(asc(sortColumn));
+        query = query.orderBy(asc(sortColumn)) as typeof query;
       }
 
       // Apply pagination and execute
       const mods = await query.limit(parseInt(limit as string)).offset(offset);
       
       // Get total count
-      const [{ count }] = await db
-        .select({ count: sql<number>`count(*)` })
+      let countQuery = db
+        .select({ count: sql<number>`count(*)`.as('count') })
         .from(schema.mods);
+        
+      if (filters.length > 0) {
+        countQuery = countQuery.where(and(...filters)) as typeof countQuery;
+      }
+      
+      const [totalResult] = await countQuery;
+      const totalCount = totalResult?.count || 0;
       
       res.json({
         mods,
         pagination: {
-          total: count,
+          total: totalCount,
           page: parseInt(page as string),
           limit: parseInt(limit as string),
-          totalPages: Math.ceil(count / parseInt(limit as string))
+          totalPages: Math.ceil(totalCount / parseInt(limit as string))
         }
       });
     } catch (error: any) {
@@ -2144,9 +2158,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete a subscription plan (admin only)
   app.delete("/api/subscription/plans/:id", auth.isAdmin, async (req, res) => {
     try {
-      const success = await storage.deleteSubscriptionPlan(parseInt(req.params.id));
+      const planDeleteResult = await storage.deleteSubscriptionPlan(parseInt(req.params.id));
       
-      if (!success) {
+      if (!planDeleteResult) {
         return res.status(404).json({ message: "Subscription plan not found" });
       }
       
@@ -2158,7 +2172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress: req.ip
       });
       
-      res.json({ success });
+      res.json({ success: planDeleteResult });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -2835,7 +2849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (featured === "true") {
-        conditions.push(eq(schema.mods.featured, true));
+        conditions.push(eq(schema.mods.isFeatured, true));
       }
 
       if (premium === "true") {
@@ -2866,29 +2880,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
 
-      const mods = await db.select()
-        .from(schema.mods)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+      // Build the query step by step to avoid type issues
+      let modsQuery = db.select().from(schema.mods);
+      
+      if (conditions.length > 0) {
+        modsQuery = modsQuery.where(and(...conditions)) as any;
+      }
+      
+      const mods = await modsQuery
         .orderBy(orderBy)
         .limit(limitNum)
         .offset((pageNum - 1) * limitNum);
 
-      const [totalResult] = await db.select({ count: sql<number>`count(*)` })
-        .from(schema.mods)
-        .where(conditions.length > 0 ? and(...conditions) : undefined);
-
-      const total = totalResult?.count || 0;
+      // Build count query separately
+      let totalQuery = db.select({ count: sql<number>`count(*)`.as('count') }).from(schema.mods);
+      
+      if (conditions.length > 0) {
+        totalQuery = totalQuery.where(and(...conditions)) as any;
+      }
+      
+      const [totalResult] = await totalQuery;
+      const totalCount = totalResult?.count || 0;
 
       res.json({
         mods,
         pagination: {
           currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          total,
+          totalPages: Math.ceil(totalCount / limitNum),
+          total: totalCount,
           pageSize: limitNum,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error searching mods:", error);
       res.status(500).json({ message: "Failed to search mods" });
     }
@@ -2977,7 +3000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .limit(limit)
       .offset((page - 1) * limit);
 
-      const [totalResult] = await db.select({ count: sql<number>`count(*)` })
+      const [totalResult] = await db.select({ count: sql<number>`count(*)`.as('count') })
         .from(schema.reviews)
         .where(and(...conditions));
 
@@ -2992,9 +3015,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           limit,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching mod reviews:", error);
-      res.status(500).json({ message: "Failed to fetch reviews" });
+      res.status(500).json({ message: error.message });
     }
   });
 
@@ -3054,12 +3077,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the review
       const [review] = await db.insert(schema.reviews)
         .values({
-          userId,
-          modId,
-          rating,
-          title: title.trim(),
-          content: content.trim(),
-          isVerifiedPurchase,
+          userId: userId as number,
+          modId: modId as number,
+          rating: rating as number,
+          title: title.trim() as string,
+          content: content.trim() as string,
+          isVerifiedPurchase: Boolean(isVerifiedPurchase),
           helpfulCount: 0,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -3068,8 +3091,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update mod's average rating
       const [avgResult] = await db.select({
-        avgRating: sql<number>`avg(${schema.reviews.rating})`,
-        reviewCount: sql<number>`count(*)`,
+        avgRating: sql<number>`avg(${schema.reviews.rating})`.as('avgRating'),
+        reviewCount: sql<number>`count(*)`.as('reviewCount'),
       })
       .from(schema.reviews)
       .where(eq(schema.reviews.modId, modId));
@@ -3082,7 +3105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(schema.mods.id, modId));
 
       res.status(201).json({ message: "Review submitted successfully", review });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating review:", error);
       res.status(500).json({ message: "Failed to submit review" });
     }
@@ -3157,7 +3180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
         // Check if user should be asked for review
-        const [totalDownloads] = await db.select({ count: sql<number>`count(*)` })
+        const [totalDownloads] = await db.select({ count: sql<number>`count(*)`.as('count') })
           .from(schema.modDownloads)
           .where(and(
             eq(schema.modDownloads.userId, userId),
@@ -3177,7 +3200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ shouldRequestReview });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error tracking download:", error);
       res.status(500).json({ message: "Failed to track download" });
     }

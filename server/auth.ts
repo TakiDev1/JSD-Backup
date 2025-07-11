@@ -8,6 +8,19 @@ import { promisify } from 'util';
 import { storage } from './storage';
 import connectPg from 'connect-pg-simple';
 import { pool } from './db';
+import { User } from '@shared/schema';
+
+// Extend Express Request type to include user property
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username: string;
+      isAdmin?: boolean;
+      is_admin?: boolean;
+    }
+  }
+}
 
 // Password hashing with scrypt
 const scryptAsync = promisify(crypto.scrypt);
@@ -97,7 +110,26 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user || false);
+      // Convert null to undefined for TypeScript compatibility
+      if (user) {
+        const convertedUser = {
+          ...user,
+          isAdmin: user.isAdmin ?? undefined,
+          isPremium: user.isPremium ?? undefined,
+          email: user.email ?? undefined,
+          discordId: user.discordId ?? undefined,
+          discordUsername: user.discordUsername ?? undefined,
+          discordAvatar: user.discordAvatar ?? undefined,
+          stripeCustomerId: user.stripeCustomerId ?? undefined,
+          stripeSubscriptionId: user.stripeSubscriptionId ?? undefined,
+          premiumExpiresAt: user.premiumExpiresAt ?? undefined,
+          lastLogin: user.lastLogin ?? undefined,
+          isBanned: user.isBanned ?? undefined
+        };
+        done(null, convertedUser);
+      } else {
+        done(null, false);
+      }
     } catch (err) {
       done(err, false);
     }

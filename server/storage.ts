@@ -256,7 +256,7 @@ export class DatabaseStorage implements IStorage {
     const result: Record<string, string> = {};
     
     for (const setting of settings) {
-      result[setting.key] = setting.value;
+      result[setting.key] = setting.value || '';
     }
     
     return result;
@@ -264,7 +264,7 @@ export class DatabaseStorage implements IStorage {
   
   async getSiteSetting(key: string): Promise<string | undefined> {
     const result = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
-    return result[0]?.value;
+    return result[0]?.value || undefined;
   }
   
   async setSiteSetting(key: string, value: string): Promise<schema.SiteSetting> {
@@ -290,29 +290,33 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
+  async getMods(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean, onlyPublished?: boolean, limit?: number, offset?: number }): Promise<schema.Mod[]> {
     let query = db.select().from(mods);
+    
+    const conditions = [];
     
     if (params) {
       if (params.category) {
-        query = query.where(eq(mods.category, params.category));
+        conditions.push(eq(mods.category, params.category));
       }
       
       if (params.searchTerm) {
-        query = query.where(
+        conditions.push(
           sql`${mods.title} LIKE ${'%' + params.searchTerm + '%'} OR ${mods.description} LIKE ${'%' + params.searchTerm + '%'}`
         );
       }
       
       if (params.featured !== undefined) {
-        query = query.where(eq(mods.isFeatured, params.featured));
+        conditions.push(eq(mods.isFeatured, params.featured));
       }
       
       if (params.subscriptionOnly !== undefined) {
-        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
+        conditions.push(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
-      // Removed filter for isPublished since we show all mods now
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
       
       if (params.limit) {
         query = query.limit(params.limit);
@@ -329,26 +333,30 @@ export class DatabaseStorage implements IStorage {
   async getModsCount(params?: { category?: string, searchTerm?: string, featured?: boolean, subscriptionOnly?: boolean }): Promise<number> {
     let query = db.select({ count: count() }).from(mods);
     
+    const conditions = [];
+    
     if (params) {
       if (params.category) {
-        query = query.where(eq(mods.category, params.category));
+        conditions.push(eq(mods.category, params.category));
       }
       
       if (params.searchTerm) {
-        query = query.where(
+        conditions.push(
           sql`${mods.title} LIKE ${'%' + params.searchTerm + '%'} OR ${mods.description} LIKE ${'%' + params.searchTerm + '%'}`
         );
       }
       
       if (params.featured !== undefined) {
-        query = query.where(eq(mods.isFeatured, params.featured));
+        conditions.push(eq(mods.isFeatured, params.featured));
       }
       
       if (params.subscriptionOnly !== undefined) {
-        query = query.where(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
+        conditions.push(eq(mods.isSubscriptionOnly, params.subscriptionOnly));
       }
       
-      // Removed filter for isPublished
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
     }
     
     const result = await query;
@@ -492,9 +500,9 @@ export class DatabaseStorage implements IStorage {
     
     // Get total revenue
     const revenueResult = await db.select({
-      sum: sql`SUM(${purchases.price})`
+      sum: sql`COALESCE(SUM(${purchases.price}), 0)`
     }).from(purchases);
-    const totalRevenue = revenueResult[0]?.sum || 0;
+    const totalRevenue = Number(revenueResult[0]?.sum) || 0;
     
     // Get active users (logged in within the last 30 days)
     const thirtyDaysAgo = new Date();
