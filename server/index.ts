@@ -67,9 +67,13 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Check connection to database 
+let isInitialized = false;
+
+async function initializeApp() {
+  if (isInitialized) return;
+  
   try {
+    // Check connection to database 
     const client = await pool.connect();
     console.log("Database connection established.");
     client.release();
@@ -80,7 +84,7 @@ app.use((req, res, next) => {
     console.error("Error connecting to database:", error);
   }
   
-  const server = await registerRoutes(app);
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -90,23 +94,33 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  // For Vercel deployment, always serve static files
+  serveStatic(app);
+  
+  isInitialized = true;
+}
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 3000;
-  server.listen({
-    port,
-    host: "127.0.0.1",
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
+// For Vercel serverless deployment
+export default async function handler(req: Request, res: Response) {
+  await initializeApp();
+  return app(req, res);
+}
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  (async () => {
+    await initializeApp();
+    
+    // For development, setup Vite
+    if (app.get("env") === "development") {
+      const { createServer } = await import('http');
+      const server = createServer(app);
+      await setupVite(app, server);
+    }
+
+    const port = 3000;
+    app.listen(port, "127.0.0.1", () => {
+      log(`serving on port ${port}`);
+    });
+  })();
+}
