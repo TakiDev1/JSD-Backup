@@ -57,7 +57,10 @@ export async function trackUserActivity(req: Request, res: Response, next: NextF
       const ip = getClientIP(req);
       const userAgent = req.headers['user-agent'] || '';
       const { deviceType, browser, operatingSystem } = parseUserAgent(userAgent);
-      const referrer = req.headers.referer || req.headers.referrer || '';
+      
+      // Fix the referrer type issue
+      const refererHeader = req.headers.referer || req.headers.referrer;
+      const referrer = Array.isArray(refererHeader) ? refererHeader[0] : (refererHeader || '');
       
       // Update user information with tracking data
       await storage.updateUserTrackingInfo(user.id, {

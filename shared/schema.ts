@@ -561,3 +561,16 @@ export type InsertReviewHelpfulVote = z.infer<typeof insertReviewHelpfulVoteSche
 
 export type ModDownload = typeof modDownloads.$inferSelect;
 export type InsertModDownload = z.infer<typeof insertModDownloadSchema>;
+
+// Export types for role management (MISSING EXPORTS)
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
