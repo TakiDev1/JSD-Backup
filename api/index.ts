@@ -1,26 +1,30 @@
 import { type VercelRequest, VercelResponse } from '@vercel/node';
 import express from "express";
-import { registerRoutes } from "../server/routes";
-import { seedDatabase } from "../server/seed";
 import { pool } from "../server/db";
+import { storage } from "../server/storage";
 import 'dotenv/config';
 
 let app: express.Application | null = null;
 let isInitialized = false;
 
-async function initializeApp() {
-  if (isInitialized && app) return app;
+// Simple in-memory cache to avoid repeated initialization
+const initCache = {
+  dbConnected: false,
+  routesRegistered: false
+};
+
+async function createMinimalApp() {
+  if (app && isInitialized) return app;
   
-  console.log("Initializing Express app for Vercel...");
+  console.log("Creating minimal Express app for Vercel...");
   
-  // Create Express app
   const expressApp = express();
   
   // Basic middleware
-  expressApp.use(express.json({ limit: '50mb' }));
-  expressApp.use(express.urlencoded({ extended: false, limit: '50mb' }));
+  expressApp.use(express.json({ limit: '10mb' }));
+  expressApp.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-  // CORS middleware for Vercel
+  // CORS
   expressApp.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -33,81 +37,115 @@ async function initializeApp() {
     next();
   });
 
-  // Request logging
-  expressApp.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-  });
-
-  try {
-    // Initialize database connection
-    console.log("Connecting to database...");
-    const client = await pool.connect();
-    console.log("Database connection established.");
-    client.release();
-    
-    // Seed database (only if needed)
-    console.log("Seeding database...");
-    await seedDatabase();
-    console.log("Database seeding completed.");
-  } catch (error) {
-    console.error("Database initialization error:", error);
-    // Don't throw - allow app to continue without database
-  }
-  
-  try {
-    // Register API routes
-    console.log("Registering routes...");
-    await registerRoutes(expressApp);
-    console.log("Routes registered successfully.");
-  } catch (error) {
-    console.error("Route registration error:", error);
-    throw error; // This is critical, so throw
+  // Database connection test
+  if (!initCache.dbConnected) {
+    try {
+      console.log("Testing database connection...");
+      const client = await pool.connect();
+      console.log("Database connected successfully");
+      client.release();
+      initCache.dbConnected = true;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+    }
   }
 
-  // Health check endpoint
-  expressApp.get('/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      message: 'JSD Mods API is running on Vercel'
+  // Essential API routes only
+  if (!initCache.routesRegistered) {
+    // Health check
+    expressApp.get('/health', (req, res) => {
+      res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        message: 'JSD Mods API is running on Vercel',
+        dbConnected: initCache.dbConnected
+      });
     });
-  });
 
-  // Error handling middleware
+    // Basic mods endpoint
+    expressApp.get('/api/mods', async (req, res) => {
+      try {
+        const { limit = 12, featured, category } = req.query;
+        
+        const mods = await storage.getMods({
+          category: category as string,
+          featured: featured === "true",
+          limit: parseInt(limit as string)
+        });
+        
+        res.json({ mods });
+      } catch (error: any) {
+        console.error("Error fetching mods:", error);
+        res.status(500).json({ message: "Failed to fetch mods" });
+      }
+    });
+
+    // Individual mod endpoint
+    expressApp.get('/api/mods/:id', async (req, res) => {
+      try {
+        const mod = await storage.getMod(parseInt(req.params.id));
+        
+        if (!mod) {
+          return res.status(404).json({ message: "Mod not found" });
+        }
+        
+        res.json(mod);
+      } catch (error: any) {
+        console.error("Error fetching mod:", error);
+        res.status(500).json({ message: "Failed to fetch mod" });
+      }
+    });
+
+    // Auth check endpoint
+    expressApp.get('/api/auth/user', (req, res) => {
+      res.status(401).json({ message: "Authentication not available in minimal mode" });
+    });
+
+    // Cart endpoints (simplified)
+    expressApp.get('/api/cart', (req, res) => {
+      res.json([]);
+    });
+
+    expressApp.post('/api/cart', (req, res) => {
+      res.status(501).json({ message: "Cart functionality not available in minimal mode" });
+    });
+
+    initCache.routesRegistered = true;
+    console.log("Essential routes registered");
+  }
+
+  // Error handling
   expressApp.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error("Express error:", err);
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ 
-      error: message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    res.status(500).json({ 
+      error: "Internal Server Error",
+      message: err.message 
     });
   });
 
-  // 404 handler for unmatched routes
+  // 404 handler
   expressApp.use('*', (req, res) => {
-    console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "Route not found",
       path: req.originalUrl,
-      method: req.method
+      method: req.method,
+      available_endpoints: ['/health', '/api/mods', '/api/mods/:id']
     });
   });
   
   app = expressApp;
   isInitialized = true;
-  console.log("Express app initialization completed.");
+  console.log("Minimal Express app created successfully");
   return expressApp;
 }
 
 // Vercel serverless function export
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log(`Handling request: ${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     
-    // Initialize the Express app
-    const expressApp = await initializeApp();
+    // Create the minimal Express app
+    const expressApp = await createMinimalApp();
     
     // Handle the request with Express
     return expressApp(req as any, res as any);
@@ -116,7 +154,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("Handler error:", error);
     
     // Return error response
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal Server Error",
       message: error instanceof Error ? error.message : "Unknown error",
       timestamp: new Date().toISOString()
