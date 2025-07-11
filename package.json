@@ -11,7 +11,7 @@
     "dev": "tsx server/start.ts",
     "dev:modlocker": "cd modlocker && node index.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:modlocker\"",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outfile=api/index.js",
     "start": "NODE_ENV=production node dist/index.js",
     "vercel-build": "npm run build",
     "check": "tsc",
