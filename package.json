@@ -1,9 +1,12 @@
 {
   "name": "rest-express",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "BeamNG Mod Shop with Reviews System, Modlocker Integration, and Advanced Search",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "tsx server/start.ts",
     "dev:modlocker": "cd modlocker && node index.js",
