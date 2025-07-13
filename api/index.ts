@@ -116,12 +116,13 @@ async function createProductionApp() {
       if (!dbInitialized || !db || !schema) {
         console.log("[AUTH] Using fallback authentication");
         
-        // Simple fallback authentication
+        // Simple fallback authentication - be more lenient for testing
         const adminUsers = ['JSD', 'Von', 'Developer', 'Camoz'];
         const isAdmin = adminUsers.includes(username);
         
+        // For admin users, check password
         if (isAdmin && password === 'admin') {
-          console.log("[AUTH] Fallback authentication successful");
+          console.log("[AUTH] Admin fallback authentication successful");
           return res.json({
             success: true,
             message: 'Login successful (fallback mode)',
@@ -130,12 +131,29 @@ async function createProductionApp() {
               username: username,
               isAdmin: true,
               isPremium: true
-            }
+            },
+            token: `fallback-token-${username}-${Date.now()}`
           });
-        } else {
-          console.log("[AUTH] Fallback authentication failed");
-          return sendErrorResponse(res, 401, "Invalid credentials");
         }
+        
+        // For testing, allow any username with password "test" or "admin"
+        if (password === 'test' || password === 'admin' || password === 'password') {
+          console.log("[AUTH] Test fallback authentication successful");
+          return res.json({
+            success: true,
+            message: 'Login successful (fallback mode)',
+            user: {
+              id: Math.floor(Math.random() * 1000),
+              username: username,
+              isAdmin: false,
+              isPremium: false
+            },
+            token: `fallback-token-${username}-${Date.now()}`
+          });
+        }
+        
+        console.log("[AUTH] Fallback authentication failed");
+        return sendErrorResponse(res, 401, "Invalid credentials");
       }
 
       // Database authentication
@@ -176,7 +194,8 @@ async function createProductionApp() {
       res.json({
         success: true,
         message: 'Login successful',
-        user: userWithoutPassword
+        user: userWithoutPassword,
+        token: `db-token-${user.id}-${Date.now()}`
       });
 
     } catch (error: any) {
@@ -201,17 +220,20 @@ async function createProductionApp() {
       if (!dbInitialized || !db || !schema) {
         console.log("[AUTH] Using fallback registration");
         
-        // Simple fallback - just return success for demo
+        const newUser = {
+          id: Math.floor(Math.random() * 1000),
+          username: username,
+          email: email,
+          isAdmin: false,
+          isPremium: false
+        };
+        
+        // Return with token for immediate login
         return res.status(201).json({
           success: true,
           message: 'Registration successful (fallback mode)',
-          user: {
-            id: Math.floor(Math.random() * 1000),
-            username: username,
-            email: email,
-            isAdmin: false,
-            isPremium: false
-          }
+          user: newUser,
+          token: `fallback-token-${username}-${Date.now()}`
         });
       }
 
@@ -244,13 +266,14 @@ async function createProductionApp() {
       const newUser = result[0];
       console.log("[AUTH] Database registration successful");
       
-      // Return user without password
+      // Return user without password but with token
       const { password: _, ...userWithoutPassword } = newUser;
       
       res.status(201).json({
         success: true,
         message: "Registration successful",
-        user: userWithoutPassword
+        user: userWithoutPassword,
+        token: `db-token-${newUser.id}-${Date.now()}`
       });
 
     } catch (error: any) {
@@ -273,10 +296,40 @@ async function createProductionApp() {
     }
   });
 
-  // Get current user endpoint
+  // Get current user endpoint - now handles tokens
   expressApp.get('/api/auth/user', (req, res) => {
     try {
       console.log("[AUTH] User info request");
+      
+      // Check for Authorization header with token
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log(`[AUTH] Token provided: ${token.substring(0, 20)}...`);
+        
+        // Simple token validation for fallback mode
+        if (token.startsWith('fallback-token-') || token.startsWith('db-token-')) {
+          // Extract username from token (simple approach for fallback)
+          const tokenParts = token.split('-');
+          if (tokenParts.length >= 3) {
+            const username = tokenParts[2];
+            console.log(`[AUTH] Token validation successful for: ${username}`);
+            
+            // Return a basic user object
+            return res.json({
+              success: true,
+              user: {
+                id: Math.floor(Math.random() * 1000),
+                username: username,
+                isAdmin: ['JSD', 'Von', 'Developer', 'Camoz'].includes(username),
+                isPremium: true
+              }
+            });
+          }
+        }
+      }
+      
+      console.log("[AUTH] No valid token provided");
       return sendErrorResponse(res, 401, "Not authenticated");
     } catch (error: any) {
       console.error('[AUTH] User info error:', error);
