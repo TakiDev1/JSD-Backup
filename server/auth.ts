@@ -55,7 +55,7 @@ const DISCORD_SCOPES = ['identify', 'email'];
 const PostgresStore = connectPg(session);
 
 export function setupAuth(app: Express) {
-  // Setup session with enhanced security and debugging
+  // Setup session with enhanced security
   const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(20).toString('hex');
   console.log("Setting up session middleware with secret hash:", crypto.createHash('sha256').update(sessionSecret).digest('hex').substring(0, 8));
   
@@ -73,9 +73,9 @@ export function setupAuth(app: Express) {
         tableName: 'session'
       }),
       secret: sessionSecret,
-      resave: true,      // Save session on each request
+      resave: false,      // Don't save session if unmodified
       rolling: true,     // Reset expiration countdown on every response
-      saveUninitialized: true, // Create session for all users
+      saveUninitialized: false, // Don't create session for unauthenticated users
       name: 'jsd_session' // Custom name for better security
     })
   );
@@ -83,24 +83,6 @@ export function setupAuth(app: Express) {
   // Initialize Passport
   app.use(passport.initialize());
   app.use(passport.session());
-  
-  // Authentication debugging middleware
-  app.use((req, res, next) => {
-    console.log("Auth check - Session ID:", req.sessionID);
-    console.log("Auth check - isAuthenticated():", req.isAuthenticated());
-    console.log("Auth check - Session data:", req.session);
-    
-    if (req.isAuthenticated()) {
-      console.log("Auth check - User authenticated:", { 
-        id: req.user?.id, 
-        username: req.user?.username 
-      });
-    } else {
-      console.log("Auth check - User not authenticated");
-    }
-    
-    next();
-  });
 
   // Serialize/deserialize user
   passport.serializeUser((user: any, done) => {
@@ -131,6 +113,7 @@ export function setupAuth(app: Express) {
         done(null, false);
       }
     } catch (err) {
+      console.error("Error deserializing user:", err);
       done(err, false);
     }
   });
@@ -175,6 +158,7 @@ export function setupAuth(app: Express) {
         
         return done(null, convertedUser);
       } catch (err) {
+        console.error("Local strategy error:", err);
         return done(err);
       }
     })
@@ -256,6 +240,7 @@ export function setupAuth(app: Express) {
               return done(null, false);
             }
           } catch (err) {
+            console.error("Discord strategy error:", err);
             return done(err);
           }
         }
@@ -266,28 +251,13 @@ export function setupAuth(app: Express) {
   // Authentication middleware
   return {
     isAuthenticated: (req: any, res: any, next: any) => {
-      console.log("Authentication check - Path:", req.path, "Method:", req.method);
-      console.log("Authentication check - User:", req.user ? { id: req.user.id, username: req.user.username } : "Not authenticated");
-      console.log("Authentication check - isAuthenticated():", req.isAuthenticated());
-      
       if (req.isAuthenticated()) {
-        console.log("Authentication check - PASSED");
         return next();
       }
-      
-      console.log("Authentication check - FAILED");
       res.status(401).json({ message: 'Unauthorized' });
     },
     
     isAdmin: (req: any, res: any, next: any) => {
-      // Debug logging
-      console.log("Auth check - user:", req.user ? { 
-        id: req.user.id, 
-        username: req.user.username, 
-        isAdmin: req.user.isAdmin, 
-        is_admin: req.user.is_admin 
-      } : 'No user');
-      
       if (req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
         return next();
       }

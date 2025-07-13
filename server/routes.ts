@@ -115,17 +115,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add a route to check Discord auth availability
   app.get("/api/auth/discord-status", (req, res) => {
-    const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
-    res.json({ available });
+    try {
+      const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
+      res.json({ available });
+    } catch (error) {
+      console.error("Error checking Discord status:", error);
+      res.status(500).json({ error: "Failed to check Discord status" });
+    }
   });
   
   // Regular user login route
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
-      
-      console.log("Login attempt for username:", username);
-      console.log("Session before login:", req.sessionID);
       
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
@@ -135,7 +137,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserByUsername(username);
       
       if (!user) {
-        console.log("Login failed: User not found");
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
@@ -162,6 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       req.login(convertedUser, (err) => {
         if (err) {
+          console.error("Login error:", err);
           return res.status(500).json({ message: 'Login failed' });
         }
         res.json({ message: 'Login successful', user: convertedUser });
@@ -173,20 +175,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/auth/user", (req, res) => {
-    console.log("Auth check - Session ID:", req.sessionID);
-    console.log("Auth check - isAuthenticated():", req.isAuthenticated());
-    console.log("Auth check - Session data:", req.session);
-    
-    if (req.isAuthenticated() && req.user) {
-      const user = { ...req.user };
-      console.log("Auth check - User authenticated:", { id: (user as any).id, username: (user as any).username });
-      
-      // Don't send sensitive information to the client
-      delete (user as any).password;
-      res.json(user);
-    } else {
-      console.log("Auth check - User not authenticated");
-      res.status(401).json({ message: "Not authenticated" });
+    try {
+      if (req.isAuthenticated() && req.user) {
+        const user = { ...req.user };
+        
+        // Don't send sensitive information to the client
+        delete (user as any).password;
+        res.json(user);
+      } else {
+        res.status(401).json({ message: "Not authenticated" });
+      }
+    } catch (error) {
+      console.error("Error getting user:", error);
+      res.status(500).json({ message: "Failed to get user information" });
     }
   });
 
@@ -2086,6 +2087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscription plans and benefits API routes
   
   // Get all subscription plans
+
   app.get("/api/subscription/plans", async (req, res) => {
     try {
       const plans = await storage.getSubscriptionPlans();
