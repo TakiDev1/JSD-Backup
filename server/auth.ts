@@ -157,7 +157,23 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: 'Incorrect password.' });
         }
         
-        return done(null, user);
+        // Convert null to undefined for TypeScript compatibility
+        const convertedUser = {
+          ...user,
+          isAdmin: user.isAdmin ?? undefined,
+          isPremium: user.isPremium ?? undefined,
+          isBanned: user.isBanned ?? undefined,
+          email: user.email ?? undefined,
+          discordId: user.discordId ?? undefined,
+          discordUsername: user.discordUsername ?? undefined,
+          discordAvatar: user.discordAvatar ?? undefined,
+          stripeCustomerId: user.stripeCustomerId ?? undefined,
+          stripeSubscriptionId: user.stripeSubscriptionId ?? undefined,
+          premiumExpiresAt: user.premiumExpiresAt ?? undefined,
+          lastLogin: user.lastLogin ?? undefined
+        };
+        
+        return done(null, convertedUser);
       } catch (err) {
         return done(err);
       }
@@ -218,7 +234,27 @@ export function setupAuth(app: Express) {
               });
             }
             
-            return done(null, user);
+            // Convert null to undefined for TypeScript compatibility
+            if (user) {
+              const convertedUser = {
+                ...user,
+                isAdmin: user.isAdmin ?? undefined,
+                isPremium: user.isPremium ?? undefined,
+                isBanned: user.isBanned ?? undefined,
+                email: user.email ?? undefined,
+                discordId: user.discordId ?? undefined,
+                discordUsername: user.discordUsername ?? undefined,
+                discordAvatar: user.discordAvatar ?? undefined,
+                stripeCustomerId: user.stripeCustomerId ?? undefined,
+                stripeSubscriptionId: user.stripeSubscriptionId ?? undefined,
+                premiumExpiresAt: user.premiumExpiresAt ?? undefined,
+                lastLogin: user.lastLogin ?? undefined
+              };
+              
+              return done(null, convertedUser);
+            } else {
+              return done(null, false);
+            }
           } catch (err) {
             return done(err);
           }

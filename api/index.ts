@@ -8,7 +8,6 @@ import session from "express-session";
 import passport from "passport";
 import { eq, sql, desc, and, gte, lte, like, or } from "drizzle-orm";
 import { db } from "../server/db";
-import * as schema from "@shared/schema";
 import 'dotenv/config';
 
 let app: express.Application | null = null;
@@ -106,19 +105,27 @@ async function createFullApp() {
     const client = await pool.connect();
     console.log("Database connected successfully");
     client.release();
-    
-    // Seed database if needed
-    try {
-      await storage.seedDatabase?.();
-    } catch (seedError) {
-      console.log("Seeding skipped or failed:", seedError);
-    }
   } catch (error) {
     console.error("Database connection failed:", error);
+    // Don't fail completely, just log the error
   }
 
   // Authentication routes
-  const auth = setupAuth(expressApp);
+  let auth;
+  try {
+    auth = setupAuth(expressApp);
+  } catch (error) {
+    console.error("Auth setup failed:", error);
+    // Create fallback auth middleware
+    auth = {
+      isAuthenticated: (req: any, res: any, next: any) => {
+        res.status(401).json({ message: 'Authentication not available' });
+      },
+      isAdmin: (req: any, res: any, next: any) => {
+        res.status(403).json({ message: 'Admin access not available' });
+      }
+    };
+  }
 
   // Health check
   expressApp.get('/health', (req, res) => {
