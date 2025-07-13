@@ -3,54 +3,123 @@ import { apiRequest } from "./queryClient";
 // JWT token management
 const TOKEN_KEY = 'jsd_auth_token';
 
-// Get JWT token from localStorage
+// Get JWT token from cookie
+function getTokenFromCookie(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === TOKEN_KEY) {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
+// Get JWT token from localStorage or cookie
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  
+  // First check localStorage
+  let token = localStorage.getItem(TOKEN_KEY);
+  
+  // If not found in localStorage, check cookies
+  if (!token) {
+    token = getTokenFromCookie();
+    // If found in cookie, also store in localStorage for future use
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+  }
+  
+  return token;
 }
 
-// Set JWT token in localStorage
+// Set JWT token in localStorage and cookie
 export function setAuthToken(token: string): void {
   if (typeof window === 'undefined') return;
+  
   localStorage.setItem(TOKEN_KEY, token);
+  
+  // Also set in cookie for consistency
+  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
 }
 
-// Remove JWT token from localStorage
+// Remove JWT token from localStorage and cookie
 export function removeAuthToken(): void {
   if (typeof window === 'undefined') return;
+  
   localStorage.removeItem(TOKEN_KEY);
+  
+  // Also remove from cookie
+  document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 // Check if the user is logged in
 export async function checkAuth() {
   try {
-    console.log("Checking auth status...");
+    // First, try to get token from localStorage (token-based auth)
     const token = getAuthToken();
     
-    if (!token) {
-      console.log("Auth status: No token found");
-      return null;
+    if (token) {
+      console.log("Checking token-based authentication");
+      const response = await fetch("/api/auth/user", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        console.log("Token-based auth successful:", user);
+        return user;
+      } else {
+        console.log("Token-based auth failed, removing invalid token");
+        removeAuthToken();
+      }
     }
     
-    const res = await fetch("/api/auth/user", {
+    // If token-based auth fails, try session-based auth
+    console.log("Checking session-based authentication");
+    const sessionResponse = await fetch("/api/auth/user", {
+      method: "GET",
+      credentials: 'include', // Include cookies for session
       headers: {
-        "Authorization": `Bearer ${token}`,
-        "Cache-Control": "no-cache",
+        "Content-Type": "application/json",
       },
     });
-    
-    if (res.ok) {
-      const userData = await res.json();
-      console.log("Auth status: Authenticated as", userData?.username);
-      return userData;
+
+    if (sessionResponse.ok) {
+      const user = await sessionResponse.json();
+      console.log("Session-based auth successful:", user);
+      return user;
+    } else {
+      console.log("Session-based auth failed");
     }
     
-    // If token is invalid, remove it
-    if (res.status === 401) {
-      removeAuthToken();
+    // If both fail, check if there's a JWT token in cookies (Discord auth)
+    const cookieToken = getCookieValue('jsd_auth_token');
+    if (cookieToken) {
+      console.log("Found JWT token in cookie, checking authentication");
+      const cookieResponse = await fetch("/api/auth/user", {
+        headers: {
+          "Authorization": `Bearer ${cookieToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (cookieResponse.ok) {
+        const user = await cookieResponse.json();
+        console.log("Cookie-based auth successful:", user);
+        // Store the token in localStorage for future use
+        setAuthToken(cookieToken);
+        return user;
+      }
     }
     
-    console.log("Auth status: Not authenticated");
+    console.log("All authentication methods failed");
     return null;
   } catch (error) {
     console.error("Error checking auth:", error);
@@ -58,20 +127,54 @@ export async function checkAuth() {
   }
 }
 
+// Helper function to get cookie value
+function getCookieValue(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || null;
+  }
+  return null;
+}
+
 // Logout the user
 export async function logout() {
   try {
     const token = getAuthToken();
+    
+    // Try to logout from both systems
+    const logoutPromises = [];
+    
+    // Token-based logout
     if (token) {
-      await fetch("/api/auth/logout", {
+      logoutPromises.push(
+        fetch("/api/auth/logout", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+      );
+    }
+    
+    // Session-based logout
+    logoutPromises.push(
+      fetch("/api/auth/logout", {
         method: "POST",
+        credentials: 'include', // Include cookies for session
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      });
-    }
+      })
+    );
+    
+    // Wait for all logout requests to complete
+    await Promise.allSettled(logoutPromises);
+    
+    // Clear local authentication state
     removeAuthToken();
+    
     return true;
   } catch (error) {
     console.error("Error logging out:", error);
