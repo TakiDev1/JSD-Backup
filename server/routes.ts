@@ -133,25 +133,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
       
-      // Find user
-      const user = await storage.getUserByUsername(username);
+      console.log("Login attempt for username:", username);
+      
+      // Find user with proper error handling
+      let user;
+      try {
+        user = await storage.getUserByUsername(username);
+      } catch (dbError) {
+        console.error("Database error during user lookup:", dbError);
+        return res.status(500).json({ message: "Database error during login" });
+      }
       
       if (!user) {
+        console.log("User not found:", username);
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
       // Verify password - only if the user has a password set
       if (user.password) {
-        const passwordValid = await comparePasswords(password, user.password);
+        let passwordValid;
+        try {
+          passwordValid = await comparePasswords(password, user.password);
+        } catch (passwordError) {
+          console.error("Password comparison error:", passwordError);
+          return res.status(500).json({ message: "Authentication error" });
+        }
         
         if (!passwordValid) {
+          console.log("Invalid password for user:", username);
           return res.status(401).json({ message: "Invalid username or password" });
         }
       } else {
+        console.log("User has no password set:", username);
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      // Login the user
       // Convert null to undefined for TypeScript compatibility
       const convertedUser = {
         ...user,
@@ -161,16 +177,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email ?? undefined,
       };
       
+      // Login the user
       req.login(convertedUser, (err) => {
         if (err) {
-          console.error("Login error:", err);
+          console.error("Login error during req.login:", err);
           return res.status(500).json({ message: 'Login failed' });
         }
+        
+        console.log("User logged in successfully:", username);
+        
+        // Update last login and login count
+        storage.incrementUserLogin(user.id)
+          .catch(updateError => console.error("Failed to update login count:", updateError));
+        
         res.json({ message: 'Login successful', user: convertedUser });
       });
     } catch (error: any) {
       console.error('Login error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({ message: 'Internal server error' });
     }
   });
   
