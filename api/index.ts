@@ -1,13 +1,40 @@
 import { type VercelRequest, VercelResponse } from '@vercel/node';
-import { AuthService, RateLimiter } from "../server/auth-service";
-import { storage } from "../server/storage";
-import { createPaymentIntent } from "../server/stripe";
 import express from "express";
 import cors from "cors";
 import 'dotenv/config';
 
+// Safe dependency loading
+let AuthService: any = null;
+let RateLimiter: any = null;
+let storage: any = null;
+let createPaymentIntent: any = null;
+
+// Try to load dependencies safely
+async function initializeDependencies() {
+  try {
+    console.log("[INIT] Loading dependencies...");
+    
+    const authModule = await import("../server/auth-service");
+    AuthService = authModule.AuthService;
+    RateLimiter = authModule.RateLimiter;
+    
+    const storageModule = await import("../server/storage");
+    storage = storageModule.storage;
+    
+    const stripeModule = await import("../server/stripe");
+    createPaymentIntent = stripeModule.createPaymentIntent;
+    
+    console.log("[INIT] Dependencies loaded successfully");
+    return true;
+  } catch (error) {
+    console.error("[INIT] Failed to load dependencies:", error);
+    return false;
+  }
+}
+
 let app: express.Application | null = null;
 let isInitialized = false;
+let dependenciesLoaded = false;
 
 // Weekend sales and promotional deals management
 interface Deal {
@@ -118,6 +145,7 @@ async function createProductionApp() {
       const { username, password } = req.body;
       console.log(`[DEBUG] /api/auth/login endpoint hit for username: ${username}`);
       const clientIP = getClientIP(req);
+      
       if (!username || !password) {
         return res.status(400).type('application/json').json({ 
           message: "Username and password are required",
@@ -125,10 +153,19 @@ async function createProductionApp() {
         });
       }
 
+      // Check if dependencies are loaded
+      if (!AuthService || !RateLimiter) {
+        console.error('[ERROR] AuthService or RateLimiter not loaded');
+        return res.status(500).type('application/json').json({ 
+          message: "Authentication service temporarily unavailable",
+          success: false 
+        });
+      }
+
       // Rate limiting
       const rateLimitId = `login:${clientIP}`;
       if (RateLimiter.isRateLimited(rateLimitId)) {
-        return res.status(429).json({ 
+        return res.status(429).type('application/json').json({ 
           message: "Too many login attempts. Please try again later.",
           success: false 
         });
@@ -138,7 +175,7 @@ async function createProductionApp() {
       const result = await AuthService.authenticate(username, password);
       
       if (!result) {
-        return res.status(401).json({ 
+        return res.status(401).type('application/json').json({ 
           message: "Invalid username or password",
           success: false 
         });
@@ -147,7 +184,7 @@ async function createProductionApp() {
       // Reset rate limit on successful login
       RateLimiter.resetAttempts(rateLimitId);
 
-      res.json({
+      res.type('application/json').json({
         message: 'Login successful',
         success: true,
         user: result.user,
@@ -279,7 +316,7 @@ async function createProductionApp() {
     try {
       console.log("[DEBUG] /api/auth/discord-status endpoint hit");
       const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
-      res.json({ 
+      res.type('application/json').json({ 
         available,
         success: true 
       });
@@ -716,6 +753,21 @@ async function createProductionApp() {
 // Vercel serverless function handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    // Initialize dependencies if not already done
+    if (!dependenciesLoaded) {
+      dependenciesLoaded = await initializeDependencies();
+    }
+    
+    // If dependencies failed to load, return error
+    if (!dependenciesLoaded) {
+      console.error("[HANDLER] Dependencies not loaded, returning 500");
+      return res.status(500).json({
+        message: "Service temporarily unavailable",
+        success: false,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     const expressApp = await createProductionApp();
     return expressApp(req as any, res as any);
     
