@@ -1,15 +1,37 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserPlus, UserMinus, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  TrendingUp, 
+  Users, 
+  UserCheck, 
+  Calendar,
+  Download,
+  RefreshCw,
+  UserPlus,
+  UserMinus
+} from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from '@/components/admin/admin-layout';
 
-export default function UserAnalytics() {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['/api/admin/stats'],
-  });
+interface AdminStats {
+  users: number;
+  mods: number;
+  purchases: number;
+  revenue: number;
+  activeUsers: number;
+  pendingReviews: number;
+}
 
-  const { data: users } = useQuery({
-    queryKey: ['/api/users'],
+export default function UsersAnalytics() {
+  const { data: stats = {} as AdminStats, isLoading, refetch } = useQuery({
+    queryKey: ['/api/admin/stats'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/stats');
+      return res.json();
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   if (isLoading) {

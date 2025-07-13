@@ -12,6 +12,11 @@ interface ModsQueryParams {
   subscription?: boolean;
   limit?: number;
   page?: number;
+  sortBy?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  premium?: boolean;
 }
 
 export function useModsList(params: ModsQueryParams = {}) {

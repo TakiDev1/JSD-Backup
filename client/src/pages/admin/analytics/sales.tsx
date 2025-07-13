@@ -1,23 +1,72 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, ShoppingCart, CreditCard, Calendar, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  TrendingUp, 
+  DollarSign, 
+  ShoppingCart, 
+  Calendar,
+  Download,
+  RefreshCw,
+  BarChart3
+} from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 import AdminLayout from '@/components/admin/admin-layout';
 
-export default function SalesReport() {
-  const { data: stats, isLoading } = useQuery<{
-    users: number;
-    mods: number;
-    purchases: number;
-    revenue: number;
-    activeUsers: number;
-    pendingReviews: number;
-  }>({
+interface AdminStats {
+  users: number;
+  mods: number;
+  purchases: number;
+  revenue: number;
+  activeUsers: number;
+  pendingReviews: number;
+}
+
+export default function SalesAnalytics() {
+  const { data: stats = {} as AdminStats, isLoading, refetch } = useQuery({
     queryKey: ['/api/admin/stats'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/stats');
+      return res.json();
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const { data: purchases } = useQuery<any[]>({
-    queryKey: ['/api/purchases'],
+  const { data: purchases = [] } = useQuery({
+    queryKey: ['/api/admin/purchases'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/purchases');
+      return res.json();
+    },
   });
+
+  const salesMetrics = [
+    {
+      title: "Total Revenue",
+      value: `$${stats?.revenue || 0}`,
+      icon: DollarSign,
+      color: "from-green-500 to-emerald-500",
+      bgColor: "from-green-900/50 to-green-800/30 border-green-500/20",
+      change: "+15%"
+    },
+    {
+      title: "Total Purchases",
+      value: stats?.purchases || 0,
+      icon: ShoppingCart,
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "from-blue-900/50 to-blue-800/30 border-blue-500/20",
+      change: "+8%"
+    },
+    {
+      title: "Average Order Value",
+      value: `$${stats?.purchases && stats?.purchases > 0 ? ((stats?.revenue || 0) / stats.purchases).toFixed(2) : '0'}`,
+      icon: TrendingUp,
+      color: "from-purple-500 to-violet-500",
+      bgColor: "from-purple-900/50 to-purple-800/30 border-purple-500/20",
+      change: "+5%"
+    }
+  ];
 
   if (isLoading) {
     return (
@@ -37,33 +86,6 @@ export default function SalesReport() {
     );
   }
 
-  const salesData = [
-    {
-      title: "Total Revenue",
-      value: `$${stats?.revenue || 0}`,
-      icon: DollarSign,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "from-green-900/50 to-green-800/30 border-green-500/20",
-      change: "+15%"
-    },
-    {
-      title: "Total Orders",
-      value: stats?.purchases || 0,
-      icon: ShoppingCart,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "from-blue-900/50 to-blue-800/30 border-blue-500/20",
-      change: "+8%"
-    },
-    {
-      title: "Average Order Value",
-      value: `$${stats?.purchases > 0 ? ((stats?.revenue || 0) / stats.purchases).toFixed(2) : '0'}`,
-      icon: CreditCard,
-      color: "from-purple-500 to-violet-500",
-      bgColor: "from-purple-900/50 to-purple-800/30 border-purple-500/20",
-      change: "+12%"
-    }
-  ];
-
   return (
     <AdminLayout>
       <div className="container mx-auto px-4">
@@ -74,7 +96,7 @@ export default function SalesReport() {
 
         {/* Sales Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {salesData.map((metric, index) => {
+          {salesMetrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
               <Card key={index} className={`bg-gradient-to-r ${metric.bgColor} border backdrop-blur-sm`}>

@@ -1,23 +1,33 @@
-import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
-import { useForumCategories, useForumThreads, useForumThread, useCreateThread, useCreateReply } from "@/hooks/use-forum";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import PostList from "@/components/forum/post-list";
-import PostEditor from "@/components/forum/post-editor";
-import { Loader2, MessageSquare, Eye, Pin, Lock, ChevronRight, PlusCircle, Reply } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  MessageCircle, 
+  User, 
+  Clock, 
+  ArrowLeft, 
+  Plus, 
+  Search,
+  Filter,
+  ChevronRight,
+  Pin,
+  Lock,
+  Trash2,
+  Edit,
+  Loader2,
+  PlusCircle,
+  Reply,
+  Eye
+} from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 // Form schemas
 const threadFormSchema = z.object({
@@ -33,90 +43,98 @@ const replyFormSchema = z.object({
 type ThreadFormValues = z.infer<typeof threadFormSchema>;
 type ReplyFormValues = z.infer<typeof replyFormSchema>;
 
-const ForumPage = () => {
-  const params = useParams<{ categoryId?: string, threadId?: string }>();
-  const [, navigate] = useLocation();
-  const { isAuthenticated, user, getUserAvatar } = useAuth();
-  const [isNewThreadOpen, setIsNewThreadOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+interface ForumCategory {
+  id: number;
+  name: string;
+  description: string;
+  threadCount: number;
+  lastActivity: string;
+}
+
+interface ForumThread {
+  id: number;
+  title: string;
+  content: string;
+  isPinned: boolean;
+  isLocked: boolean;
+  replyCount: number;
+  authorId: number;
+  authorName: string;
+  createdAt: string;
+  lastReplyAt: string;
+}
+
+interface ForumReply {
+  id: number;
+  content: string;
+  authorId: number;
+  authorName: string;
+  createdAt: string;
+}
+
+interface ThreadData {
+  thread: ForumThread;
+  replies: ForumReply[];
+}
+
+export default function Forum() {
+  const { categoryId, threadId } = useParams<{ categoryId?: string; threadId?: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  // Parse IDs from params
-  const categoryId = params.categoryId ? parseInt(params.categoryId) : undefined;
-  const threadId = params.threadId ? parseInt(params.threadId) : undefined;
-  
-  // Fetch data based on params
-  const { data: categories, isLoading: isCategoriesLoading } = useForumCategories();
-  const { data: threads, isLoading: isThreadsLoading } = useForumThreads(categoryId);
-  const { data: threadData, isLoading: isThreadLoading } = useForumThread(threadId);
-  
-  // Current thread and replies
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [newThreadTitle, setNewThreadTitle] = useState('');
+  const [newThreadContent, setNewThreadContent] = useState('');
+  const [newReplyContent, setNewReplyContent] = useState('');
+  const [showNewThreadForm, setShowNewThreadForm] = useState(false);
+
+  // Fetch forum categories
+  const { data: categories = [] } = useQuery<ForumCategory[]>({
+    queryKey: ['/api/forum/categories'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/forum/categories');
+      return res.json();
+    },
+  });
+
+  // Fetch threads for a category
+  const { data: threads = [] } = useQuery<ForumThread[]>({
+    queryKey: ['/api/forum/threads', categoryId],
+    queryFn: async () => {
+      if (!categoryId) return [];
+      const res = await apiRequest('GET', `/api/forum/categories/${categoryId}/threads`);
+      return res.json();
+    },
+    enabled: !!categoryId && !threadId,
+  });
+
+  // Fetch thread details and replies
+  const { data: threadData } = useQuery<ThreadData>({
+    queryKey: ['/api/forum/thread', threadId],
+    queryFn: async () => {
+      if (!threadId) return null;
+      const res = await apiRequest('GET', `/api/forum/threads/${threadId}`);
+      return res.json();
+    },
+    enabled: !!threadId,
+  });
+
   const thread = threadData?.thread;
   const replies = threadData?.replies || [];
-  
-  // Get current category name
-  const currentCategory = categories?.find((cat: any) => cat.id === categoryId);
-  
-  // Thread form
-  const threadForm = useForm<ThreadFormValues>({
-    resolver: zodResolver(threadFormSchema),
-    defaultValues: {
-      title: "",
-      content: "",
-    },
-  });
-  
-  // Reply form
-  const replyForm = useForm<ReplyFormValues>({
-    resolver: zodResolver(replyFormSchema),
-    defaultValues: {
-      content: "",
-    },
-  });
-  
-  // Create thread mutation
-  const createThreadMutation = useCreateThread();
-  
-  // Create reply mutation
-  const createReplyMutation = useCreateReply();
-  
-  // Handle create thread
-  const onCreateThread = (values: ThreadFormValues) => {
-    if (!categoryId) return;
-    
-    createThreadMutation.mutate({
-      categoryId,
-      title: values.title,
-      content: values.content,
-    }, {
-      onSuccess: (newThread) => {
-        setIsNewThreadOpen(false);
-        threadForm.reset();
-        // Navigate to new thread
-        navigate(`/forum/thread/${newThread.id}`);
-      },
-    });
-  };
-  
-  // Handle create reply
-  const onCreateReply = (values: ReplyFormValues) => {
-    if (!threadId) return;
-    
-    createReplyMutation.mutate({
-      threadId,
-      content: values.content,
-    }, {
-      onSuccess: () => {
-        replyForm.reset();
-      },
-    });
-  };
-  
-  // Filter threads based on search
-  const filteredThreads = threads?.filter((thread: any) => 
-    searchTerm === "" || 
-    thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    thread.content.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+
+  // Find current category
+  const currentCategory = categories?.find((cat: ForumCategory) => cat.id === Number(categoryId));
+
+  // Filter threads
+  const filteredThreads = threads?.filter((thread: ForumThread) =>
+    thread.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterType === 'all' || 
+     (filterType === 'pinned' && thread.isPinned) ||
+     (filterType === 'locked' && thread.isLocked))
+  );
 
   // Determine what to render
   let content;
@@ -602,6 +620,4 @@ const ForumPage = () => {
       </Dialog>
     </div>
   );
-};
-
-export default ForumPage;
+}

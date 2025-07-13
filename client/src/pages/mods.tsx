@@ -344,7 +344,6 @@ const ModsPage = () => {
 
       {/* Floating Deal Notification */}
       <FloatingDealNotification
-        isVisible={showFloatingDeal}
         onClose={() => setShowFloatingDeal(false)}
       />
     </div>
@@ -352,3 +351,11 @@ const ModsPage = () => {
 };
 
 export default ModsPage;
+
+interface FloatingDealProps {
+  onClose: () => void;
+}
+
+function FloatingDeal({ onClose }: FloatingDealProps) {
+  // ...existing code...
+}

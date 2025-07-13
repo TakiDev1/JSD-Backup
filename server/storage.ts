@@ -315,15 +315,15 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
       
       if (params.limit) {
-        query = query.limit(params.limit);
+        query = query.limit(params.limit) as any;
       }
       
       if (params.offset) {
-        query = query.offset(params.offset);
+        query = query.offset(params.offset) as any;
       }
     }
     
@@ -355,7 +355,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
@@ -364,12 +364,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMod(mod: schema.InsertMod): Promise<schema.Mod> {
-    const result = await db.insert(mods).values(mod).returning();
+    // Ensure tags and features are properly typed as arrays
+    const modData = {
+      ...mod,
+      tags: Array.isArray(mod.tags) ? mod.tags : (mod.tags ? [mod.tags] : []),
+      features: Array.isArray(mod.features) ? mod.features : (mod.features ? [mod.features] : [])
+    };
+    
+    const result = await db.insert(mods).values(modData).returning();
     return result[0];
   }
 
   async updateMod(id: number, mod: Partial<schema.InsertMod>): Promise<schema.Mod | undefined> {
-    const result = await db.update(mods).set(mod).where(eq(mods.id, id)).returning();
+    // Ensure tags and features are properly typed as arrays if they exist
+    const modData: any = { ...mod };
+    if (modData.tags) {
+      modData.tags = Array.isArray(modData.tags) ? modData.tags : [modData.tags];
+    }
+    if (modData.features) {
+      modData.features = Array.isArray(modData.features) ? modData.features : [modData.features];
+    }
+    
+    const result = await db.update(mods).set(modData).where(eq(mods.id, id)).returning();
     return result[0];
   }
 
@@ -472,7 +488,7 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(adminActivityLog).orderBy(desc(adminActivityLog.timestamp));
     
     if (limit) {
-      query = query.limit(limit);
+      query = query.limit(limit) as any;
     }
     
     return await query;
@@ -537,12 +553,24 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createSubscriptionPlan(plan: schema.InsertSubscriptionPlan): Promise<schema.SubscriptionPlan> {
-    const result = await db.insert(subscriptionPlans).values(plan).returning();
+    // Ensure features are properly typed as arrays
+    const planData = {
+      ...plan,
+      features: Array.isArray(plan.features) ? plan.features : (plan.features ? [plan.features] : [])
+    };
+    
+    const result = await db.insert(subscriptionPlans).values(planData).returning();
     return result[0];
   }
   
   async updateSubscriptionPlan(id: number, plan: Partial<schema.InsertSubscriptionPlan>): Promise<schema.SubscriptionPlan | undefined> {
-    const result = await db.update(subscriptionPlans).set(plan).where(eq(subscriptionPlans.id, id)).returning();
+    // Ensure features are properly typed as arrays if they exist
+    const planData: any = { ...plan };
+    if (planData.features) {
+      planData.features = Array.isArray(planData.features) ? planData.features : [planData.features];
+    }
+    
+    const result = await db.update(subscriptionPlans).set(planData).where(eq(subscriptionPlans.id, id)).returning();
     return result[0];
   }
   
