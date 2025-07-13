@@ -1,19 +1,46 @@
 import { apiRequest } from "./queryClient";
 
-// Session-based authentication - no token management needed
+// Hybrid authentication - handles both session-based and token-based auth
 // Sessions are handled automatically via HTTP cookies
+// Tokens are stored in localStorage as fallback
+
+// Helper function to get stored token
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('jsd_auth_token');
+}
+
+// Helper function to store token
+function storeToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('jsd_auth_token', token);
+}
+
+// Helper function to remove token
+function removeToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('jsd_auth_token');
+}
 
 // Check if the user is logged in
 export async function checkAuth() {
   try {
     console.log("Checking auth status...");
     
+    const token = getStoredToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    // Include token in Authorization header if available
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const response = await fetch("/api/auth/user", {
       method: "GET",
       credentials: 'include', // Include cookies for session
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
     
     if (response.ok) {
@@ -22,6 +49,10 @@ export async function checkAuth() {
       return data.success ? data.user : null;
     } else {
       console.log("Auth status: Not authenticated");
+      // If we have a token but it's invalid, remove it
+      if (token && response.status === 401) {
+        removeToken();
+      }
       return null;
     }
   } catch (error) {
@@ -45,19 +76,29 @@ export async function logout() {
   try {
     console.log("Logging out...");
     
+    const token = getStoredToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    // Include token in Authorization header if available
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const response = await fetch("/api/auth/logout", {
       method: "POST",
       credentials: 'include', // Include cookies for session
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
     
     const data = await response.json();
     console.log("Logout response:", data);
     
+    // Clear stored token regardless of response
+    removeToken();
+    
     if (response.ok) {
-      // Session is destroyed server-side, no client-side cleanup needed
       // Force a page refresh to clear any cached state
       window.location.href = '/';
       return { success: true };
@@ -69,6 +110,8 @@ export async function logout() {
     };
   } catch (error: any) {
     console.error("Logout error:", error);
+    // Clear token even on error
+    removeToken();
     return { 
       success: false, 
       error: error.message || "Logout failed" 
@@ -109,8 +152,11 @@ export async function login(username: string, password: string) {
     console.log("Login response:", data);
     
     if (response.ok && data.success) {
-      // For session-based auth, we don't need to store tokens
-      // The session is managed by cookies
+      // Store token if provided (fallback mode)
+      if (data.token) {
+        storeToken(data.token);
+      }
+      
       return { 
         success: true, 
         user: data.user 
@@ -148,8 +194,11 @@ export async function adminLogin(username: string, password: string) {
     console.log("Admin login response:", data);
     
     if (response.ok && data.success) {
-      // For session-based auth, we don't need to store tokens
-      // The session is managed by cookies
+      // Store token if provided (fallback mode)
+      if (data.token) {
+        storeToken(data.token);
+      }
+      
       return { 
         success: true, 
         user: data.user 
@@ -187,8 +236,11 @@ export async function register(username: string, email: string, password: string
     console.log("Registration response:", data);
     
     if (response.ok && data.success) {
-      // For session-based auth, we don't need to store tokens
-      // The session is managed by cookies
+      // Store token if provided (fallback mode)
+      if (data.token) {
+        storeToken(data.token);
+      }
+      
       return { 
         success: true, 
         user: data.user 

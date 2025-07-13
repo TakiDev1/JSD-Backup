@@ -16,11 +16,17 @@ export async function apiRequest(
   console.log(`API Request: ${method} ${url}`, data ? data : "no data");
   
   try {
-    // Build headers for session-based authentication
+    // Build headers for hybrid authentication (session + token)
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Requested-With": "XMLHttpRequest" // Help identify AJAX requests server-side
     };
+    
+    // Include JWT token if available (for fallback authentication)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jsd_auth_token') : null;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     
     const res = await fetch(url, {
       method,
@@ -36,11 +42,12 @@ export async function apiRequest(
       hasSetCookie: res.headers.has('set-cookie')
     });
     
-    // If we get a 401, it means the session is invalid or expired
-    if (res.status === 401) {
-      console.log("Session appears to be invalid or expired");
-      // For session-based auth, we might want to redirect to login
-      // but don't automatically reload as that could cause loops
+    // If we get a 401 and have a token, it might be invalid - remove it
+    if (res.status === 401 && token) {
+      console.log("Token appears to be invalid or expired, removing it");
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('jsd_auth_token');
+      }
     }
     
     // More detailed error logging with as much info as possible
