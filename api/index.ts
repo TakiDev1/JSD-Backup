@@ -513,10 +513,7 @@ async function createProductionApp() {
   expressApp.get('/api/auth/discord', async (req, res) => {
     try {
       const clientId = process.env.DISCORD_CLIENT_ID;
-      const redirectUri = process.env.DISCORD_CALLBACK_URL || 
-                         (process.env.VERCEL_URL ? 
-                          `https://${process.env.VERCEL_URL}/api/auth/discord/callback` : 
-                          'http://localhost:5000/api/auth/discord/callback');
+      const redirectUri = process.env.DISCORD_CALLBACK_URL || 'https://jsdmods.com/api/auth/discord/callback';
       
       if (!clientId) {
         return res.status(503).json({ 
@@ -547,10 +544,7 @@ async function createProductionApp() {
 
       const clientId = process.env.DISCORD_CLIENT_ID;
       const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-      const redirectUri = process.env.DISCORD_CALLBACK_URL || 
-                         (process.env.VERCEL_URL ? 
-                          `https://${process.env.VERCEL_URL}/api/auth/discord/callback` : 
-                          'http://localhost:5000/api/auth/discord/callback');
+      const redirectUri = process.env.DISCORD_CALLBACK_URL || 'https://jsdmods.com/api/auth/discord/callback';
 
       if (!clientId || !clientSecret) {
         return res.redirect('/login?error=discord_not_configured');
