@@ -527,7 +527,7 @@ async function createProductionApp() {
       const offset = (currentPage - 1) * pageSize;
       
       // Build query conditions
-      const conditions = [];
+      const conditions: any[] = [];
       
       if (category) {
         conditions.push(eq(schema.mods.category, category as string));
@@ -546,31 +546,34 @@ async function createProductionApp() {
         conditions.push(eq(schema.mods.isFeatured, true));
       }
       
-      // Build the query
-      let query = db.select().from(schema.mods);
+      // Build the base query
+      let baseQuery = db.select().from(schema.mods);
       
+      // Apply conditions if any
       if (conditions.length > 0) {
-        query = query.where(and(...conditions)) as any;
+        baseQuery = baseQuery.where(and(...conditions)) as any;
       }
       
-      // Apply sorting
-      if (sortBy === 'newest') {
-        query = query.orderBy(desc(schema.mods.createdAt)) as any;
-      } else if (sortBy === 'oldest') {
-        query = query.orderBy(asc(schema.mods.createdAt)) as any;
+      // Apply sorting and pagination
+      let finalQuery;
+      if (sortBy === 'oldest') {
+        finalQuery = baseQuery.orderBy(asc(schema.mods.createdAt)).limit(pageSize).offset(offset);
       } else if (sortBy === 'popular') {
-        query = query.orderBy(desc(schema.mods.downloadCount)) as any;
+        finalQuery = baseQuery.orderBy(desc(schema.mods.downloadCount)).limit(pageSize).offset(offset);
+      } else {
+        // Default to newest
+        finalQuery = baseQuery.orderBy(desc(schema.mods.createdAt)).limit(pageSize).offset(offset);
       }
       
-      const mods = await query.limit(pageSize).offset(offset);
+      const mods = await finalQuery;
       
-      // Get total count
-      let countQuery = db.select({ count: count() }).from(schema.mods);
+      // Get total count separately
+      let countBaseQuery = db.select({ count: count() }).from(schema.mods);
       if (conditions.length > 0) {
-        countQuery = countQuery.where(and(...conditions)) as any;
+        countBaseQuery = countBaseQuery.where(and(...conditions)) as any;
       }
       
-      const [totalResult] = await countQuery;
+      const [totalResult] = await countBaseQuery;
       const total = totalResult?.count || 0;
       
       res.json({
