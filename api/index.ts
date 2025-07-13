@@ -1,75 +1,114 @@
 import { type VercelRequest, VercelResponse } from '@vercel/node';
 import express from "express";
 import cors from "cors";
-import 'dotenv/config';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { Pool } from '@neondatabase/serverless';
 
-// Basic error response helper
-function sendErrorResponse(res: any, status: number, message: string, error?: any) {
-  console.error(`Error ${status}: ${message}`, error);
-  return res.status(status).json({
-    success: false,
-    message,
-    ...(process.env.NODE_ENV === 'development' && error && { error: error.message })
-  });
+// Environment variables
+const DATABASE_URL = process.env.DATABASE_URL;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key';
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Try to load database dependencies with better error handling
-let db: any = null;
-let schema: any = null;
+// Database connection
+const pool = new Pool({ connectionString: DATABASE_URL });
 
-async function initializeDatabase() {
+// JWT Helper functions
+function generateToken(user: any): string {
+  return jwt.sign(
+    { 
+      id: user.id, 
+      username: user.username, 
+      isAdmin: user.is_admin || user.isAdmin 
+    },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+function verifyToken(token: string): any {
   try {
-    console.log("[DB] Initializing database connection...");
-    
-    // Check if DATABASE_URL exists
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is not set");
-    }
-    
-    console.log("[DB] DATABASE_URL found, length:", process.env.DATABASE_URL.length);
-    
-    // Import database modules
-    const { Pool, neonConfig } = await import('@neondatabase/serverless');
-    const { drizzle } = await import('drizzle-orm/neon-serverless');
-    const ws = await import("ws");
-    schema = await import("../shared/schema");
-    
-    // Configure WebSocket for Neon
-    neonConfig.webSocketConstructor = ws.default;
-    
-    // Create database connection
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle(pool, { schema });
-    
-    console.log("[DB] Database connection established successfully");
-    return true;
+    return jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    console.error("[DB] Failed to initialize database:", error);
-    return false;
+    return null;
   }
 }
 
-let app: express.Application | null = null;
-let isInitialized = false;
-let dbInitialized = false;
+// Password helpers
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
+}
 
-async function createProductionApp() {
-  if (app && isInitialized) return app;
+async function comparePasswords(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
+
+// Auth middleware
+function authMiddleware(req: any, res: any, next: any) {
+  const authHeader = req.headers.authorization;
   
-  console.log("[APP] Creating Express app for Vercel...");
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+  
+  const token = authHeader.substring(7);
+  const decoded = verifyToken(token);
+  
+  if (!decoded) {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+  
+  req.user = decoded;
+  next();
+}
+
+function adminMiddleware(req: any, res: any, next: any) {
+  authMiddleware(req, res, () => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    next();
+  });
+}
+
+// Database queries
+async function getUserByUsername(username: string) {
+  const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+  return result.rows[0];
+}
+
+async function getUserById(id: number) {
+  const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+  return result.rows[0];
+}
+
+async function createUser(username: string, email: string, hashedPassword: string) {
+  const result = await pool.query(
+    'INSERT INTO users (username, email, password, is_admin, is_premium, is_banned, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+    [username, email, hashedPassword, false, false, false, new Date()]
+  );
+  return result.rows[0];
+}
+
+async function updateUserLogin(id: number) {
+  await pool.query(
+    'UPDATE users SET last_login = $1, login_count = COALESCE(login_count, 0) + 1 WHERE id = $2',
+    [new Date(), id]
+  );
+}
+
+// Express app setup
+let app: express.Application | null = null;
+
+function createApp() {
+  if (app) return app;
   
   const expressApp = express();
   
-  // Security headers
-  expressApp.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    next();
-  });
-
-  // CORS configuration
+  // Middleware
   expressApp.use(cors({
     origin: process.env.NODE_ENV === 'production' 
       ? ['https://jsd-mods.vercel.app', 'https://jsdmods.com']
@@ -78,511 +117,739 @@ async function createProductionApp() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   }));
-
-  // Body parsing middleware
+  
   expressApp.use(express.json({ limit: '10mb' }));
   expressApp.use(express.urlencoded({ extended: false, limit: '10mb' }));
-
+  
   // Request logging
   expressApp.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
   });
-
-  // Health check endpoint
+  
+  // Health check
   expressApp.get('/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
-      message: 'JSD Mods API is running',
-      environment: process.env.NODE_ENV || 'development',
-      dbConnected: dbInitialized
+      message: 'JSD Mods API (PostgreSQL)',
+      database: !!DATABASE_URL
     });
   });
-
-  // Simple authentication endpoints with fallback
+  
+  // AUTH ENDPOINTS
+  
+  // Login
   expressApp.post('/api/auth/login', async (req, res) => {
     try {
-      console.log("[AUTH] Login attempt started");
       const { username, password } = req.body;
       
       if (!username || !password) {
-        return sendErrorResponse(res, 400, "Username and password are required");
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
+        });
       }
-
-      console.log(`[AUTH] Login attempt for username: ${username}`);
-
-      // If database not available, use simple fallback
-      if (!dbInitialized || !db || !schema) {
-        console.log("[AUTH] Using fallback authentication");
-        
-        // Simple fallback authentication - be more lenient for testing
-        const adminUsers = ['JSD', 'Von', 'Developer', 'Camoz'];
-        const isAdmin = adminUsers.includes(username);
-        
-        // For admin users, check password
-        if (isAdmin && password === 'admin') {
-          console.log("[AUTH] Admin fallback authentication successful");
-          return res.json({
-            success: true,
-            message: 'Login successful (fallback mode)',
-            user: {
-              id: Math.floor(Math.random() * 1000),
-              username: username,
-              isAdmin: true,
-              isPremium: true
-            },
-            token: `fallback-token-${username}-${Date.now()}`
-          });
-        }
-        
-        // For testing, allow any username with password "test" or "admin"
-        if (password === 'test' || password === 'admin' || password === 'password') {
-          console.log("[AUTH] Test fallback authentication successful");
-          return res.json({
-            success: true,
-            message: 'Login successful (fallback mode)',
-            user: {
-              id: Math.floor(Math.random() * 1000),
-              username: username,
-              isAdmin: false,
-              isPremium: false
-            },
-            token: `fallback-token-${username}-${Date.now()}`
-          });
-        }
-        
-        console.log("[AUTH] Fallback authentication failed");
-        return sendErrorResponse(res, 401, "Invalid credentials");
-      }
-
-      // Database authentication
-      console.log("[AUTH] Using database authentication");
-      const { eq } = await import("drizzle-orm");
-      const { comparePasswords } = await import("../server/auth");
       
-      const result = await db.select().from(schema.users).where(eq(schema.users.username, username));
-      const user = result[0];
+      console.log(`[AUTH] Login attempt for: ${username}`);
+      
+      // Get user from database
+      const user = await getUserByUsername(username);
       
       if (!user) {
-        console.log("[AUTH] User not found in database");
-        return sendErrorResponse(res, 401, "Invalid credentials");
+        console.log(`[AUTH] User not found: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
       }
       
-      if (!user.password) {
-        console.log("[AUTH] User has no password set");
-        return sendErrorResponse(res, 401, "Password login not available");
+      if (user.is_banned) {
+        console.log(`[AUTH] User is banned: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Account is banned'
+        });
       }
       
-      const isValid = await comparePasswords(password, user.password);
+      // Check password
+      const isValidPassword = await comparePasswords(password, user.password);
       
-      if (!isValid) {
-        console.log("[AUTH] Invalid password");
-        return sendErrorResponse(res, 401, "Invalid credentials");
+      if (!isValidPassword) {
+        console.log(`[AUTH] Invalid password for: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
       }
       
-      if (user.isBanned) {
-        console.log("[AUTH] User is banned");
-        return sendErrorResponse(res, 401, "Account is banned");
-      }
+      // Update login info
+      await updateUserLogin(user.id);
       
-      console.log("[AUTH] Database authentication successful");
+      // Generate token
+      const token = generateToken(user);
       
-      // Return user without password
+      console.log(`[AUTH] Login successful for: ${username}`);
+      
+      // Return user info without password
       const { password: _, ...userWithoutPassword } = user;
       
       res.json({
         success: true,
         message: 'Login successful',
-        user: userWithoutPassword,
-        token: `db-token-${user.id}-${Date.now()}`
+        user: {
+          ...userWithoutPassword,
+          isAdmin: user.is_admin,
+          isPremium: user.is_premium
+        },
+        token
       });
-
+      
     } catch (error: any) {
       console.error('[AUTH] Login error:', error);
-      return sendErrorResponse(res, 500, 'Authentication service error', error);
+      res.status(500).json({
+        success: false,
+        message: 'Authentication service error'
+      });
     }
   });
-
-  // Registration endpoint
+  
+  // Register
   expressApp.post('/api/auth/register', async (req, res) => {
     try {
-      console.log("[AUTH] Registration attempt started");
       const { username, email, password } = req.body;
       
       if (!username || !password) {
-        return sendErrorResponse(res, 400, "Username and password are required");
-      }
-
-      console.log(`[AUTH] Registration attempt for username: ${username}`);
-
-      // If database not available, use simple fallback
-      if (!dbInitialized || !db || !schema) {
-        console.log("[AUTH] Using fallback registration");
-        
-        const newUser = {
-          id: Math.floor(Math.random() * 1000),
-          username: username,
-          email: email,
-          isAdmin: false,
-          isPremium: false
-        };
-        
-        // Return with token for immediate login
-        return res.status(201).json({
-          success: true,
-          message: 'Registration successful (fallback mode)',
-          user: newUser,
-          token: `fallback-token-${username}-${Date.now()}`
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
         });
       }
-
-      // Database registration
-      console.log("[AUTH] Using database registration");
-      const { eq } = await import("drizzle-orm");
-      const { hashPassword } = await import("../server/auth");
       
-      // Check if username already exists
-      const existingUser = await db.select().from(schema.users).where(eq(schema.users.username, username));
-      if (existingUser.length > 0) {
-        console.log("[AUTH] Username already exists");
-        return sendErrorResponse(res, 400, "Username already exists");
+      console.log(`[AUTH] Registration attempt for: ${username}`);
+      
+      // Check if user exists
+      const existingUser = await getUserByUsername(username);
+      
+      if (existingUser) {
+        console.log(`[AUTH] Username already exists: ${username}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Username already exists'
+        });
       }
       
-      // Hash the password
+      // Hash password
       const hashedPassword = await hashPassword(password);
       
-      // Create the user
-      const result = await db.insert(schema.users).values({
-        username,
-        email,
-        password: hashedPassword,
-        isAdmin: false,
-        isPremium: false,
-        isBanned: false,
-        createdAt: new Date()
-      }).returning();
+      // Create user
+      const newUser = await createUser(username, email, hashedPassword);
       
-      const newUser = result[0];
-      console.log("[AUTH] Database registration successful");
+      // Generate token
+      const token = generateToken(newUser);
       
-      // Return user without password but with token
+      console.log(`[AUTH] Registration successful for: ${username}`);
+      
+      // Return user info without password
       const { password: _, ...userWithoutPassword } = newUser;
       
       res.status(201).json({
         success: true,
-        message: "Registration successful",
-        user: userWithoutPassword,
-        token: `db-token-${newUser.id}-${Date.now()}`
+        message: 'Registration successful',
+        user: {
+          ...userWithoutPassword,
+          isAdmin: newUser.is_admin,
+          isPremium: newUser.is_premium
+        },
+        token
       });
-
+      
     } catch (error: any) {
       console.error('[AUTH] Registration error:', error);
-      return sendErrorResponse(res, 500, 'Registration service error', error);
-    }
-  });
-
-  // Logout endpoint
-  expressApp.post('/api/auth/logout', (req, res) => {
-    try {
-      console.log("[AUTH] Logout request");
-      res.json({ 
-        success: true,
-        message: 'Logout successful'
+      res.status(500).json({
+        success: false,
+        message: 'Registration service error'
       });
-    } catch (error: any) {
-      console.error('[AUTH] Logout error:', error);
-      return sendErrorResponse(res, 500, 'Logout failed', error);
     }
   });
-
-  // Get current user endpoint - now handles tokens
-  expressApp.get('/api/auth/user', (req, res) => {
+  
+  // Get current user
+  expressApp.get('/api/auth/user', authMiddleware, async (req, res) => {
     try {
-      console.log("[AUTH] User info request");
+      console.log(`[AUTH] User info request for ID: ${req.user.id}`);
       
-      // Check for Authorization header with token
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        console.log(`[AUTH] Token provided: ${token.substring(0, 20)}...`);
-        
-        // Simple token validation for fallback mode
-        if (token.startsWith('fallback-token-') || token.startsWith('db-token-')) {
-          // Extract username from token (simple approach for fallback)
-          const tokenParts = token.split('-');
-          if (tokenParts.length >= 3) {
-            const username = tokenParts[2];
-            console.log(`[AUTH] Token validation successful for: ${username}`);
-            
-            // Return a basic user object
-            return res.json({
-              success: true,
-              user: {
-                id: Math.floor(Math.random() * 1000),
-                username: username,
-                isAdmin: ['JSD', 'Von', 'Developer', 'Camoz'].includes(username),
-                isPremium: true
-              }
-            });
-          }
-        }
+      // Get fresh user data from database
+      const user = await getUserById(req.user.id);
+      
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
       }
       
-      console.log("[AUTH] No valid token provided");
-      return sendErrorResponse(res, 401, "Not authenticated");
+      if (user.is_banned) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is banned'
+        });
+      }
+      
+      // Return user info without password
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({
+        success: true,
+        user: {
+          ...userWithoutPassword,
+          isAdmin: user.is_admin,
+          isPremium: user.is_premium
+        }
+      });
+      
     } catch (error: any) {
       console.error('[AUTH] User info error:', error);
-      return sendErrorResponse(res, 500, 'Failed to get user information', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get user information'
+      });
     }
   });
-
-  // Admin login endpoint  
+  
+  // Logout (client-side token removal)
+  expressApp.post('/api/auth/logout', (req, res) => {
+    console.log('[AUTH] Logout request');
+    res.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  });
+  
+  // Admin login (same as regular login but checks admin status)
   expressApp.post('/api/auth/admin-login', async (req, res) => {
     try {
-      console.log("[ADMIN] Admin login attempt started");
       const { username, password } = req.body;
       
       if (!username || !password) {
-        return sendErrorResponse(res, 400, "Username and password are required");
-      }
-
-      console.log(`[ADMIN] Admin login attempt for username: ${username}`);
-
-      // Simple fallback for admin authentication
-      const adminUsers = ['JSD', 'Von', 'Developer', 'Camoz'];
-      const isAdmin = adminUsers.includes(username);
-      
-      if (isAdmin && password === 'admin') {
-        console.log("[ADMIN] Admin authentication successful");
-        return res.json({
-          success: true,
-          message: 'Admin login successful',
-          user: {
-            id: Math.floor(Math.random() * 1000),
-            username: username,
-            isAdmin: true,
-            isPremium: true
-          }
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
         });
-      } else {
-        console.log("[ADMIN] Admin authentication failed");
-        return sendErrorResponse(res, 401, "Invalid admin credentials");
       }
-
-    } catch (error: any) {
-      console.error('[ADMIN] Admin login error:', error);
-      return sendErrorResponse(res, 500, 'Admin authentication service error', error);
-    }
-  });
-
-  // Discord status endpoint
-  expressApp.get('/api/auth/discord-status', (req, res) => {
-    try {
-      console.log("[DISCORD] Status check");
-      const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
-      res.json({ 
-        available,
-        success: true 
-      });
-    } catch (error: any) {
-      console.error('[DISCORD] Status check error:', error);
-      return sendErrorResponse(res, 500, 'Failed to check Discord status', error);
-    }
-  });
-
-  // Simple mods endpoints
-  expressApp.get('/api/mods', (req, res) => {
-    try {
-      console.log("[MODS] Mods list request");
+      
+      console.log(`[ADMIN] Admin login attempt for: ${username}`);
+      
+      // Get user from database
+      const user = await getUserByUsername(username);
+      
+      if (!user) {
+        console.log(`[ADMIN] User not found: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid admin credentials'
+        });
+      }
+      
+      if (!user.is_admin) {
+        console.log(`[ADMIN] User is not admin: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Admin access required'
+        });
+      }
+      
+      if (user.is_banned) {
+        console.log(`[ADMIN] Admin user is banned: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Account is banned'
+        });
+      }
+      
+      // Check password
+      const isValidPassword = await comparePasswords(password, user.password);
+      
+      if (!isValidPassword) {
+        console.log(`[ADMIN] Invalid password for admin: ${username}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid admin credentials'
+        });
+      }
+      
+      // Update login info
+      await updateUserLogin(user.id);
+      
+      // Generate token
+      const token = generateToken(user);
+      
+      console.log(`[ADMIN] Admin login successful for: ${username}`);
+      
+      // Return user info without password
+      const { password: _, ...userWithoutPassword } = user;
+      
       res.json({
         success: true,
-        mods: [],
+        message: 'Admin login successful',
+        user: {
+          ...userWithoutPassword,
+          isAdmin: user.is_admin,
+          isPremium: user.is_premium
+        },
+        token
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Admin login error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Admin authentication service error'
+      });
+    }
+  });
+  
+  // Discord auth status
+  expressApp.get('/api/auth/discord-status', (req, res) => {
+    console.log('[DISCORD] Status check');
+    const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
+    res.json({
+      success: true,
+      available
+    });
+  });
+  
+  // MODS ENDPOINTS
+  
+  // Get mods
+  expressApp.get('/api/mods', async (req, res) => {
+    try {
+      const { category, search, featured, limit = 12, page = 1 } = req.query;
+      
+      console.log('[MODS] Fetching mods with filters:', { category, search, featured, limit, page });
+      
+      let query = 'SELECT * FROM mods WHERE 1=1';
+      const params: any[] = [];
+      let paramCount = 0;
+      
+      if (category) {
+        paramCount++;
+        query += ` AND category = $${paramCount}`;
+        params.push(category);
+      }
+      
+      if (search) {
+        paramCount++;
+        query += ` AND (title ILIKE $${paramCount} OR description ILIKE $${paramCount})`;
+        params.push(`%${search}%`);
+      }
+      
+      if (featured === 'true') {
+        paramCount++;
+        query += ` AND is_featured = $${paramCount}`;
+        params.push(true);
+      }
+      
+      // Add pagination
+      const limitNum = parseInt(limit as string);
+      const pageNum = parseInt(page as string);
+      const offset = (pageNum - 1) * limitNum;
+      
+      query += ` ORDER BY created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      params.push(limitNum, offset);
+      
+      const result = await pool.query(query, params);
+      
+      // Get total count
+      let countQuery = 'SELECT COUNT(*) FROM mods WHERE 1=1';
+      const countParams: any[] = [];
+      let countParamCount = 0;
+      
+      if (category) {
+        countParamCount++;
+        countQuery += ` AND category = $${countParamCount}`;
+        countParams.push(category);
+      }
+      
+      if (search) {
+        countParamCount++;
+        countQuery += ` AND (title ILIKE $${countParamCount} OR description ILIKE $${countParamCount})`;
+        countParams.push(`%${search}%`);
+      }
+      
+      if (featured === 'true') {
+        countParamCount++;
+        countQuery += ` AND is_featured = $${countParamCount}`;
+        countParams.push(true);
+      }
+      
+      const countResult = await pool.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0].count);
+      
+      res.json({
+        success: true,
+        mods: result.rows,
         pagination: {
-          total: 0,
-          page: 1,
-          limit: 12,
-          totalPages: 0
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum)
         }
       });
+      
     } catch (error: any) {
-      console.error('[MODS] Mods list error:', error);
-      return sendErrorResponse(res, 500, 'Failed to fetch mods', error);
-    }
-  });
-
-  expressApp.get('/api/mods/featured', (req, res) => {
-    try {
-      console.log("[MODS] Featured mods request");
-      res.json({ 
-        success: true,
-        mods: []
+      console.error('[MODS] Error fetching mods:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch mods'
       });
-    } catch (error: any) {
-      console.error('[MODS] Featured mods error:', error);
-      return sendErrorResponse(res, 500, 'Failed to fetch featured mods', error);
     }
   });
-
-  // Admin settings endpoint
-  expressApp.get('/api/admin/settings', (req, res) => {
+  
+  // Get featured mods
+  expressApp.get('/api/mods/featured', async (req, res) => {
     try {
-      console.log("[ADMIN] Settings request");
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+      
+      console.log(`[MODS] Fetching ${limit} featured mods`);
+      
+      const result = await pool.query(
+        'SELECT * FROM mods WHERE is_featured = true ORDER BY created_at DESC LIMIT $1',
+        [limit]
+      );
+      
+      res.json({
+        success: true,
+        mods: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[MODS] Error fetching featured mods:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch featured mods'
+      });
+    }
+  });
+  
+  // Get single mod
+  expressApp.get('/api/mods/:id', async (req, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      
+      if (isNaN(modId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mod ID'
+        });
+      }
+      
+      console.log(`[MODS] Fetching mod ${modId}`);
+      
+      const result = await pool.query('SELECT * FROM mods WHERE id = $1', [modId]);
+      const mod = result.rows[0];
+      
+      if (!mod) {
+        return res.status(404).json({
+          success: false,
+          message: 'Mod not found'
+        });
+      }
+      
+      // Get latest version
+      const versionResult = await pool.query(
+        'SELECT * FROM mod_versions WHERE mod_id = $1 AND is_latest = true LIMIT 1',
+        [modId]
+      );
+      
+      res.json({
+        success: true,
+        mod: {
+          ...mod,
+          latestVersion: versionResult.rows[0] || null,
+          reviews: []
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('[MODS] Error fetching mod:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch mod'
+      });
+    }
+  });
+  
+  // CART ENDPOINTS (protected)
+  
+  // Get cart
+  expressApp.get('/api/cart', authMiddleware, async (req, res) => {
+    try {
+      console.log(`[CART] Fetching cart for user ${req.user.id}`);
+      
+      const result = await pool.query(`
+        SELECT ci.*, m.title, m.description, m.price, m.discount_price, m.preview_image_url, m.category
+        FROM cart_items ci
+        JOIN mods m ON ci.mod_id = m.id
+        WHERE ci.user_id = $1
+        ORDER BY ci.added_at DESC
+      `, [req.user.id]);
+      
+      res.json({
+        success: true,
+        items: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[CART] Error fetching cart:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve cart items'
+      });
+    }
+  });
+  
+  // Add to cart
+  expressApp.post('/api/cart', authMiddleware, async (req, res) => {
+    try {
+      const { modId } = req.body;
+      
+      if (!modId || isNaN(modId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mod ID'
+        });
+      }
+      
+      console.log(`[CART] Adding mod ${modId} to cart for user ${req.user.id}`);
+      
+      // Check if mod exists
+      const modResult = await pool.query('SELECT * FROM mods WHERE id = $1', [modId]);
+      if (modResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Mod not found'
+        });
+      }
+      
+      // Check if already in cart
+      const cartCheck = await pool.query(
+        'SELECT * FROM cart_items WHERE user_id = $1 AND mod_id = $2',
+        [req.user.id, modId]
+      );
+      
+      if (cartCheck.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Item already in cart'
+        });
+      }
+      
+      // Check if already purchased
+      const purchaseCheck = await pool.query(
+        'SELECT * FROM purchases WHERE user_id = $1 AND mod_id = $2',
+        [req.user.id, modId]
+      );
+      
+      if (purchaseCheck.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'You already own this mod'
+        });
+      }
+      
+      // Add to cart
+      const result = await pool.query(
+        'INSERT INTO cart_items (user_id, mod_id, added_at) VALUES ($1, $2, $3) RETURNING *',
+        [req.user.id, modId, new Date()]
+      );
+      
+      res.status(201).json({
+        success: true,
+        item: {
+          ...result.rows[0],
+          mod: modResult.rows[0]
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('[CART] Error adding to cart:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add item to cart'
+      });
+    }
+  });
+  
+  // Remove from cart
+  expressApp.delete('/api/cart/:modId', authMiddleware, async (req, res) => {
+    try {
+      const modId = parseInt(req.params.modId);
+      
+      if (isNaN(modId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mod ID'
+        });
+      }
+      
+      console.log(`[CART] Removing mod ${modId} from cart for user ${req.user.id}`);
+      
+      await pool.query(
+        'DELETE FROM cart_items WHERE user_id = $1 AND mod_id = $2',
+        [req.user.id, modId]
+      );
+      
+      res.json({
+        success: true,
+        message: 'Item removed from cart'
+      });
+      
+    } catch (error: any) {
+      console.error('[CART] Error removing from cart:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to remove item from cart'
+      });
+    }
+  });
+  
+  // Clear cart
+  expressApp.delete('/api/cart', authMiddleware, async (req, res) => {
+    try {
+      console.log(`[CART] Clearing cart for user ${req.user.id}`);
+      
+      await pool.query('DELETE FROM cart_items WHERE user_id = $1', [req.user.id]);
+      
+      res.json({
+        success: true,
+        message: 'Cart cleared'
+      });
+      
+    } catch (error: any) {
+      console.error('[CART] Error clearing cart:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to clear cart'
+      });
+    }
+  });
+  
+  // ADMIN ENDPOINTS (protected)
+  
+  // Get admin settings
+  expressApp.get('/api/admin/settings', adminMiddleware, async (req, res) => {
+    try {
+      console.log(`[ADMIN] Settings request from user ${req.user.id}`);
+      
+      const result = await pool.query('SELECT * FROM site_settings');
+      const settings: Record<string, string> = {};
+      
+      for (const setting of result.rows) {
+        settings[setting.key] = setting.value || '';
+      }
+      
       res.json({
         success: true,
         settings: {
-          siteName: "JSD Mods",
-          maintenanceMode: false,
+          siteName: settings.siteName || "JSD Mods",
+          maintenanceMode: settings.maintenanceMode === "true",
           discordEnabled: !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET),
-          stripeEnabled: !!process.env.STRIPE_SECRET_KEY
+          stripeEnabled: !!process.env.STRIPE_SECRET_KEY,
+          ...settings
         }
       });
+      
     } catch (error: any) {
-      console.error('[ADMIN] Settings error:', error);
-      return sendErrorResponse(res, 500, 'Failed to fetch settings', error);
-    }
-  });
-
-  // Discord OAuth endpoints
-  expressApp.get('/api/auth/discord', (req, res) => {
-    try {
-      console.log("[DISCORD] Discord OAuth redirect request");
-      const clientId = process.env.DISCORD_CLIENT_ID;
-      const redirectUri = process.env.DISCORD_CALLBACK_URL || 'https://jsdmods.com/api/auth/discord/callback';
-      
-      if (!clientId) {
-        return sendErrorResponse(res, 503, "Discord authentication not configured");
-      }
-
-      const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email`;
-      
-      console.log("[DISCORD] Redirecting to Discord OAuth");
-      res.redirect(discordAuthUrl);
-    } catch (error: any) {
-      console.error('[DISCORD] OAuth redirect error:', error);
-      return sendErrorResponse(res, 500, 'Discord authentication failed', error);
-    }
-  });
-
-  expressApp.get('/api/auth/discord/callback', async (req, res) => {
-    try {
-      console.log("[DISCORD] Discord OAuth callback");
-      const { code } = req.query;
-      
-      if (!code) {
-        console.log("[DISCORD] No authorization code received");
-        return res.redirect('/login?error=discord_failed');
-      }
-
-      const clientId = process.env.DISCORD_CLIENT_ID;
-      const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-      const redirectUri = process.env.DISCORD_CALLBACK_URL || 'https://jsdmods.com/api/auth/discord/callback';
-
-      if (!clientId || !clientSecret) {
-        console.log("[DISCORD] Discord credentials not configured");
-        return res.redirect('/login?error=discord_not_configured');
-      }
-
-      console.log("[DISCORD] Exchanging code for access token");
-      
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          grant_type: 'authorization_code',
-          code: code as string,
-          redirect_uri: redirectUri,
-        }),
+      console.error('[ADMIN] Error fetching settings:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch settings'
       });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        console.log("[DISCORD] Failed to get access token");
-        return res.redirect('/login?error=discord_token_failed');
-      }
-
-      console.log("[DISCORD] Getting user info from Discord");
-      
-      // Get user info from Discord
-      const userResponse = await fetch('https://discord.com/api/users/@me', {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
-        },
-      });
-
-      const discordUser = await userResponse.json();
-      console.log(`[DISCORD] Discord user: ${discordUser.username}`);
-
-      // Simple fallback Discord authentication
-      const adminUsernames = ['jsd', 'von', 'developer', 'camoz'];
-      const isAdmin = adminUsernames.includes(discordUser.username.toLowerCase());
-      
-      if (isAdmin) {
-        console.log("[DISCORD] Admin user authenticated via Discord");
-        // For now, just redirect with success - would need proper session handling
-        res.redirect('/?discord_login=success&admin=true');
-      } else {
-        console.log("[DISCORD] Regular user authenticated via Discord");
-        res.redirect('/?discord_login=success');
-      }
-
-    } catch (error: any) {
-      console.error('[DISCORD] OAuth callback error:', error);
-      res.redirect('/login?error=discord_callback_failed');
     }
   });
-
-  // Global error handling middleware
+  
+  // Get admin users
+  expressApp.get('/api/admin/users', adminMiddleware, async (req, res) => {
+    try {
+      console.log(`[ADMIN] Users request from user ${req.user.id}`);
+      
+      const result = await pool.query('SELECT id, username, email, is_admin, is_premium, is_banned, created_at, last_login FROM users ORDER BY username');
+      
+      res.json({
+        success: true,
+        users: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching users:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch users'
+      });
+    }
+  });
+  
+  // Get admin stats
+  expressApp.get('/api/admin/stats', adminMiddleware, async (req, res) => {
+    try {
+      console.log(`[ADMIN] Stats request from user ${req.user.id}`);
+      
+      const [usersResult, modsResult, purchasesResult] = await Promise.all([
+        pool.query('SELECT COUNT(*) FROM users'),
+        pool.query('SELECT COUNT(*) FROM mods'),
+        pool.query('SELECT COUNT(*) FROM purchases')
+      ]);
+      
+      res.json({
+        success: true,
+        stats: {
+          totalUsers: parseInt(usersResult.rows[0].count),
+          totalMods: parseInt(modsResult.rows[0].count),
+          totalPurchases: parseInt(purchasesResult.rows[0].count)
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching stats:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch statistics'
+      });
+    }
+  });
+  
+  // Error handling
   expressApp.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error("[ERROR] Unhandled error:", err);
-    return sendErrorResponse(res, 500, 'Internal server error', err);
+    console.error('[ERROR] Unhandled error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   });
-
+  
   // 404 handler
   expressApp.use('*', (req, res) => {
-    console.log(`[404] Not found: ${req.method} ${req.originalUrl}`);
-    return sendErrorResponse(res, 404, 'Endpoint not found');
+    res.status(404).json({
+      success: false,
+      message: 'Endpoint not found'
+    });
   });
   
   app = expressApp;
-  isInitialized = true;
-  console.log("[APP] Express app initialized successfully");
   return expressApp;
 }
 
-// Vercel serverless function handler
+// Vercel serverless handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log(`[HANDLER] Request: ${req.method} ${req.url}`);
-    
-    // Initialize database if not already done
-    if (!dbInitialized) {
-      console.log("[HANDLER] Initializing database...");
-      dbInitialized = await initializeDatabase();
-      console.log(`[HANDLER] Database initialization result: ${dbInitialized}`);
-    }
-    
-    // Create the Express app
-    const expressApp = await createProductionApp();
+    const expressApp = createApp();
     return expressApp(req as any, res as any);
-    
   } catch (error: any) {
-    console.error("[HANDLER] Critical error:", error);
-    
+    console.error('[HANDLER] Critical error:', error);
     return res.status(500).json({
       success: false,
-      message: "Service temporarily unavailable",
-      timestamp: new Date().toISOString(),
-      ...(process.env.NODE_ENV === 'development' && { 
-        error: error.message,
-        stack: error.stack 
-      })
+      message: 'Service temporarily unavailable',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
