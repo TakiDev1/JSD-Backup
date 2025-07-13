@@ -116,10 +116,10 @@ async function createProductionApp() {
   expressApp.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password } = req.body;
+      console.log(`[DEBUG] /api/auth/login endpoint hit for username: ${username}`);
       const clientIP = getClientIP(req);
-      
       if (!username || !password) {
-        return res.status(400).json({ 
+        return res.status(400).type('application/json').json({ 
           message: "Username and password are required",
           success: false 
         });
@@ -156,7 +156,7 @@ async function createProductionApp() {
 
     } catch (error: any) {
       console.error('Login error:', error);
-      res.status(500).json({ 
+      res.status(500).type('application/json').json({ 
         message: 'Authentication service temporarily unavailable',
         success: false 
       });
@@ -277,6 +277,7 @@ async function createProductionApp() {
 
   expressApp.get('/api/auth/discord-status', async (req, res) => {
     try {
+      console.log("[DEBUG] /api/auth/discord-status endpoint hit");
       const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
       res.json({ 
         available,
@@ -284,7 +285,7 @@ async function createProductionApp() {
       });
     } catch (error: any) {
       console.error('Discord status error:', error);
-      res.status(500).json({ 
+      res.status(500).type('application/json').json({ 
         message: "Failed to check Discord status",
         success: false 
       });

@@ -86,12 +86,22 @@ async function initializeApp() {
   
   await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Catch-all error handler for uncaught errors
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    console.error('[GLOBAL ERROR HANDLER]', err);
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    res.status(status).type('application/json').json({ message, success: false });
+  });
 
-    res.status(status).json({ message });
-    throw err;
+  // 404 handler for unmatched routes
+  app.use('*', (req, res) => {
+    res.status(404).type('application/json').json({
+      message: "Endpoint not found",
+      success: false,
+      path: req.originalUrl,
+      method: req.method
+    });
   });
 
   // For Vercel deployment, always serve static files
