@@ -396,6 +396,21 @@ async function createProductionApp() {
     try {
       const { category, search, featured, limit = 12, page = 1, sortBy = 'newest' } = req.query;
       
+      // Use fallback if dependencies not loaded
+      if (!dependenciesLoaded || !storage) {
+        console.log("[MODS] Dependencies not loaded, using fallback mods");
+        return res.json({
+          success: true,
+          mods: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page as string),
+            limit: parseInt(limit as string),
+            totalPages: 0
+          }
+        });
+      }
+      
       const mods = await storage.getMods({
         category: category as string,
         searchTerm: search as string,
@@ -433,6 +448,15 @@ async function createProductionApp() {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
       
+      // Use fallback if dependencies not loaded
+      if (!dependenciesLoaded || !storage) {
+        console.log("[MODS] Dependencies not loaded, using fallback featured mods");
+        return res.json({ 
+          success: true,
+          mods: []
+        });
+      }
+      
       const mods = await storage.getMods({
         featured: true,
         limit: limit
@@ -453,6 +477,15 @@ async function createProductionApp() {
 
   expressApp.get('/api/mods/:id', async (req, res) => {
     try {
+      // Use fallback if dependencies not loaded
+      if (!dependenciesLoaded || !storage) {
+        console.log("[MODS] Dependencies not loaded, using fallback mod");
+        return res.status(404).json({ 
+          message: "Mod not found",
+          success: false 
+        });
+      }
+      
       const mod = await storage.getMod(parseInt(req.params.id));
       
       if (!mod) {
@@ -482,14 +515,21 @@ async function createProductionApp() {
   });
 
   // Protected cart endpoints
-  expressApp.get('/api/cart', AuthService.authMiddleware, async (req, res) => {
+  expressApp.get('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.status(503).json({ 
+          message: "Service temporarily unavailable",
+          success: false 
+        });
+      }
+
       const userId = (req as any).user.id;
       const cartItems = await storage.getCartItems(userId);
       
       // Get mod details for each cart item
       const itemsWithMods = await Promise.all(
-        cartItems.map(async (item) => {
+        cartItems.map(async (item: any) => {
           const mod = await storage.getMod(item.modId);
           return {
             ...item,
@@ -511,8 +551,15 @@ async function createProductionApp() {
     }
   });
 
-  expressApp.post('/api/cart', AuthService.authMiddleware, async (req, res) => {
+  expressApp.post('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.status(503).json({ 
+          message: "Service temporarily unavailable",
+          success: false 
+        });
+      }
+
       const userId = (req as any).user.id;
       const { modId } = req.body;
       
@@ -533,7 +580,7 @@ async function createProductionApp() {
       
       // Check if already in cart
       const existingItems = await storage.getCartItems(userId);
-      if (existingItems.some(item => item.modId === modId)) {
+      if (existingItems.some((item: any) => item.modId === modId)) {
         return res.status(400).json({ 
           message: "Item already in cart",
           success: false 
@@ -571,8 +618,15 @@ async function createProductionApp() {
     }
   });
 
-  expressApp.delete('/api/cart/:modId', AuthService.authMiddleware, async (req, res) => {
+  expressApp.delete('/api/cart/:modId', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.status(503).json({ 
+          message: "Service temporarily unavailable",
+          success: false 
+        });
+      }
+
       const userId = (req as any).user.id;
       const modId = parseInt(req.params.modId);
       
@@ -591,8 +645,15 @@ async function createProductionApp() {
     }
   });
 
-  expressApp.delete('/api/cart', AuthService.authMiddleware, async (req, res) => {
+  expressApp.delete('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.status(503).json({ 
+          message: "Service temporarily unavailable",
+          success: false 
+        });
+      }
+
       const userId = (req as any).user.id;
       await storage.clearCart(userId);
       
@@ -631,8 +692,43 @@ async function createProductionApp() {
     }
   });
 
+  // Payment endpoints
+  expressApp.post('/api/create-payment-intent', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
+    try {
+      if (!dependenciesLoaded || !createPaymentIntent) {
+        return res.status(503).json({ 
+          message: "Service temporarily unavailable",
+          success: false 
+        });
+      }
+
+      const { amount } = req.body;
+      const userId = (req as any).user.id;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ 
+          message: "Invalid amount",
+          success: false 
+        });
+      }
+      
+      const paymentIntent = await createPaymentIntent(amount, { userId: userId.toString() });
+      
+      res.json({ 
+        success: true,
+        clientSecret: paymentIntent.clientSecret 
+      });
+    } catch (error: any) {
+      console.error("Payment intent error:", error);
+      res.status(500).json({ 
+        message: "Failed to create payment",
+        success: false 
+      });
+    }
+  });
+
   // Admin endpoints
-  expressApp.get('/api/admin/settings', AuthService.adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/settings', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
       // For now, return basic settings - this would be from database in production
       const settings = {
@@ -655,13 +751,20 @@ async function createProductionApp() {
     }
   });
 
-  expressApp.get('/api/admin/users', AuthService.adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/users', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.json({
+          success: true,
+          users: []
+        });
+      }
+
       // Get all users - in production this would have pagination
       const users = await storage.getAllUsers();
       res.json({
         success: true,
-        users: users.map(user => ({
+        users: users.map((user: any) => ({
           ...user,
           password: undefined // Never send passwords
         }))
@@ -675,8 +778,24 @@ async function createProductionApp() {
     }
   });
 
-  expressApp.get('/api/admin/stats', AuthService.adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/stats', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
     try {
+      if (!dependenciesLoaded || !storage) {
+        return res.json({
+          success: true,
+          stats: {
+            totalUsers: 0,
+            totalMods: 0,
+            totalPurchases: 0,
+            deals: {
+              totalDeals: activeDeals.length,
+              activeDeals: activeDeals.filter(d => d.isActive).length,
+              totalUsage: activeDeals.reduce((sum, deal) => sum + deal.usageCount, 0)
+            }
+          }
+        });
+      }
+
       // Get basic statistics
       const stats = {
         totalUsers: await storage.getUserCount(),
@@ -707,34 +826,6 @@ async function createProductionApp() {
     }
   });
 
-  // Payment endpoints
-  expressApp.post('/api/create-payment-intent', AuthService.authMiddleware, async (req, res) => {
-    try {
-      const { amount } = req.body;
-      const userId = (req as any).user.id;
-      
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ 
-          message: "Invalid amount",
-          success: false 
-        });
-      }
-      
-      const paymentIntent = await createPaymentIntent(amount, { userId: userId.toString() });
-      
-      res.json({ 
-        success: true,
-        clientSecret: paymentIntent.clientSecret 
-      });
-    } catch (error: any) {
-      console.error("Payment intent error:", error);
-      res.status(500).json({ 
-        message: "Failed to create payment",
-        success: false 
-      });
-    }
-  });
-
   // Admin login endpoint
   expressApp.post('/api/auth/admin-login', async (req, res) => {
     try {
@@ -744,6 +835,35 @@ async function createProductionApp() {
       if (!username || !password) {
         return res.status(400).json({ 
           message: "Username and password are required",
+          success: false 
+        });
+      }
+
+      // Use fallback if dependencies not loaded
+      if (!dependenciesLoaded) {
+        console.log("[AUTH] Dependencies not loaded, using fallback admin authentication");
+        
+        const rateLimitId = `admin-login:${clientIP}`;
+        if (fallbackRateLimiter.isRateLimited(rateLimitId)) {
+          return res.status(429).json({ 
+            message: "Too many admin login attempts. Please try again later.",
+            success: false 
+          });
+        }
+
+        const fallbackResult = await fallbackAuth.authenticate(username, password);
+        if (fallbackResult && fallbackResult.user.isAdmin) {
+          fallbackRateLimiter.resetAttempts(rateLimitId);
+          return res.json({
+            message: 'Admin login successful (fallback mode)',
+            success: true,
+            user: fallbackResult.user,
+            token: fallbackResult.token
+          });
+        }
+
+        return res.status(401).json({ 
+          message: "Invalid admin credentials",
           success: false 
         });
       }
@@ -838,3 +958,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+
+// Initialize dependencies on server start
+initializeDependencies();
