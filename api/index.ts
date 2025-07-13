@@ -34,6 +34,111 @@ const fallbackAuth = {
       };
     }
     return null;
+  },
+
+  async authenticateDiscord(profile: any) {
+    // Check if this is a known admin Discord user
+    const adminUsernames = ['jsd', 'von', 'developer', 'camoz'];
+    const isAdmin = adminUsernames.includes(profile.username.toLowerCase());
+    
+    if (isAdmin) {
+      return {
+        user: {
+          id: Math.floor(Math.random() * 1000) + 100, // Random ID for fallback
+          username: profile.username,
+          isAdmin: true,
+          isPremium: true,
+          discordId: profile.id,
+          discordUsername: profile.username,
+          discordAvatar: profile.avatar
+        },
+        token: 'fallback-discord-token-' + profile.id
+      };
+    }
+    
+    // For non-admin users, create a regular user
+    return {
+      user: {
+        id: Math.floor(Math.random() * 1000) + 100,
+        username: profile.username,
+        isAdmin: false,
+        isPremium: false,
+        discordId: profile.id,
+        discordUsername: profile.username,
+        discordAvatar: profile.avatar
+      },
+      token: 'fallback-discord-token-' + profile.id
+    };
+  },
+
+  extractTokenFromHeader(authHeader: string | undefined): string | null {
+    if (!authHeader) return null;
+    
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') return null;
+    
+    return parts[1];
+  },
+
+  async getUserFromToken(token: string) {
+    if (!token.startsWith('fallback-token-')) return null;
+    
+    const userId = parseInt(token.replace('fallback-token-', ''));
+    const user = this.users.find(u => u.id === userId);
+    
+    if (user) {
+      return {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.isAdmin,
+        isPremium: true
+      };
+    }
+    return null;
+  },
+
+  async authMiddleware(req: any, res: any, next: any) {
+    try {
+      const token = fallbackAuth.extractTokenFromHeader(req.headers.authorization);
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided', success: false });
+      }
+
+      const user = await fallbackAuth.getUserFromToken(token);
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid or expired token', success: false });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      console.error('Fallback auth middleware error:', error);
+      res.status(500).json({ message: 'Authentication error', success: false });
+    }
+  },
+
+  async adminMiddleware(req: any, res: any, next: any) {
+    try {
+      const token = fallbackAuth.extractTokenFromHeader(req.headers.authorization);
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided', success: false });
+      }
+
+      const user = await fallbackAuth.getUserFromToken(token);
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid or expired token', success: false });
+      }
+
+      if (!user.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required', success: false });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      console.error('Fallback admin middleware error:', error);
+      res.status(500).json({ message: 'Authentication error', success: false });
+    }
   }
 };
 
@@ -290,7 +395,37 @@ async function createProductionApp() {
 
   expressApp.get('/api/auth/user', async (req, res) => {
     try {
-      const token = AuthService.extractTokenFromHeader(req.headers.authorization);
+      let token: string | null = null;
+      let user: any = null;
+
+      // Use fallback if dependencies not loaded
+      if (!dependenciesLoaded) {
+        console.log("[AUTH] Dependencies not loaded, using fallback user validation");
+        
+        token = fallbackAuth.extractTokenFromHeader(req.headers.authorization);
+        if (!token) {
+          return res.status(401).json({ 
+            message: "Not authenticated",
+            success: false 
+          });
+        }
+
+        user = await fallbackAuth.getUserFromToken(token);
+        if (!user) {
+          return res.status(401).json({ 
+            message: "Invalid or expired token",
+            success: false 
+          });
+        }
+
+        return res.json({
+          success: true,
+          user: user
+        });
+      }
+
+      // Normal flow with full dependencies
+      token = AuthService.extractTokenFromHeader(req.headers.authorization);
       
       if (!token) {
         return res.status(401).json({ 
@@ -299,7 +434,7 @@ async function createProductionApp() {
         });
       }
 
-      const user = await AuthService.getUserFromToken(token);
+      user = await AuthService.getUserFromToken(token);
       
       if (!user) {
         return res.status(401).json({ 
@@ -371,6 +506,109 @@ async function createProductionApp() {
         message: 'Token refresh failed',
         success: false 
       });
+    }
+  });
+
+  // Discord OAuth endpoints
+  expressApp.get('/api/auth/discord', async (req, res) => {
+    try {
+      const clientId = process.env.DISCORD_CLIENT_ID;
+      const redirectUri = process.env.DISCORD_CALLBACK_URL || 
+                         (process.env.VERCEL_URL ? 
+                          `https://${process.env.VERCEL_URL}/api/auth/discord/callback` : 
+                          'http://localhost:5000/api/auth/discord/callback');
+      
+      if (!clientId) {
+        return res.status(503).json({ 
+          message: "Discord authentication not configured", 
+          success: false 
+        });
+      }
+
+      const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email`;
+      
+      res.redirect(discordAuthUrl);
+    } catch (error: any) {
+      console.error('Discord auth error:', error);
+      res.status(500).json({ 
+        message: 'Discord authentication failed', 
+        success: false 
+      });
+    }
+  });
+
+  expressApp.get('/api/auth/discord/callback', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code) {
+        return res.redirect('/login?error=discord_failed');
+      }
+
+      const clientId = process.env.DISCORD_CLIENT_ID;
+      const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+      const redirectUri = process.env.DISCORD_CALLBACK_URL || 
+                         (process.env.VERCEL_URL ? 
+                          `https://${process.env.VERCEL_URL}/api/auth/discord/callback` : 
+                          'http://localhost:5000/api/auth/discord/callback');
+
+      if (!clientId || !clientSecret) {
+        return res.redirect('/login?error=discord_not_configured');
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'authorization_code',
+          code: code as string,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.access_token) {
+        return res.redirect('/login?error=discord_token_failed');
+      }
+
+      // Get user info from Discord
+      const userResponse = await fetch('https://discord.com/api/users/@me', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      const discordUser = await userResponse.json();
+
+      // Check if dependencies are loaded for full authentication
+      const authService = dependenciesLoaded ? AuthService : fallbackAuth;
+      
+      // Authenticate with Discord profile
+      const result = await authService.authenticateDiscord(discordUser);
+      
+      if (!result) {
+        return res.redirect('/login?error=discord_auth_failed');
+      }
+
+      // Set token in cookie or return it
+      res.cookie('jsd_auth_token', result.token, {
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        path: '/'
+      });
+
+      res.redirect('/?discord_login=success');
+    } catch (error: any) {
+      console.error('Discord callback error:', error);
+      res.redirect('/login?error=discord_callback_failed');
     }
   });
 
@@ -515,159 +753,325 @@ async function createProductionApp() {
   });
 
   // Protected cart endpoints
-  expressApp.get('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.status(503).json({ 
-          message: "Service temporarily unavailable",
-          success: false 
-        });
-      }
-
-      const userId = (req as any).user.id;
-      const cartItems = await storage.getCartItems(userId);
-      
-      // Get mod details for each cart item
-      const itemsWithMods = await Promise.all(
-        cartItems.map(async (item: any) => {
-          const mod = await storage.getMod(item.modId);
-          return {
-            ...item,
-            mod
-          };
-        })
-      );
-      
-      res.json({
-        success: true,
-        items: itemsWithMods
-      });
-    } catch (error: any) {
-      console.error("Cart fetch error:", error);
-      res.status(500).json({ 
-        message: "Failed to retrieve cart items",
-        success: false 
-      });
-    }
-  });
-
-  expressApp.post('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.status(503).json({ 
-          message: "Service temporarily unavailable",
-          success: false 
-        });
-      }
-
-      const userId = (req as any).user.id;
-      const { modId } = req.body;
-      
-      if (!modId || isNaN(modId)) {
-        return res.status(400).json({ 
-          message: "Invalid mod ID",
-          success: false 
-        });
-      }
-      
-      const mod = await storage.getMod(modId);
-      if (!mod) {
-        return res.status(404).json({ 
-          message: "Mod not found",
-          success: false 
-        });
-      }
-      
-      // Check if already in cart
-      const existingItems = await storage.getCartItems(userId);
-      if (existingItems.some((item: any) => item.modId === modId)) {
-        return res.status(400).json({ 
-          message: "Item already in cart",
-          success: false 
-        });
-      }
-      
-      // Check if already purchased
-      const purchase = await storage.getModPurchase(userId, modId);
-      if (purchase) {
-        return res.status(400).json({ 
-          message: "You already own this mod",
-          success: false 
-        });
-      }
-      
-      const cartItem = await storage.addToCart({
-        userId,
-        modId,
-        addedAt: new Date()
-      });
-      
-      res.status(201).json({
-        success: true,
-        item: {
-          ...cartItem,
-          mod
+  expressApp.get('/api/cart', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.authMiddleware ? AuthService.authMiddleware : fallbackAuth.authMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.status(503).json({ 
+            message: "Service temporarily unavailable",
+            success: false 
+          });
         }
-      });
-    } catch (error: any) {
-      console.error("Add to cart error:", error);
-      res.status(500).json({ 
-        message: "Failed to add item to cart",
-        success: false 
-      });
-    }
-  });
 
-  expressApp.delete('/api/cart/:modId', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.status(503).json({ 
-          message: "Service temporarily unavailable",
+        const userId = (req as any).user.id;
+        const cartItems = await storage.getCartItems(userId);
+        
+        // Get mod details for each cart item
+        const itemsWithMods = await Promise.all(
+          cartItems.map(async (item: any) => {
+            const mod = await storage.getMod(item.modId);
+            return {
+              ...item,
+              mod
+            };
+          })
+        );
+        
+        res.json({
+          success: true,
+          items: itemsWithMods
+        });
+      } catch (error: any) {
+        console.error("Cart fetch error:", error);
+        res.status(500).json({ 
+          message: "Failed to retrieve cart items",
           success: false 
         });
       }
-
-      const userId = (req as any).user.id;
-      const modId = parseInt(req.params.modId);
-      
-      await storage.removeFromCart(userId, modId);
-      
-      res.json({ 
-        success: true,
-        message: "Item removed from cart"
-      });
-    } catch (error: any) {
-      console.error("Remove from cart error:", error);
-      res.status(500).json({ 
-        message: "Failed to remove item from cart",
-        success: false 
-      });
-    }
+    });
   });
 
-  expressApp.delete('/api/cart', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.status(503).json({ 
-          message: "Service temporarily unavailable",
+  expressApp.post('/api/cart', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.authMiddleware ? AuthService.authMiddleware : fallbackAuth.authMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.status(503).json({ 
+            message: "Service temporarily unavailable",
+            success: false 
+          });
+        }
+
+        const userId = (req as any).user.id;
+        const { modId } = req.body;
+        
+        if (!modId || isNaN(modId)) {
+          return res.status(400).json({ 
+            message: "Invalid mod ID",
+            success: false 
+          });
+        }
+        
+        const mod = await storage.getMod(modId);
+        if (!mod) {
+          return res.status(404).json({ 
+            message: "Mod not found",
+            success: false 
+          });
+        }
+        
+        // Check if already in cart
+        const existingItems = await storage.getCartItems(userId);
+        if (existingItems.some((item: any) => item.modId === modId)) {
+          return res.status(400).json({ 
+            message: "Item already in cart",
+            success: false 
+          });
+        }
+        
+        // Check if already purchased
+        const purchase = await storage.getModPurchase(userId, modId);
+        if (purchase) {
+          return res.status(400).json({ 
+            message: "You already own this mod",
+            success: false 
+          });
+        }
+        
+        const cartItem = await storage.addToCart({
+          userId,
+          modId,
+          addedAt: new Date()
+        });
+        
+        res.status(201).json({
+          success: true,
+          item: {
+            ...cartItem,
+            mod
+          }
+        });
+      } catch (error: any) {
+        console.error("Add to cart error:", error);
+        res.status(500).json({ 
+          message: "Failed to add item to cart",
           success: false 
         });
       }
+    });
+  });
 
-      const userId = (req as any).user.id;
-      await storage.clearCart(userId);
-      
-      res.json({ 
-        success: true,
-        message: "Cart cleared"
-      });
-    } catch (error: any) {
-      console.error("Clear cart error:", error);
-      res.status(500).json({ 
-        message: "Failed to clear cart",
-        success: false 
-      });
-    }
+  expressApp.delete('/api/cart/:modId', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.authMiddleware ? AuthService.authMiddleware : fallbackAuth.authMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.status(503).json({ 
+            message: "Service temporarily unavailable",
+            success: false 
+          });
+        }
+
+        const userId = (req as any).user.id;
+        const modId = parseInt(req.params.modId);
+        
+        await storage.removeFromCart(userId, modId);
+        
+        res.json({ 
+          success: true,
+          message: "Item removed from cart"
+        });
+      } catch (error: any) {
+        console.error("Remove from cart error:", error);
+        res.status(500).json({ 
+          message: "Failed to remove item from cart",
+          success: false 
+        });
+      }
+    });
+  });
+
+  expressApp.delete('/api/cart', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.authMiddleware ? AuthService.authMiddleware : fallbackAuth.authMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.status(503).json({ 
+            message: "Service temporarily unavailable",
+            success: false 
+          });
+        }
+
+        const userId = (req as any).user.id;
+        await storage.clearCart(userId);
+        
+        res.json({ 
+          success: true,
+          message: "Cart cleared"
+        });
+      } catch (error: any) {
+        console.error("Clear cart error:", error);
+        res.status(500).json({ 
+          message: "Failed to clear cart",
+          success: false 
+        });
+      }
+    });
+  });
+
+  // Payment endpoints
+  expressApp.post('/api/create-payment-intent', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.authMiddleware ? AuthService.authMiddleware : fallbackAuth.authMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !createPaymentIntent) {
+          return res.status(503).json({ 
+            message: "Service temporarily unavailable",
+            success: false 
+          });
+        }
+
+        const { amount } = req.body;
+        const userId = (req as any).user.id;
+        
+        if (!amount || amount <= 0) {
+          return res.status(400).json({ 
+            message: "Invalid amount",
+            success: false 
+          });
+        }
+        
+        const paymentIntent = await createPaymentIntent(amount, { userId: userId.toString() });
+        
+        res.json({ 
+          success: true,
+          clientSecret: paymentIntent.clientSecret 
+        });
+      } catch (error: any) {
+        console.error("Payment intent error:", error);
+        res.status(500).json({ 
+          message: "Failed to create payment",
+          success: false 
+        });
+      }
+    });
+  });
+
+  // Admin endpoints
+  expressApp.get('/api/admin/settings', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.adminMiddleware ? AuthService.adminMiddleware : fallbackAuth.adminMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        // For now, return basic settings - this would be from database in production
+        const settings = {
+          siteName: "JSD Mods",
+          maintenanceMode: false,
+          discordEnabled: !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET),
+          stripeEnabled: !!process.env.STRIPE_SECRET_KEY
+        };
+        
+        res.json({
+          success: true,
+          settings
+        });
+      } catch (error: any) {
+        console.error("Error fetching settings:", error);
+        res.status(500).json({ 
+          message: "Failed to fetch settings",
+          success: false 
+        });
+      }
+    });
+  });
+
+  expressApp.get('/api/admin/users', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.adminMiddleware ? AuthService.adminMiddleware : fallbackAuth.adminMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.json({
+            success: true,
+            users: []
+          });
+        }
+
+        // Get all users - in production this would have pagination
+        const users = await storage.getAllUsers();
+        res.json({
+          success: true,
+          users: users.map((user: any) => ({
+            ...user,
+            password: undefined // Never send passwords
+          }))
+        });
+      } catch (error: any) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ 
+          message: "Failed to fetch users",
+          success: false 
+        });
+      }
+    });
+  });
+
+  expressApp.get('/api/admin/stats', async (req, res, next) => {
+    // Choose middleware based on dependencies loaded
+    const middleware = dependenciesLoaded && AuthService?.adminMiddleware ? AuthService.adminMiddleware : fallbackAuth.adminMiddleware;
+    return middleware(req, res, async () => {
+      try {
+        if (!dependenciesLoaded || !storage) {
+          return res.json({
+            success: true,
+            stats: {
+              totalUsers: 0,
+              totalMods: 0,
+              totalPurchases: 0,
+              deals: {
+                totalDeals: activeDeals.length,
+                activeDeals: activeDeals.filter(d => d.isActive).length,
+                totalUsage: activeDeals.reduce((sum, deal) => sum + deal.usageCount, 0)
+              }
+            }
+          });
+        }
+
+        // Get basic statistics
+        const stats = {
+          totalUsers: await storage.getUserCount(),
+          totalMods: await storage.getModsCount({}),
+          totalPurchases: await storage.getPurchaseCount()
+        };
+        
+        // Add deals statistics
+        const dealStats = {
+          totalDeals: activeDeals.length,
+          activeDeals: activeDeals.filter(d => d.isActive).length,
+          totalUsage: activeDeals.reduce((sum, deal) => sum + deal.usageCount, 0)
+        };
+        
+        res.json({
+          success: true,
+          stats: {
+            ...stats,
+            deals: dealStats
+          }
+        });
+      } catch (error: any) {
+        console.error("Error fetching stats:", error);
+        res.status(500).json({ 
+          message: "Failed to fetch statistics",
+          success: false 
+        });
+      }
+    });
   });
 
   // Deals endpoints
@@ -687,140 +1091,6 @@ async function createProductionApp() {
       console.error("Error fetching deals:", error);
       res.status(500).json({ 
         message: "Failed to fetch deals",
-        success: false 
-      });
-    }
-  });
-
-  // Payment endpoints
-  expressApp.post('/api/create-payment-intent', AuthService?.authMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !createPaymentIntent) {
-        return res.status(503).json({ 
-          message: "Service temporarily unavailable",
-          success: false 
-        });
-      }
-
-      const { amount } = req.body;
-      const userId = (req as any).user.id;
-      
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ 
-          message: "Invalid amount",
-          success: false 
-        });
-      }
-      
-      const paymentIntent = await createPaymentIntent(amount, { userId: userId.toString() });
-      
-      res.json({ 
-        success: true,
-        clientSecret: paymentIntent.clientSecret 
-      });
-    } catch (error: any) {
-      console.error("Payment intent error:", error);
-      res.status(500).json({ 
-        message: "Failed to create payment",
-        success: false 
-      });
-    }
-  });
-
-  // Admin endpoints
-  expressApp.get('/api/admin/settings', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      // For now, return basic settings - this would be from database in production
-      const settings = {
-        siteName: "JSD Mods",
-        maintenanceMode: false,
-        discordEnabled: !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET),
-        stripeEnabled: !!process.env.STRIPE_SECRET_KEY
-      };
-      
-      res.json({
-        success: true,
-        settings
-      });
-    } catch (error: any) {
-      console.error("Error fetching settings:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch settings",
-        success: false 
-      });
-    }
-  });
-
-  expressApp.get('/api/admin/users', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.json({
-          success: true,
-          users: []
-        });
-      }
-
-      // Get all users - in production this would have pagination
-      const users = await storage.getAllUsers();
-      res.json({
-        success: true,
-        users: users.map((user: any) => ({
-          ...user,
-          password: undefined // Never send passwords
-        }))
-      });
-    } catch (error: any) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch users",
-        success: false 
-      });
-    }
-  });
-
-  expressApp.get('/api/admin/stats', AuthService?.adminMiddleware || ((req: any, res: any, next: any) => res.status(401).json({ message: 'Not authenticated' })), async (req, res) => {
-    try {
-      if (!dependenciesLoaded || !storage) {
-        return res.json({
-          success: true,
-          stats: {
-            totalUsers: 0,
-            totalMods: 0,
-            totalPurchases: 0,
-            deals: {
-              totalDeals: activeDeals.length,
-              activeDeals: activeDeals.filter(d => d.isActive).length,
-              totalUsage: activeDeals.reduce((sum, deal) => sum + deal.usageCount, 0)
-            }
-          }
-        });
-      }
-
-      // Get basic statistics
-      const stats = {
-        totalUsers: await storage.getUserCount(),
-        totalMods: await storage.getModsCount({}),
-        totalPurchases: await storage.getPurchaseCount()
-      };
-      
-      // Add deals statistics
-      const dealStats = {
-        totalDeals: activeDeals.length,
-        activeDeals: activeDeals.filter(d => d.isActive).length,
-        totalUsage: activeDeals.reduce((sum, deal) => sum + deal.usageCount, 0)
-      };
-      
-      res.json({
-        success: true,
-        stats: {
-          ...stats,
-          deals: dealStats
-        }
-      });
-    } catch (error: any) {
-      console.error("Error fetching stats:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch statistics",
         success: false 
       });
     }
