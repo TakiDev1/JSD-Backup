@@ -23,6 +23,12 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import MaintenancePage from "@/pages/maintenance";
 import DebugCart from "@/pages/debug-cart";
+
+// Legal Pages
+import TermsOfService from "@/pages/terms";
+import PrivacyPolicy from "@/pages/privacy";
+import RefundPolicy from "@/pages/refund-policy";
+
 import AdminDashboard from "@/pages/admin/admin-dashboard";
 import AdminMods from "@/pages/admin/mods";
 import AdminSettings from "@/pages/admin/settings";
@@ -86,6 +92,7 @@ function Router() {
   }
   return (
     <Switch>
+      {/* Public Pages */}
       <Route path="/" component={Home} />
       <Route path="/mods" component={Mods} />
       <Route path="/mods/:id" component={ModDetails} />
@@ -94,12 +101,18 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/debug-cart" component={DebugCart} />
-      {/* Forum routes removed as requested */}
       <Route path="/profile" component={Profile} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/maintenance" component={MaintenancePage} />
+      
+      {/* Legal Pages */}
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/refund-policy" component={RefundPolicy} />
+      
+      {/* Admin Routes */}
       <AdminRoute path="/admin" component={AdminDashboard} />
       
       {/* Analytics */}

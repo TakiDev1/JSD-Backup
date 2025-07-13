@@ -91,18 +91,21 @@ export default function DealsManagement() {
     }
   });
 
-  // Fetch deals
+  // Fetch deals with proper typing
   const { data: deals = [], isLoading } = useQuery<Deal[]>({
     queryKey: ['/api/admin/deals'],
-    queryFn: () => apiRequest('/api/admin/deals')
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/admin/deals');
+      return await res.json();
+    }
   });
 
   // Create deal mutation
   const createDealMutation = useMutation({
-    mutationFn: (data: DealFormData) => apiRequest('/api/admin/deals', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+    mutationFn: async (data: DealFormData) => {
+      const res = await apiRequest('POST', '/api/admin/deals', data);
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/deals'] });
       setIsCreateDialogOpen(false);
@@ -123,11 +126,10 @@ export default function DealsManagement() {
 
   // Update deal mutation
   const updateDealMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Deal> }) => 
-      apiRequest(`/api/admin/deals/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      }),
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Deal> }) => {
+      const res = await apiRequest('PATCH', `/api/admin/deals/${id}`, data);
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/deals'] });
       toast({
@@ -146,9 +148,10 @@ export default function DealsManagement() {
 
   // Delete deal mutation
   const deleteDealMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/admin/deals/${id}`, {
-      method: 'DELETE'
-    }),
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('DELETE', `/api/admin/deals/${id}`);
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/deals'] });
       toast({
@@ -199,10 +202,10 @@ export default function DealsManagement() {
     return `${hours}h`;
   };
 
-  // Calculate stats
-  const activeDeals = deals.filter(deal => deal.isActive);
-  const totalUsage = deals.reduce((sum, deal) => sum + deal.usageCount, 0);
-  const avgDiscount = deals.length > 0 ? deals.reduce((sum, deal) => sum + deal.discount, 0) / deals.length : 0;
+  // Calculate stats with proper typing
+  const activeDeals = Array.isArray(deals) ? deals.filter((deal: Deal) => deal.isActive) : [];
+  const totalUsage = Array.isArray(deals) ? deals.reduce((sum: number, deal: Deal) => sum + deal.usageCount, 0) : 0;
+  const avgDiscount = Array.isArray(deals) && deals.length > 0 ? deals.reduce((sum: number, deal: Deal) => sum + deal.discount, 0) / deals.length : 0;
 
   return (
     <AdminLayout>
@@ -347,7 +350,7 @@ export default function DealsManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Total Deals</p>
-                  <p className="text-2xl font-bold text-white">{deals.length}</p>
+                  <p className="text-2xl font-bold text-white">{Array.isArray(deals) ? deals.length : 0}</p>
                 </div>
               </div>
             </CardContent>
@@ -408,7 +411,7 @@ export default function DealsManagement() {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
               </div>
-            ) : deals.length === 0 ? (
+            ) : !Array.isArray(deals) || deals.length === 0 ? (
               <div className="text-center py-8">
                 <Gift className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-400">No deals created yet</p>
@@ -416,8 +419,8 @@ export default function DealsManagement() {
               </div>
             ) : (
               <div className="space-y-4">
-                {deals.map((deal) => {
-                  const IconComponent = dealTypeIcons[deal.type];
+                {deals.map((deal: Deal) => {
+                  const IconComponent = dealTypeIcons[deal.type as keyof typeof dealTypeIcons];
                   const isExpired = new Date(deal.endDate) < new Date();
                   
                   return (
@@ -429,7 +432,7 @@ export default function DealsManagement() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className={`p-3 bg-gradient-to-r ${dealTypeColors[deal.type]} rounded-lg`}>
+                          <div className={`p-3 bg-gradient-to-r ${dealTypeColors[deal.type as keyof typeof dealTypeColors]} rounded-lg`}>
                             <IconComponent className="h-5 w-5 text-white" />
                           </div>
                           

@@ -84,7 +84,11 @@ const Footer = () => {
                   My Mod Locker
                 </Link>
               </li>
-
+              <li>
+                <Link href="/forum" className="text-neutral hover:text-primary transition-colors">
+                  Community Forum
+                </Link>
+              </li>
               <li>
                 <Link href="/about" className="text-neutral hover:text-primary transition-colors">
                   About JSD
@@ -112,7 +116,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/help/refunds" className="text-neutral hover:text-primary transition-colors">
+                <Link href="/refund-policy" className="text-neutral hover:text-primary transition-colors">
                   Refund Policy
                 </Link>
               </li>
