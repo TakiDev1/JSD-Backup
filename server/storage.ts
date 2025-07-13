@@ -26,6 +26,7 @@ export interface IStorage {
   getUserByPatreonId(patreonId: string): Promise<schema.User | undefined>;
   getAllUsers(): Promise<schema.User[]>;
   getAllUsersWithTrackingInfo(): Promise<any[]>;
+  getUserCount(): Promise<number>;
   createUser(user: schema.InsertUser): Promise<schema.User>;
   updateUser(id: number, user: Partial<schema.InsertUser>): Promise<schema.User | undefined>;
   updateUserStripeInfo(id: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<schema.User | undefined>;
@@ -69,6 +70,7 @@ export interface IStorage {
   getPurchasesByMod(modId: number): Promise<schema.Purchase[]>;
   getAllPurchases(): Promise<schema.Purchase[]>;
   getModPurchase(userId: number, modId: number): Promise<schema.Purchase | undefined>;
+  getPurchaseCount(): Promise<number>;
   createPurchase(purchase: schema.InsertPurchase): Promise<schema.Purchase>;
   
   // Review and Forum operations removed
@@ -198,6 +200,11 @@ export class DatabaseStorage implements IStorage {
     );
     
     return usersWithStats;
+  }
+
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: count() }).from(users);
+    return result[0]?.count || 0;
   }
 
   async updateUserPatreonInfo(id: number, patreonInfo: { patreonId: string, patreonTier: string }): Promise<schema.User | undefined> {
@@ -444,6 +451,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(mods.id, purchase.modId));
     
     return result[0];
+  }
+
+  async getPurchaseCount(): Promise<number> {
+    const result = await db.select({ count: count() }).from(purchases);
+    return result[0]?.count || 0;
   }
 
   // Review operations and Forum operations removed

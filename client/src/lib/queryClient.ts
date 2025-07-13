@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getAuthToken, removeAuthToken } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -16,31 +17,41 @@ export async function apiRequest(
   console.log(`API Request: ${method} ${url}`, data ? data : "no data");
   
   try {
-    // Always include Content-Type for consistency, and always include credentials
-    const headers = {
+    // Get JWT token for authentication
+    const token = getAuthToken();
+    
+    // Build headers with JWT token if available
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Requested-With": "XMLHttpRequest" // Help identify AJAX requests server-side
     };
     
-    // Log session cookie to help debug auth issues
-    const cookies = document.cookie;
-    if (cookies) {
-      console.log(`API Request has cookies: ${cookies.includes('connect.sid')}`);
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
     }
     
     const res = await fetch(url, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include", // Always include credentials
       cache: "no-cache", // Don't use cache for POST/PUT/DELETE
       mode: "same-origin", // Restrict to same origin for security
     });
     
     console.log(`API Response: ${method} ${url} - Status: ${res.status}`, {
-      hasSetCookie: res.headers.has('set-cookie'),
-      contentType: res.headers.get('content-type')
+      contentType: res.headers.get('content-type'),
+      hasAuth: !!token
     });
+    
+    // If we get a 401 and have a token, it means the token is invalid
+    if (res.status === 401 && token) {
+      console.log("Token appears to be invalid, removing from storage");
+      removeAuthToken();
+      // Optionally reload the page to reset the app state
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
+    }
     
     // More detailed error logging with as much info as possible
     if (!res.ok) {
@@ -73,11 +84,25 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const token = getAuthToken();
+    
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      // If we get a 401 and have a token, it means the token is invalid
+      if (token) {
+        removeAuthToken();
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
+      }
       return null;
     }
 

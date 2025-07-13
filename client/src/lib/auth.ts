@@ -1,12 +1,40 @@
 import { apiRequest } from "./queryClient";
 
+// JWT token management
+const TOKEN_KEY = 'jsd_auth_token';
+
+// Get JWT token from localStorage
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+// Set JWT token in localStorage
+export function setAuthToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+// Remove JWT token from localStorage
+export function removeAuthToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TOKEN_KEY);
+}
+
 // Check if the user is logged in
 export async function checkAuth() {
   try {
     console.log("Checking auth status...");
+    const token = getAuthToken();
+    
+    if (!token) {
+      console.log("Auth status: No token found");
+      return null;
+    }
+    
     const res = await fetch("/api/auth/user", {
-      credentials: "include",
       headers: {
+        "Authorization": `Bearer ${token}`,
         "Cache-Control": "no-cache",
       },
     });
@@ -15,6 +43,11 @@ export async function checkAuth() {
       const userData = await res.json();
       console.log("Auth status: Authenticated as", userData?.username);
       return userData;
+    }
+    
+    // If token is invalid, remove it
+    if (res.status === 401) {
+      removeAuthToken();
     }
     
     console.log("Auth status: Not authenticated");
@@ -28,10 +61,21 @@ export async function checkAuth() {
 // Logout the user
 export async function logout() {
   try {
-    await apiRequest("POST", "/api/auth/logout");
+    const token = getAuthToken();
+    if (token) {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    }
+    removeAuthToken();
     return true;
   } catch (error) {
     console.error("Error logging out:", error);
+    removeAuthToken(); // Remove token even if logout request fails
     return false;
   }
 }
@@ -57,6 +101,43 @@ export async function loginWithDiscord() {
   }
 }
 
+// Regular login with username and password
+export async function login(username: string, password: string) {
+  try {
+    console.log("Attempting login for:", username);
+    
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    
+    const data = await response.json();
+    console.log("Login response:", data);
+    
+    if (response.ok && data.token) {
+      setAuthToken(data.token);
+      return { 
+        success: true, 
+        user: data.user 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: data.message || "Invalid credentials" 
+    };
+  } catch (error: any) {
+    console.error("Login error:", error);
+    return { 
+      success: false, 
+      error: error.message || "Login failed. Please try again." 
+    };
+  }
+}
+
 // Admin login with username and password
 export async function adminLogin(username: string, password: string) {
   try {
@@ -68,22 +149,17 @@ export async function adminLogin(username: string, password: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
-      credentials: "include",
     });
     
     const data = await response.json();
     console.log("Admin login response:", data);
     
-    if (response.ok) {
-      console.log("Admin login response data:", data);
-      if (data && data.success && data.user) {
-        return { 
-          success: true, 
-          user: data.user 
-        };
-      } else {
-        return data; // Server response should already be in the correct format
-      }
+    if (response.ok && data.token) {
+      setAuthToken(data.token);
+      return { 
+        success: true, 
+        user: data.user 
+      };
     }
     
     return { 
@@ -95,6 +171,43 @@ export async function adminLogin(username: string, password: string) {
     return { 
       success: false, 
       error: error.message || "Login failed. Please try again." 
+    };
+  }
+}
+
+// Regular register function
+export async function register(username: string, email: string, password: string) {
+  try {
+    console.log("Attempting registration for:", username);
+    
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, email, password }),
+    });
+    
+    const data = await response.json();
+    console.log("Registration response:", data);
+    
+    if (response.ok && data.token) {
+      setAuthToken(data.token);
+      return { 
+        success: true, 
+        user: data.user 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: data.message || "Registration failed" 
+    };
+  } catch (error: any) {
+    console.error("Registration error:", error);
+    return { 
+      success: false, 
+      error: error.message || "Registration failed. Please try again." 
     };
   }
 }

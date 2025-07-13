@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Redirect, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { loginWithDiscord } from "@/lib/auth";
+import { loginWithDiscord, login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -65,30 +65,26 @@ export default function LoginPage() {
     try {
       const { username, password } = values;
       
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const result = await login(username, password);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+      if (result.success) {
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${result.user?.username}!`,
+        });
+        
+        // Force refresh auth state
+        refreshUser();
+        
+        // Navigate to home page
+        navigate("/");
+      } else {
+        toast({
+          title: "Login failed",
+          description: result.error || "Invalid username or password. Please try again.",
+          variant: "destructive",
+        });
       }
-      
-      const userData = await response.json();
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${userData.username}!`,
-      });
-      
-      // Force refresh auth state
-      refreshUser();
-      
-      // Navigate to home page
-      navigate("/");
     } catch (error: any) {
       toast({
         title: "Login failed",

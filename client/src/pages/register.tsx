@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Redirect, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { loginWithDiscord } from "@/lib/auth";
+import { loginWithDiscord, register } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -74,30 +74,26 @@ export default function RegisterPage() {
     try {
       const { username, email, password } = values;
       
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, email, password }),
-      });
+      const result = await register(username, email, password);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+      if (result.success) {
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${result.user?.username}!`,
+        });
+        
+        // Force refresh auth state
+        refreshUser();
+        
+        // Navigate to home page
+        navigate("/");
+      } else {
+        toast({
+          title: "Registration failed",
+          description: result.error || "An error occurred during registration.",
+          variant: "destructive",
+        });
       }
-      
-      const userData = await response.json();
-      toast({
-        title: "Registration successful",
-        description: `Welcome, ${userData.username}!`,
-      });
-      
-      // Force refresh auth state
-      refreshUser();
-      
-      // Navigate to home page
-      navigate("/");
     } catch (error: any) {
       toast({
         title: "Registration failed",
