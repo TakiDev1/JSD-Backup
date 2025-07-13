@@ -1,5 +1,4 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { getAuthToken, removeAuthToken } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -17,40 +16,31 @@ export async function apiRequest(
   console.log(`API Request: ${method} ${url}`, data ? data : "no data");
   
   try {
-    // Get JWT token for authentication
-    const token = getAuthToken();
-    
-    // Build headers with JWT token if available
+    // Build headers for session-based authentication
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Requested-With": "XMLHttpRequest" // Help identify AJAX requests server-side
     };
     
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    
     const res = await fetch(url, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include', // Include cookies for session authentication
       cache: "no-cache", // Don't use cache for POST/PUT/DELETE
       mode: "same-origin", // Restrict to same origin for security
     });
     
     console.log(`API Response: ${method} ${url} - Status: ${res.status}`, {
       contentType: res.headers.get('content-type'),
-      hasAuth: !!token
+      hasSetCookie: res.headers.has('set-cookie')
     });
     
-    // If we get a 401 and have a token, it means the token is invalid
-    if (res.status === 401 && token) {
-      console.log("Token appears to be invalid, removing from storage");
-      removeAuthToken();
-      // Optionally reload the page to reset the app state
-      if (typeof window !== 'undefined') {
-        window.location.reload();
-      }
+    // If we get a 401, it means the session is invalid or expired
+    if (res.status === 401) {
+      console.log("Session appears to be invalid or expired");
+      // For session-based auth, we might want to redirect to login
+      // but don't automatically reload as that could cause loops
     }
     
     // More detailed error logging with as much info as possible
@@ -84,25 +74,13 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = getAuthToken();
-    
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
     const res = await fetch(queryKey[0] as string, {
-      headers,
+      credentials: 'include', // Include cookies for session authentication
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      // If we get a 401 and have a token, it means the token is invalid
-      if (token) {
-        removeAuthToken();
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
-      }
+      // Session is invalid or expired, return null
+      console.log("Session invalid for query, returning null");
       return null;
     }
 

@@ -131,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = req.body;
       console.log(`[DEBUG] /api/auth/login endpoint hit for username: ${username}`);
       if (!username || !password) {
-        return res.status(400).type('application/json').json({ message: "Username and password are required" });
+        return res.status(400).type('application/json').json({ success: false, message: "Username and password are required" });
       }
       
       console.log("Login attempt for username:", username);
@@ -142,12 +142,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByUsername(username);
       } catch (dbError) {
         console.error("Database error during user lookup:", dbError);
-        return res.status(500).json({ message: "Database error during login" });
+        return res.status(500).json({ success: false, message: "Database error during login" });
       }
       
       if (!user) {
         console.log("User not found:", username);
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ success: false, message: "Invalid username or password" });
       }
       
       // Verify password - only if the user has a password set
@@ -157,16 +157,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           passwordValid = await comparePasswords(password, user.password);
         } catch (passwordError) {
           console.error("Password comparison error:", passwordError);
-          return res.status(500).json({ message: "Authentication error" });
+          return res.status(500).json({ success: false, message: "Authentication error" });
         }
         
         if (!passwordValid) {
           console.log("Invalid password for user:", username);
-          return res.status(401).json({ message: "Invalid username or password" });
+          return res.status(401).json({ success: false, message: "Invalid username or password" });
         }
       } else {
         console.log("User has no password set:", username);
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ success: false, message: "Invalid username or password" });
       }
       
       // Convert null to undefined for TypeScript compatibility
@@ -182,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.login(convertedUser, (err) => {
         if (err) {
           console.error("Login error during req.login:", err);
-          return res.status(500).json({ message: 'Login failed' });
+          return res.status(500).json({ success: false, message: 'Login failed' });
         }
         
         console.log("User logged in successfully:", username);
@@ -191,11 +191,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.incrementUserLogin(user.id)
           .catch(updateError => console.error("Failed to update login count:", updateError));
         
-        res.json({ message: 'Login successful', user: convertedUser });
+        // Don't send password to client
+        const userWithoutPassword = { ...convertedUser };
+        delete (userWithoutPassword as any).password;
+        
+        res.json({ success: true, user: userWithoutPassword });
       });
     } catch (error: any) {
       console.error('Login error:', error);
-      return res.status(500).type('application/json').json({ message: 'Internal server error' });
+      return res.status(500).type('application/json').json({ success: false, message: 'Internal server error' });
     }
   });
   
@@ -376,13 +380,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, email, password } = req.body;
       
       if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+        return res.status(400).json({ success: false, message: "Username and password are required" });
       }
       
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(400).json({ message: "Username already taken" });
+        return res.status(400).json({ success: false, message: "Username already taken" });
       }
       
       // Hash the password
@@ -409,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.login(convertedUser, (err) => {
         if (err) {
           console.error("Registration login error during req.login:", err);
-          return res.status(500).json({ message: "Login error" });
+          return res.status(500).json({ success: false, message: "Login error" });
         }
         
         console.log("New user authenticated in req.login:", req.isAuthenticated());
@@ -425,12 +429,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error("Error saving session after registration:", saveErr);
           }
           console.log("Session saved successfully after registration, user authenticated:", req.isAuthenticated());
-          return res.status(201).json(safeUser);
+          return res.status(201).json({ success: true, user: safeUser });
         });
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(500).json({ message: "An error occurred during registration" });
+      res.status(500).json({ success: false, message: "An error occurred during registration" });
     }
   });
   
@@ -2067,6 +2071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // In a real implementation, you would send a test message to the Discord webhook
+     
       // We'll simulate success for now
       
       // Log admin activity
@@ -2151,8 +2156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(plan);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error) {
+      console.error('Error creating role:', error);
+      res.status(500).json({ error: 'Failed to create role' });
     }
   });
   

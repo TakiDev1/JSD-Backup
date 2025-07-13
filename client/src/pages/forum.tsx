@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { 
   MessageCircle, 
   User, 
@@ -23,7 +30,8 @@ import {
   Loader2,
   PlusCircle,
   Reply,
-  Eye
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
@@ -60,8 +68,11 @@ interface ForumThread {
   replyCount: number;
   authorId: number;
   authorName: string;
+  userId: number;
+  viewCount: number;
   createdAt: string;
   lastReplyAt: string;
+  updatedAt?: string;
 }
 
 interface ForumReply {
@@ -69,6 +80,7 @@ interface ForumReply {
   content: string;
   authorId: number;
   authorName: string;
+  userId: number;
   createdAt: string;
 }
 
@@ -90,9 +102,29 @@ export default function Forum() {
   const [newThreadContent, setNewThreadContent] = useState('');
   const [newReplyContent, setNewReplyContent] = useState('');
   const [showNewThreadForm, setShowNewThreadForm] = useState(false);
+  const [isNewThreadOpen, setIsNewThreadOpen] = useState(false);
+
+  // Form instances
+  const threadForm = useForm<ThreadFormValues>({
+    resolver: zodResolver(threadFormSchema),
+    defaultValues: {
+      title: '',
+      content: '',
+    },
+  });
+
+  const replyForm = useForm<ReplyFormValues>({
+    resolver: zodResolver(replyFormSchema),
+    defaultValues: {
+      content: '',
+    },
+  });
+
+  // Authentication check
+  const isAuthenticated = !!user;
 
   // Fetch forum categories
-  const { data: categories = [] } = useQuery<ForumCategory[]>({
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<ForumCategory[]>({
     queryKey: ['/api/forum/categories'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/forum/categories');
@@ -101,7 +133,7 @@ export default function Forum() {
   });
 
   // Fetch threads for a category
-  const { data: threads = [] } = useQuery<ForumThread[]>({
+  const { data: threads = [], isLoading: isThreadsLoading } = useQuery<ForumThread[]>({
     queryKey: ['/api/forum/threads', categoryId],
     queryFn: async () => {
       if (!categoryId) return [];
@@ -112,7 +144,7 @@ export default function Forum() {
   });
 
   // Fetch thread details and replies
-  const { data: threadData } = useQuery<ThreadData>({
+  const { data: threadData, isLoading: isThreadLoading } = useQuery<ThreadData>({
     queryKey: ['/api/forum/thread', threadId],
     queryFn: async () => {
       if (!threadId) return null;
@@ -124,6 +156,68 @@ export default function Forum() {
 
   const thread = threadData?.thread;
   const replies = threadData?.replies || [];
+
+  // Create thread mutation
+  const createThreadMutation = useMutation({
+    mutationFn: async (data: ThreadFormValues) => {
+      const res = await apiRequest('POST', `/api/forum/categories/${categoryId}/threads`, data);
+      return res.json();
+    },
+    onSuccess: (newThread) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/threads', categoryId] });
+      setIsNewThreadOpen(false);
+      threadForm.reset();
+      toast({
+        title: "Thread created",
+        description: "Your thread has been created successfully.",
+      });
+      navigate(`/forum/${categoryId}/thread/${newThread.id}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create thread",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create reply mutation
+  const createReplyMutation = useMutation({
+    mutationFn: async (data: ReplyFormValues) => {
+      const res = await apiRequest('POST', `/api/forum/threads/${threadId}/replies`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/forum/thread', threadId] });
+      replyForm.reset();
+      toast({
+        title: "Reply posted",
+        description: "Your reply has been posted successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post reply",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Form handlers
+  const onCreateThread = (data: ThreadFormValues) => {
+    createThreadMutation.mutate(data);
+  };
+
+  const onCreateReply = (data: ReplyFormValues) => {
+    createReplyMutation.mutate(data);
+  };
+
+  // Utility function to get user avatar
+  const getUserAvatar = (user: { id: number }) => {
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${user.id}`;
+  };
 
   // Find current category
   const currentCategory = categories?.find((cat: ForumCategory) => cat.id === Number(categoryId));
@@ -213,7 +307,7 @@ export default function Forum() {
                     </CardTitle>
                     <CardDescription className="flex items-center space-x-2 mt-2">
                       <Badge variant="outline" className="text-neutral">
-                        <Eye className="h-3 w-3 mr-1" /> {thread.viewCount} views
+                        <Eye className="h-3 w-3 mr-1" /> {thread.viewCount || 0} views
                       </Badge>
                       <Badge variant="outline" className="text-neutral">
                         <MessageSquare className="h-3 w-3 mr-1" /> {replies.length} replies
@@ -397,7 +491,7 @@ export default function Forum() {
             
             {isAuthenticated && (
               // Show the New Thread button unless we're in Announcements category (ID 1) and user is not JSD or Von
-              (categoryId !== 1 || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
+              (categoryId !== '1' || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
                 <Button onClick={() => setIsNewThreadOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> New Thread
                 </Button>
@@ -417,7 +511,7 @@ export default function Forum() {
                 <p className="text-neutral-light">No threads found in this category</p>
                 {isAuthenticated && (
                   // Only show the Create First Thread button if user has permission
-                  (categoryId !== 1 || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
+                  (categoryId !== '1' || user?.isAdmin || user?.username === 'JSD' || user?.username === 'Von') ? (
                     <Button 
                       className="mt-4"
                       onClick={() => setIsNewThreadOpen(true)}
@@ -454,7 +548,7 @@ export default function Forum() {
                   <div className="flex justify-between">
                     <div 
                       className="flex-1 cursor-pointer"
-                      onClick={() => navigate(`/forum/thread/${thread.id}`)}
+                      onClick={() => navigate(`/forum/${categoryId}/thread/${thread.id}`)}
                     >
                       <h3 className="text-lg font-display font-semibold text-white group-hover:text-primary-light transition-colors flex items-center">
                         {thread.title}
@@ -476,10 +570,10 @@ export default function Forum() {
                     <div className="ml-4 flex flex-col items-end justify-between">
                       <div className="flex items-center space-x-2">
                         <Badge variant="outline" className="text-neutral">
-                          <Eye className="h-3 w-3 mr-1" /> {thread.viewCount}
+                          <Eye className="h-3 w-3 mr-1" /> {thread.viewCount || 0}
                         </Badge>
                         <Badge variant="outline" className="text-neutral">
-                          <MessageSquare className="h-3 w-3 mr-1" /> {/* In a real app, you would fetch reply count */}
+                          <MessageSquare className="h-3 w-3 mr-1" /> {thread.replyCount || 0}
                         </Badge>
                       </div>
                       <div className="text-neutral text-sm mt-2">
