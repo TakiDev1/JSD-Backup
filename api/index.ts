@@ -816,15 +816,50 @@ function createApp() {
   });
 
   // Get current user
-  expressApp.get('/api/auth/user', authMiddleware, async (req: any, res) => {
+  expressApp.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user?.id;
-      console.log(`[AUTH] User info request for ID: ${userId}`);
+      console.log('[AUTH] /api/auth/user endpoint hit');
+      
+      let userId = null;
+      let authMethod = 'none';
+      
+      // Method 1: Check for JWT Bearer token
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
+        
+        if (decoded) {
+          console.log('[AUTH] Valid JWT token found for user:', decoded.username);
+          userId = decoded.id;
+          authMethod = 'jwt';
+        } else {
+          console.log('[AUTH] Invalid JWT token provided');
+        }
+      }
+      
+      // Method 2: Check for session authentication
+      if (!userId && req.user && req.isAuthenticated && req.isAuthenticated()) {
+        console.log('[AUTH] Valid session found for user:', req.user.username);
+        userId = req.user.id;
+        authMethod = 'session';
+      }
+      
+      if (!userId) {
+        console.log('[AUTH] No valid authentication found');
+        return res.status(401).json({
+          success: false,
+          message: 'Not authenticated'
+        });
+      }
+      
+      console.log(`[AUTH] User authenticated via ${authMethod}, fetching user data for ID: ${userId}`);
       
       // Get fresh user data from database
       const user = await getUserById(userId);
       
       if (!user) {
+        console.log('[AUTH] User not found in database:', userId);
         return res.status(401).json({
           success: false,
           message: 'User not found'
@@ -832,6 +867,7 @@ function createApp() {
       }
       
       if (user.is_banned) {
+        console.log('[AUTH] User is banned:', user.username);
         return res.status(401).json({
           success: false,
           message: 'Account is banned'
@@ -840,6 +876,8 @@ function createApp() {
       
       // Return user info without password
       const { password: _, ...userWithoutPassword } = user;
+      
+      console.log('[AUTH] User data retrieved successfully for:', user.username);
       
       res.json({
         success: true,
