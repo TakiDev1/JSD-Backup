@@ -201,7 +201,7 @@ function createApp() {
               },
               tokenGenerated: true
             });
-          } catch (jwtError) {
+          } catch (jwtError: any) {
             console.error('[DEBUG] JWT generation error:', jwtError);
             return res.json({
               success: false,
@@ -240,18 +240,23 @@ function createApp() {
   // Login
   expressApp.post('/api/auth/login', async (req, res) => {
     try {
+      console.log('[AUTH] Login endpoint hit');
       const { username, password } = req.body;
       
+      console.log('[AUTH] Login data received:', { username, hasPassword: !!password });
+      
       if (!username || !password) {
+        console.log('[AUTH] Missing required fields for login');
         return res.status(400).json({
           success: false,
           message: 'Username and password are required'
         });
       }
       
-      console.log(`[AUTH] Login attempt for: ${username}`);
+      console.log(`[AUTH] Starting login process for: ${username}`);
       
       // Get user from database
+      console.log('[AUTH] Querying database for user...');
       const user = await getUserByUsername(username);
       
       if (!user) {
@@ -262,6 +267,8 @@ function createApp() {
         });
       }
       
+      console.log(`[AUTH] User found: ${username}, ID: ${user.id}, isAdmin: ${user.is_admin}`);
+      
       if (user.is_banned) {
         console.log(`[AUTH] User is banned: ${username}`);
         return res.status(401).json({
@@ -271,7 +278,9 @@ function createApp() {
       }
       
       // Check password
+      console.log('[AUTH] Comparing password...');
       const isValidPassword = await comparePasswords(password, user.password);
+      console.log(`[AUTH] Password comparison result: ${isValidPassword}`);
       
       if (!isValidPassword) {
         console.log(`[AUTH] Invalid password for: ${username}`);
@@ -282,12 +291,16 @@ function createApp() {
       }
       
       // Update login info
+      console.log('[AUTH] Updating login info...');
       await updateUserLogin(user.id);
+      console.log('[AUTH] Login info updated successfully');
       
       // Generate token
+      console.log('[AUTH] Generating JWT token...');
       const token = generateToken(user);
+      console.log('[AUTH] JWT token generated successfully');
       
-      console.log(`[AUTH] Login successful for: ${username}`);
+      console.log(`[AUTH] Login completed successfully for: ${username}`);
       
       // Return user info without password
       const { password: _, ...userWithoutPassword } = user;
@@ -304,10 +317,18 @@ function createApp() {
       });
       
     } catch (error: any) {
-      console.error('[AUTH] Login error:', error);
+      console.error('[AUTH] Login error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       res.status(500).json({
         success: false,
-        message: 'Authentication service error'
+        message: 'Authentication service error',
+        ...(process.env.NODE_ENV === 'development' && { 
+          error: error.message,
+          stack: error.stack 
+        })
       });
     }
   });
@@ -315,18 +336,23 @@ function createApp() {
   // Register
   expressApp.post('/api/auth/register', async (req, res) => {
     try {
+      console.log('[AUTH] Registration endpoint hit');
       const { username, email, password } = req.body;
       
+      console.log('[AUTH] Registration data received:', { username, email, hasPassword: !!password });
+      
       if (!username || !password) {
+        console.log('[AUTH] Missing required fields');
         return res.status(400).json({
           success: false,
           message: 'Username and password are required'
         });
       }
       
-      console.log(`[AUTH] Registration attempt for: ${username}`);
+      console.log(`[AUTH] Starting registration process for: ${username}`);
       
       // Check if user exists
+      console.log('[AUTH] Checking if user exists...');
       const existingUser = await getUserByUsername(username);
       
       if (existingUser) {
@@ -337,16 +363,24 @@ function createApp() {
         });
       }
       
+      console.log('[AUTH] Username available, proceeding with registration');
+      
       // Hash password
+      console.log('[AUTH] Hashing password...');
       const hashedPassword = await hashPassword(password);
+      console.log('[AUTH] Password hashed successfully');
       
       // Create user
-      const newUser = await createUser(username, email, hashedPassword);
+      console.log('[AUTH] Creating user in database...');
+      const newUser = await createUser(username, email || '', hashedPassword);
+      console.log('[AUTH] User created successfully with ID:', newUser.id);
       
       // Generate token
+      console.log('[AUTH] Generating JWT token...');
       const token = generateToken(newUser);
+      console.log('[AUTH] JWT token generated successfully');
       
-      console.log(`[AUTH] Registration successful for: ${username}`);
+      console.log(`[AUTH] Registration completed successfully for: ${username}`);
       
       // Return user info without password
       const { password: _, ...userWithoutPassword } = newUser;
@@ -363,10 +397,18 @@ function createApp() {
       });
       
     } catch (error: any) {
-      console.error('[AUTH] Registration error:', error);
+      console.error('[AUTH] Registration error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       res.status(500).json({
         success: false,
-        message: 'Registration service error'
+        message: 'Registration service error',
+        ...(process.env.NODE_ENV === 'development' && { 
+          error: error.message,
+          stack: error.stack 
+        })
       });
     }
   });
