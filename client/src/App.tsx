@@ -60,6 +60,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { MaintenanceMode } from "@/components/shared/maintenance-mode";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import DiscordCallbackHandler from "@/components/auth/discord-callback-handler";
 
 function Router() {
   const { user, isAdmin } = useAuth();
@@ -193,6 +194,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <TooltipProvider>
+              <DiscordCallbackHandler />
               <div className="min-h-screen flex flex-col bg-dark text-white font-body overflow-x-hidden">
                 <Navbar />
                 <main className="flex-1">
