@@ -149,88 +149,201 @@ function createApp() {
   // Test authentication endpoint
   expressApp.post('/api/test/auth-debug', async (req, res) => {
     try {
-      console.log('[DEBUG] Auth debug endpoint hit');
-      const { username } = req.body;
+      const { username, password } = req.body;
       
-      if (!username) {
-        return res.json({
-          success: true,
-          debug: 'No username provided',
-          timestamp: new Date().toISOString()
+      if (!username || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
         });
       }
       
-      console.log(`[DEBUG] Testing auth for username: ${username}`);
+      // Get user from database
+      const user = await getUserByUsername(username);
       
-      // Test database connection
-      const result = await pool.query('SELECT id, username, is_admin, is_premium, is_banned, password FROM users WHERE username = $1', [username]);
-      console.log(`[DEBUG] Database query result:`, result.rows.length > 0 ? 'User found' : 'User not found');
-      
-      if (result.rows.length === 0) {
-        return res.json({
-          success: true,
-          debug: `User '${username}' not found in database`,
-          availableUsers: ['JSD', 'Von', 'Developer', 'Camoz']
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
         });
       }
       
-      const user = result.rows[0];
-      console.log(`[DEBUG] User data:`, { id: user.id, username: user.username, is_admin: user.is_admin, hasPassword: !!user.password });
+      if (user.is_banned) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is banned'
+        });
+      }
       
-      // Test password comparison (if provided)
-      const { password } = req.body;
-      if (password && user.password) {
-        console.log(`[DEBUG] Testing password for user: ${username}`);
-        const isValid = await comparePasswords(password, user.password);
-        console.log(`[DEBUG] Password valid:`, isValid);
-        
-        if (isValid) {
-          // Test JWT generation
-          try {
-            const token = generateToken(user);
-            console.log(`[DEBUG] JWT token generated successfully`);
-            
-            return res.json({
-              success: true,
-              debug: 'Authentication test successful',
-              user: {
-                id: user.id,
-                username: user.username,
-                isAdmin: user.is_admin,
-                isPremium: user.is_premium
-              },
-              tokenGenerated: true
-            });
-          } catch (jwtError: any) {
-            console.error('[DEBUG] JWT generation error:', jwtError);
-            return res.json({
-              success: false,
-              debug: 'JWT generation failed',
-              error: jwtError.message
-            });
-          }
-        }
+      // Check password
+      const isValidPassword = await comparePasswords(password, user.password);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+      
+      // Generate token
+      const token = generateToken(user);
+      
+      // Return user info without password
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({
+        success: true,
+        message: 'Authentication successful',
+        user: {
+          ...userWithoutPassword,
+          isAdmin: user.is_admin,
+          isPremium: user.is_premium
+        },
+        token
+      });
+      
+    } catch (error: any) {
+      console.error('[AUTH-DEBUG] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Authentication debug test failed',
+        error: error.message
+      });
+    }
+  });
+
+  // Simple debug endpoint that we can test directly
+  expressApp.get('/api/debug/simple', async (req, res) => {
+    try {
+      console.log('[SIMPLE-DEBUG] Testing basic functionality...');
+      
+      const tests: any = {
+        environmentVariables: {
+          databaseUrl: !!process.env.DATABASE_URL,
+          jwtSecret: !!process.env.JWT_SECRET,
+          databaseUrlLength: process.env.DATABASE_URL?.length || 0
+        },
+        timestamp: new Date().toISOString(),
+        nodeVersion: process.version
+      };
+      
+      // Test basic database connection
+      try {
+        console.log('[SIMPLE-DEBUG] Testing database connection...');
+        const result = await pool.query('SELECT 1 as test');
+        tests.database = {
+          connected: true,
+          testQuery: result.rows[0]?.test === 1
+        };
+        console.log('[SIMPLE-DEBUG] Database connection successful');
+      } catch (dbError: any) {
+        console.error('[SIMPLE-DEBUG] Database error:', dbError);
+        tests.database = {
+          connected: false,
+          error: dbError.message
+        };
+      }
+      
+      // Test bcrypt
+      try {
+        console.log('[SIMPLE-DEBUG] Testing bcrypt...');
+        const testHash = await bcrypt.hash('test', 12);
+        const testCompare = await bcrypt.compare('test', testHash);
+        tests.bcrypt = {
+          working: testCompare === true,
+          hashGenerated: !!testHash
+        };
+        console.log('[SIMPLE-DEBUG] Bcrypt working');
+      } catch (bcryptError: any) {
+        console.error('[SIMPLE-DEBUG] Bcrypt error:', bcryptError);
+        tests.bcrypt = {
+          working: false,
+          error: bcryptError.message
+        };
+      }
+      
+      // Test JWT
+      try {
+        console.log('[SIMPLE-DEBUG] Testing JWT...');
+        const testPayload = { id: 1, username: 'test', isAdmin: false };
+        const token = jwt.sign(testPayload, JWT_SECRET, { expiresIn: '1h' });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        tests.jwt = {
+          working: !!decoded,
+          tokenGenerated: !!token
+        };
+        console.log('[SIMPLE-DEBUG] JWT working');
+      } catch (jwtError: any) {
+        console.error('[SIMPLE-DEBUG] JWT error:', jwtError);
+        tests.jwt = {
+          working: false,
+          error: jwtError.message
+        };
       }
       
       res.json({
         success: true,
-        debug: 'User found but password not tested',
+        message: 'Debug test completed',
+        tests
+      });
+      
+    } catch (error: any) {
+      console.error('[SIMPLE-DEBUG] Overall error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Debug test failed',
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  });
+
+  // Test specific user lookup
+  expressApp.post('/api/debug/user-test', async (req, res) => {
+    try {
+      const { username } = req.body;
+      console.log(`[USER-DEBUG] Testing user lookup for: ${username || 'no username provided'}`);
+      
+      if (!username) {
+        return res.json({
+          success: true,
+          message: 'No username provided for testing'
+        });
+      }
+      
+      // Test user lookup
+      const result = await pool.query('SELECT id, username, is_admin, is_premium, is_banned FROM users WHERE username = $1', [username]);
+      
+      if (result.rows.length === 0) {
+        const availableUsersResult = await pool.query('SELECT username FROM users WHERE is_admin = true LIMIT 5');
+        return res.json({
+          success: true,
+          message: `User '${username}' not found`,
+          userExists: false,
+          availableUsers: availableUsersResult.rows.map(u => u.username)
+        });
+      }
+      
+      const user = result.rows[0];
+      res.json({
+        success: true,
+        message: 'User found',
+        userExists: true,
         user: {
           id: user.id,
           username: user.username,
           isAdmin: user.is_admin,
           isPremium: user.is_premium,
-          hasPassword: !!user.password
+          isBanned: user.is_banned
         }
       });
       
     } catch (error: any) {
-      console.error('[DEBUG] Auth debug error:', error);
-      res.json({
+      console.error('[USER-DEBUG] Error:', error);
+      res.status(500).json({
         success: false,
-        debug: 'Authentication debug failed',
-        error: error.message,
-        stack: error.stack
+        message: 'User test failed',
+        error: error.message
       });
     }
   });
