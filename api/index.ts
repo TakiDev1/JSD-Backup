@@ -64,30 +64,48 @@ async function comparePasswords(password: string, hash: string): Promise<boolean
   return bcrypt.compare(password, hash);
 }
 
-// Auth middleware
+// Auth middleware - Enhanced to handle both session and token auth
 function authMiddleware(req: any, res: any, next: any) {
+  console.log('[AUTH-MIDDLEWARE] Checking authentication...');
+  
+  // Method 1: Check for JWT Bearer token in Authorization header
   const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (decoded) {
+      console.log('[AUTH-MIDDLEWARE] Valid JWT token found for user:', decoded.username);
+      req.user = decoded;
+      return next();
+    } else {
+      console.log('[AUTH-MIDDLEWARE] Invalid JWT token');
+    }
   }
   
-  const token = authHeader.substring(7);
-  const decoded = verifyToken(token);
-  
-  if (!decoded) {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+  // Method 2: Check for session-based authentication (if using passport/sessions)
+  if (req.user && req.isAuthenticated && req.isAuthenticated()) {
+    console.log('[AUTH-MIDDLEWARE] Valid session found for user:', req.user.username);
+    // Convert session user to our expected format
+    req.user = {
+      id: req.user.id,
+      username: req.user.username,
+      isAdmin: req.user.is_admin || req.user.isAdmin
+    };
+    return next();
   }
   
-  req.user = decoded;
-  next();
+  console.log('[AUTH-MIDDLEWARE] No valid authentication found');
+  return res.status(401).json({ success: false, message: 'Authentication required' });
 }
 
 function adminMiddleware(req: any, res: any, next: any) {
   authMiddleware(req, res, () => {
     if (!req.user?.isAdmin) {
+      console.log('[ADMIN-MIDDLEWARE] User is not admin:', req.user?.username);
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
+    console.log('[ADMIN-MIDDLEWARE] Admin access granted for:', req.user?.username);
     next();
   });
 }
@@ -1908,6 +1926,69 @@ function createApp() {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch statistics'
+      });
+    }
+  });
+  
+  // Get admin roles
+  expressApp.get('/api/admin/roles', adminMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      console.log(`[ADMIN] Roles request from user ${userId}`);
+      
+      const result = await pool.query(`
+        SELECT r.*, 
+               COUNT(ur.user_id) as user_count,
+               ARRAY_AGG(p.name) FILTER (WHERE p.name IS NOT NULL) as permissions
+        FROM roles r
+        LEFT JOIN user_roles ur ON r.id = ur.role_id
+        LEFT JOIN role_permissions rp ON r.id = rp.role_id
+        LEFT JOIN permissions p ON rp.permission_id = p.id
+        GROUP BY r.id, r.name, r.description, r.is_system, r.created_at, r.updated_at
+        ORDER BY r.name
+      `);
+      
+      res.json({
+        success: true,
+        roles: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching roles:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch roles'
+      });
+    }
+  });
+  
+  // Get support tickets
+  expressApp.get('/api/admin/support-tickets', adminMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      console.log(`[ADMIN] Support tickets request from user ${userId}`);
+      
+      const result = await pool.query(`
+        SELECT st.*,
+               u.username as user_username,
+               au.username as assigned_username
+        FROM support_tickets st
+        LEFT JOIN users u ON st.user_id = u.id
+        LEFT JOIN users au ON st.assigned_to = au.id
+        ORDER BY st.created_at DESC
+        LIMIT 100
+      `);
+      
+      res.json({
+        success: true,
+        tickets: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching support tickets:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch support tickets'
       });
     }
   });
