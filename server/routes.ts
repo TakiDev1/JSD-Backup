@@ -93,35 +93,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   // Discord authentication routes
   if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
-    app.get("/api/auth/discord", passport.authenticate("discord"));
+    console.log("✅ Discord authentication configured - setting up routes");
+    
+    app.get("/api/auth/discord", (req, res, next) => {
+      console.log("🔗 Discord auth route hit - redirecting to Discord");
+      passport.authenticate("discord")(req, res, next);
+    });
     
     app.get("/api/auth/discord/callback", 
-      passport.authenticate("discord", { failureRedirect: "/login?error=discord_failed" }),
+      passport.authenticate("discord", { 
+        failureRedirect: "/login?error=discord_failed",
+        failureMessage: true 
+      }),
       (req, res) => {
-        console.log("Discord callback successful, redirecting user");
-        res.redirect("/");
+        console.log("✅ Discord callback successful, user authenticated:", req.isAuthenticated());
+        console.log("👤 User data:", req.user);
+        res.redirect("/?discord_success=true");
       }
     );
   } else {
+    console.log("❌ Discord authentication not configured - missing credentials");
+    
     // Fallback routes when Discord is not configured
     app.get("/api/auth/discord", (req, res) => {
-      res.status(503).json({ message: "Discord authentication not configured" });
+      console.log("❌ Discord auth attempted but not configured");
+      res.status(503).json({ 
+        error: "Discord authentication not configured",
+        message: "Discord authentication is not available" 
+      });
     });
     
     app.get("/api/auth/discord/callback", (req, res) => {
-      res.status(503).json({ message: "Discord authentication not configured" });
+      console.log("❌ Discord callback attempted but not configured");
+      res.status(503).json({ 
+        error: "Discord authentication not configured",
+        message: "Discord authentication is not available" 
+      });
     });
   }
   
   // Add a route to check Discord auth availability
   app.get("/api/auth/discord-status", (req, res) => {
     try {
-      console.log("[DEBUG] /api/auth/discord-status endpoint hit");
+      console.log("🔍 Discord status check");
       const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
-      res.json({ available });
+      console.log("Discord available:", available);
+      res.json({ 
+        available,
+        clientId: process.env.DISCORD_CLIENT_ID ? "configured" : "missing",
+        clientSecret: process.env.DISCORD_CLIENT_SECRET ? "configured" : "missing"
+      });
     } catch (error) {
       console.error("Error checking Discord status:", error);
-      res.status(500).type('application/json').json({ error: "Failed to check Discord status" });
+      res.status(500).json({ error: "Failed to check Discord status" });
     }
   });
   

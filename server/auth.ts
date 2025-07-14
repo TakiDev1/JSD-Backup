@@ -166,22 +166,35 @@ export function setupAuth(app: Express) {
 
   // Setup Discord strategy if credentials are available
   if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
-    console.log("Initializing Discord authentication strategy");
+    console.log("✅ Initializing Discord authentication strategy");
+    
+    // Determine the correct callback URL based on environment
+    let callbackURL = process.env.DISCORD_CALLBACK_URL;
+    
+    if (!callbackURL) {
+      // Auto-detect callback URL based on environment
+      if (process.env.NODE_ENV === 'production') {
+        callbackURL = 'https://jsdmods.com/api/auth/discord/callback';
+      } else {
+        const port = process.env.PORT || 5000;
+        callbackURL = `http://localhost:${port}/api/auth/discord/callback`;
+      }
+    }
+    
+    console.log("🔗 Discord callback URL:", callbackURL);
+    
     passport.use(
       new DiscordStrategy(
         {
           clientID: process.env.DISCORD_CLIENT_ID,
           clientSecret: process.env.DISCORD_CLIENT_SECRET,
-          callbackURL: process.env.DISCORD_CALLBACK_URL || 
-                       (process.env.REPLIT_DOMAINS ? 
-                        `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/api/auth/discord/callback` : 
-                        'http://localhost:5000/api/auth/discord/callback'),
+          callbackURL: callbackURL,
           passReqToCallback: true,
           scope: DISCORD_SCOPES
         },
         async (req, accessToken, refreshToken, profile, done) => {
           try {
-            console.log("Discord auth - profile:", { 
+            console.log("🔐 Discord auth callback - profile:", { 
               id: profile.id,
               username: profile.username,
               email: profile.email
@@ -194,6 +207,8 @@ export function setupAuth(app: Express) {
               // Check if this Discord account should be an admin
               const shouldBeAdmin = ['jsd', 'von', 'developer'].includes(profile.username.toLowerCase());
               
+              console.log("👤 Existing user found:", user.username, "shouldBeAdmin:", shouldBeAdmin);
+              
               // Update existing user and grant admin access if needed
               user = await storage.updateUser(user.id, {
                 discordUsername: profile.username,
@@ -205,6 +220,8 @@ export function setupAuth(app: Express) {
             } else {
               // Check if this is an admin Discord account
               const isAdmin = ['jsd', 'von', 'developer'].includes(profile.username.toLowerCase());
+              
+              console.log("👤 Creating new user:", profile.username, "isAdmin:", isAdmin);
               
               // Create new user with admin status if appropriate
               user = await storage.createUser({
@@ -235,17 +252,23 @@ export function setupAuth(app: Express) {
                 lastLogin: user.lastLogin ?? undefined
               };
               
+              console.log("✅ Discord auth successful for user:", convertedUser.username);
               return done(null, convertedUser);
             } else {
+              console.error("❌ Failed to create/update user");
               return done(null, false);
             }
           } catch (err) {
-            console.error("Discord strategy error:", err);
+            console.error("❌ Discord strategy error:", err);
             return done(err);
           }
         }
       )
     );
+  } else {
+    console.log("❌ Discord authentication not configured - missing environment variables");
+    console.log("DISCORD_CLIENT_ID:", process.env.DISCORD_CLIENT_ID ? "✅ Set" : "❌ Missing");
+    console.log("DISCORD_CLIENT_SECRET:", process.env.DISCORD_CLIENT_SECRET ? "✅ Set" : "❌ Missing");
   }
 
   // Authentication middleware
