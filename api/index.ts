@@ -92,6 +92,67 @@ function adminMiddleware(req: any, res: any, next: any) {
   });
 }
 
+// Helper function for updating user login info
+async function updateUserLogin(userId: number) {
+  try {
+    await pool.query(
+      'UPDATE users SET last_login = $1, login_count = COALESCE(login_count, 0) + 1 WHERE id = $2',
+      [new Date(), userId]
+    );
+  } catch (error) {
+    console.error('Error updating user login:', error);
+  }
+}
+
+// Helper function to get client IP
+function getClientIP(req: any): string {
+  return req.headers['x-forwarded-for'] || 
+         req.headers['x-real-ip'] || 
+         req.connection?.remoteAddress || 
+         req.socket?.remoteAddress ||
+         req.ip || 
+         'unknown';
+}
+
+// Helper function for admin activity logging
+async function logAdminActivity(userId: number, action: string, details: string, ipAddress: string) {
+  try {
+    await pool.query(
+      'INSERT INTO admin_activity_log (user_id, action, details, ip_address, timestamp) VALUES ($1, $2, $3, $4, $5)',
+      [userId, action, details, ipAddress, new Date()]
+    );
+  } catch (error) {
+    console.error('Error logging admin activity:', error);
+  }
+}
+
+// Helper function to create purchase record
+async function createPurchase(userId: number, modId: number, transactionId: string, price: number, ipAddress: string) {
+  try {
+    const result = await pool.query(
+      'INSERT INTO purchases (user_id, mod_id, transaction_id, price, purchase_date, customer_ip_address) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [userId, modId, transactionId, price, new Date(), ipAddress]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating purchase:', error);
+    throw error;
+  }
+}
+
+// Helper function to update site settings
+async function updateSiteSetting(key: string, value: string) {
+  try {
+    await pool.query(
+      'INSERT INTO site_settings (key, value, updated_at) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = $3',
+      [key, value, new Date()]
+    );
+  } catch (error) {
+    console.error('Error updating site setting:', error);
+    throw error;
+  }
+}
+
 // Database queries
 async function getUserByUsername(username: string) {
   const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
@@ -1156,8 +1217,616 @@ function createApp() {
     }
   });
   
-  // ADMIN ENDPOINTS (protected)
+  // PURCHASING & ORDERS ENDPOINTS
   
+  // Create purchase/order
+  expressApp.post('/api/purchase/complete', authMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { transactionId, cartItems } = req.body;
+      const clientIP = getClientIP(req);
+      
+      if (!transactionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Transaction ID is required'
+        });
+      }
+      
+      console.log(`[PURCHASE] Processing purchase for user ${userId}, transaction: ${transactionId}`);
+      
+      // Get cart items if not provided
+      let itemsToPurchase = cartItems;
+      if (!itemsToPurchase) {
+        const cartResult = await pool.query('SELECT * FROM cart_items WHERE user_id = $1', [userId]);
+        itemsToPurchase = cartResult.rows;
+      }
+      
+      if (!itemsToPurchase || itemsToPurchase.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No items to purchase'
+        });
+      }
+      
+      const purchases = [];
+      
+      // Create purchase records for each item
+      for (const item of itemsToPurchase) {
+        const modId = item.mod_id || item.modId;
+        
+        // Get mod details
+        const modResult = await pool.query('SELECT * FROM mods WHERE id = $1', [modId]);
+        const mod = modResult.rows[0];
+        
+        if (mod) {
+          const price = mod.discount_price || mod.price;
+          const purchase = await createPurchase(userId, modId, transactionId, price, clientIP);
+          purchases.push({
+            ...purchase,
+            mod: mod
+          });
+          
+          console.log(`[PURCHASE] Created purchase record for mod ${modId}, price: ${price}`);
+        }
+      }
+      
+      // Clear cart after successful purchase
+      await pool.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+      
+      res.json({
+        success: true,
+        message: 'Purchase completed successfully',
+        purchases: purchases
+      });
+      
+    } catch (error: any) {
+      console.error('[PURCHASE] Error completing purchase:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to complete purchase'
+      });
+    }
+  });
+  
+  // Get user purchases
+  expressApp.get('/api/purchases', authMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      console.log(`[PURCHASES] Fetching purchases for user ${userId}`);
+      
+      const result = await pool.query(`
+        SELECT p.*, m.title, m.description, m.category, m.preview_image_url
+        FROM purchases p
+        JOIN mods m ON p.mod_id = m.id
+        WHERE p.user_id = $1
+        ORDER BY p.purchase_date DESC
+      `, [userId]);
+      
+      res.json({
+        success: true,
+        purchases: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[PURCHASES] Error fetching purchases:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch purchases'
+      });
+    }
+  });
+  
+  // Get mod locker (user's owned mods)
+  expressApp.get('/api/mod-locker', authMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      console.log(`[MOD-LOCKER] Fetching mod locker for user ${userId}`);
+      
+      const result = await pool.query(`
+        SELECT DISTINCT m.*, p.purchase_date
+        FROM mods m
+        JOIN purchases p ON m.id = p.mod_id
+        WHERE p.user_id = $1
+        ORDER BY p.purchase_date DESC
+      `, [userId]);
+      
+      res.json({
+        success: true,
+        purchasedMods: result.rows,
+        subscriptionMods: [],
+        hasSubscription: false
+      });
+      
+    } catch (error: any) {
+      console.error('[MOD-LOCKER] Error fetching mod locker:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch mod locker'
+      });
+    }
+  });
+  
+  // COMPREHENSIVE ADMIN ENDPOINTS
+  
+  // Update site settings
+  expressApp.post('/api/admin/settings', adminMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { key, value } = req.body;
+      const clientIP = getClientIP(req);
+      
+      if (!key) {
+        return res.status(400).json({
+          success: false,
+          message: 'Setting key is required'
+        });
+      }
+      
+      console.log(`[ADMIN] Updating setting: ${key} = ${value}`);
+      
+      await updateSiteSetting(key, value || '');
+      await logAdminActivity(userId, 'UPDATE_SETTING', `Updated setting ${key}`, clientIP);
+      
+      res.json({
+        success: true,
+        message: 'Setting updated successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error updating setting:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update setting'
+      });
+    }
+  });
+  
+  // Ban/unban user
+  expressApp.patch('/api/admin/users/:id/ban', adminMiddleware, async (req: any, res) => {
+    try {
+      const targetUserId = parseInt(req.params.id);
+      const adminUserId = req.user?.id;
+      const { banned } = req.body;
+      const clientIP = getClientIP(req);
+      
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      if (targetUserId === adminUserId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot ban yourself'
+        });
+      }
+      
+      console.log(`[ADMIN] ${banned ? 'Banning' : 'Unbanning'} user ${targetUserId}`);
+      
+      const result = await pool.query(
+        'UPDATE users SET is_banned = $1 WHERE id = $2 RETURNING id, username, is_banned',
+        [banned, targetUserId]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      const user = result.rows[0];
+      await logAdminActivity(
+        adminUserId, 
+        banned ? 'BAN_USER' : 'UNBAN_USER', 
+        `${banned ? 'Banned' : 'Unbanned'} user ${user.username} (ID: ${targetUserId})`, 
+        clientIP
+      );
+      
+      res.json({
+        success: true,
+        user: user
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error banning/unbanning user:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update user ban status'
+      });
+    }
+  });
+  
+  // Update user admin status
+  expressApp.patch('/api/admin/users/:id', adminMiddleware, async (req: any, res) => {
+    try {
+      const targetUserId = parseInt(req.params.id);
+      const adminUserId = req.user?.id;
+      const updates = req.body;
+      const clientIP = getClientIP(req);
+      
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      console.log(`[ADMIN] Updating user ${targetUserId}:`, updates);
+      
+      // Build dynamic update query
+      const allowedFields = ['is_admin', 'is_premium', 'is_banned', 'email'];
+      const updateFields = [];
+      const updateValues = [];
+      let paramCount = 0;
+      
+      for (const [field, value] of Object.entries(updates)) {
+        if (allowedFields.includes(field)) {
+          paramCount++;
+          updateFields.push(`${field} = $${paramCount}`);
+          updateValues.push(value);
+        }
+      }
+      
+      if (updateFields.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No valid fields to update'
+        });
+      }
+      
+      updateValues.push(targetUserId);
+      const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount + 1} RETURNING id, username, email, is_admin, is_premium, is_banned`;
+      
+      const result = await pool.query(query, updateValues);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      const user = result.rows[0];
+      await logAdminActivity(
+        adminUserId, 
+        'UPDATE_USER', 
+        `Updated user ${user.username} (ID: ${targetUserId})`, 
+        clientIP
+      );
+      
+      res.json({
+        success: true,
+        user: user
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error updating user:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update user'
+      });
+    }
+  });
+  
+  // Create new mod
+  expressApp.post('/api/admin/mods', adminMiddleware, async (req: any, res) => {
+    try {
+      const adminUserId = req.user?.id;
+      const modData = req.body;
+      const clientIP = getClientIP(req);
+      
+      console.log('[ADMIN] Creating new mod:', modData.title);
+      
+      const result = await pool.query(`
+        INSERT INTO mods (
+          title, description, category, price, discount_price, 
+          preview_image_url, download_url, is_featured, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *
+      `, [
+        modData.title,
+        modData.description || '',
+        modData.category || 'other',
+        modData.price || 0,
+        modData.discountPrice || null,
+        modData.previewImageUrl || '',
+        modData.downloadUrl || '',
+        modData.isFeatured || false,
+        new Date(),
+        new Date()
+      ]);
+      
+      const newMod = result.rows[0];
+      await logAdminActivity(
+        adminUserId, 
+        'CREATE_MOD', 
+        `Created mod: ${newMod.title} (ID: ${newMod.id})`, 
+        clientIP
+      );
+      
+      res.status(201).json({
+        success: true,
+        mod: newMod
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error creating mod:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create mod'
+      });
+    }
+  });
+  
+  // Update mod
+  expressApp.put('/api/admin/mods/:id', adminMiddleware, async (req: any, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      const adminUserId = req.user?.id;
+      const updates = req.body;
+      const clientIP = getClientIP(req);
+      
+      if (isNaN(modId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mod ID'
+        });
+      }
+      
+      console.log(`[ADMIN] Updating mod ${modId}:`, updates);
+      
+      // Build dynamic update query
+      const allowedFields = [
+        'title', 'description', 'category', 'price', 'discount_price',
+        'preview_image_url', 'download_url', 'is_featured'
+      ];
+      const updateFields = [];
+      const updateValues = [];
+      let paramCount = 0;
+      
+      for (const [field, value] of Object.entries(updates)) {
+        if (allowedFields.includes(field)) {
+          paramCount++;
+          updateFields.push(`${field} = $${paramCount}`);
+          updateValues.push(value);
+        }
+      }
+      
+      if (updateFields.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No valid fields to update'
+        });
+      }
+      
+      // Add updated_at
+      paramCount++;
+      updateFields.push(`updated_at = $${paramCount}`);
+      updateValues.push(new Date());
+      
+      updateValues.push(modId);
+      const query = `UPDATE mods SET ${updateFields.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`;
+      
+      const result = await pool.query(query, updateValues);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Mod not found'
+        });
+      }
+      
+      const mod = result.rows[0];
+      await logAdminActivity(
+        adminUserId, 
+        'UPDATE_MOD', 
+        `Updated mod: ${mod.title} (ID: ${modId})`, 
+        clientIP
+      );
+      
+      res.json({
+        success: true,
+        mod: mod
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error updating mod:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update mod'
+      });
+    }
+  });
+  
+  // Delete mod
+  expressApp.delete('/api/admin/mods/:id', adminMiddleware, async (req: any, res) => {
+    try {
+      const modId = parseInt(req.params.id);
+      const adminUserId = req.user?.id;
+      const clientIP = getClientIP(req);
+      
+      if (isNaN(modId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mod ID'
+        });
+      }
+      
+      console.log(`[ADMIN] Deleting mod ${modId}`);
+      
+      // Get mod info before deleting
+      const modResult = await pool.query('SELECT * FROM mods WHERE id = $1', [modId]);
+      const mod = modResult.rows[0];
+      
+      if (!mod) {
+        return res.status(404).json({
+          success: false,
+          message: 'Mod not found'
+        });
+      }
+      
+      // Delete the mod (this should cascade to related records)
+      await pool.query('DELETE FROM mods WHERE id = $1', [modId]);
+      
+      await logAdminActivity(
+        adminUserId, 
+        'DELETE_MOD', 
+        `Deleted mod: ${mod.title} (ID: ${modId})`, 
+        clientIP
+      );
+      
+      res.json({
+        success: true,
+        message: 'Mod deleted successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error deleting mod:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete mod'
+      });
+    }
+  });
+  
+  // Get all orders (admin)
+  expressApp.get('/api/admin/orders', adminMiddleware, async (req: any, res) => {
+    try {
+      const adminUserId = req.user?.id;
+      console.log(`[ADMIN] Fetching all orders for admin ${adminUserId}`);
+      
+      const result = await pool.query(`
+        SELECT 
+          p.*,
+          u.username,
+          u.email,
+          m.title as mod_title,
+          m.category as mod_category
+        FROM purchases p
+        JOIN users u ON p.user_id = u.id
+        JOIN mods m ON p.mod_id = m.id
+        ORDER BY p.purchase_date DESC
+        LIMIT 1000
+      `);
+      
+      res.json({
+        success: true,
+        orders: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching orders:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders'
+      });
+    }
+  });
+  
+  // Get admin activity logs
+  expressApp.get('/api/admin/activity', adminMiddleware, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      
+      console.log(`[ADMIN] Fetching admin activity logs (limit: ${limit})`);
+      
+      const result = await pool.query(`
+        SELECT 
+          aa.*,
+          u.username
+        FROM admin_activity_log aa
+        JOIN users u ON aa.user_id = u.id
+        ORDER BY aa.timestamp DESC
+        LIMIT $1
+      `, [limit]);
+      
+      res.json({
+        success: true,
+        activities: result.rows
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching activity logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch activity logs'
+      });
+    }
+  });
+  
+  // Advanced admin stats
+  expressApp.get('/api/admin/analytics', adminMiddleware, async (req: any, res) => {
+    try {
+      console.log('[ADMIN] Fetching advanced analytics');
+      
+      const [
+        userStats,
+        modStats,
+        purchaseStats,
+        revenueStats,
+        recentActivity
+      ] = await Promise.all([
+        pool.query(`
+          SELECT 
+            COUNT(*) as total_users,
+            COUNT(CASE WHEN is_admin = true THEN 1 END) as admin_users,
+            COUNT(CASE WHEN is_premium = true THEN 1 END) as premium_users,
+            COUNT(CASE WHEN is_banned = true THEN 1 END) as banned_users,
+            COUNT(CASE WHEN last_login > NOW() - INTERVAL '30 days' THEN 1 END) as active_users
+          FROM users
+        `),
+        pool.query(`
+          SELECT 
+            COUNT(*) as total_mods,
+            COUNT(CASE WHEN is_featured = true THEN 1 END) as featured_mods,
+            AVG(price) as avg_price
+          FROM mods
+        `),
+        pool.query(`
+          SELECT 
+            COUNT(*) as total_purchases,
+            COUNT(CASE WHEN purchase_date > NOW() - INTERVAL '30 days' THEN 1 END) as recent_purchases
+          FROM purchases
+        `),
+        pool.query(`
+          SELECT 
+            SUM(price) as total_revenue,
+            SUM(CASE WHEN purchase_date > NOW() - INTERVAL '30 days' THEN price ELSE 0 END) as monthly_revenue
+          FROM purchases
+        `),
+        pool.query(`
+          SELECT action, COUNT(*) as count
+          FROM admin_activity_log
+          WHERE timestamp > NOW() - INTERVAL '7 days'
+          GROUP BY action
+          ORDER BY count DESC
+          LIMIT 10
+        `)
+      ]);
+      
+      res.json({
+        success: true,
+        analytics: {
+          users: userStats.rows[0],
+          mods: modStats.rows[0],
+          purchases: purchaseStats.rows[0],
+          revenue: revenueStats.rows[0],
+          recentActivity: recentActivity.rows
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('[ADMIN] Error fetching analytics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch analytics'
+      });
+    }
+  });
+
   // Get admin settings
   expressApp.get('/api/admin/settings', adminMiddleware, async (req: any, res) => {
     try {
