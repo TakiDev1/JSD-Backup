@@ -2072,6 +2072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // In a real implementation, you would send a test message to the Discord webhook
      
+
       // We'll simulate success for now
       
       // Log admin activity
