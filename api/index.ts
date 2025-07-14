@@ -4,6 +4,9 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Pool } from 'pg';
+import passport from 'passport';
+import { Strategy as DiscordStrategy } from 'passport-discord';
+import session from 'express-session';
 
 // Type definitions
 interface AuthenticatedRequest extends express.Request {
@@ -17,6 +20,7 @@ interface AuthenticatedRequest extends express.Request {
 // Environment variables
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'your-session-secret';
 
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
@@ -99,19 +103,25 @@ async function getUserById(id: number) {
   return result.rows[0];
 }
 
-async function createUser(username: string, email: string, hashedPassword: string) {
+async function getUserByDiscordId(discordId: string) {
+  const result = await pool.query('SELECT * FROM users WHERE discord_id = $1', [discordId]);
+  return result.rows[0];
+}
+
+async function createUser(username: string, email: string, hashedPassword: string, discordId?: string, discordUsername?: string, discordAvatar?: string) {
   const result = await pool.query(
-    'INSERT INTO users (username, email, password, is_admin, is_premium, is_banned, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    [username, email, hashedPassword, false, false, false, new Date()]
+    'INSERT INTO users (username, email, password, discord_id, discord_username, discord_avatar, is_admin, is_premium, is_banned, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+    [username, email, hashedPassword, discordId, discordUsername, discordAvatar, false, false, false, new Date()]
   );
   return result.rows[0];
 }
 
-async function updateUserLogin(id: number) {
-  await pool.query(
-    'UPDATE users SET last_login = $1, login_count = COALESCE(login_count, 0) + 1 WHERE id = $2',
-    [new Date(), id]
+async function updateUserDiscord(userId: number, discordId: string, discordUsername: string, discordAvatar: string) {
+  const result = await pool.query(
+    'UPDATE users SET discord_id = $1, discord_username = $2, discord_avatar = $3 WHERE id = $4 RETURNING *',
+    [discordId, discordUsername, discordAvatar, userId]
   );
+  return result.rows[0];
 }
 
 // Express app setup
@@ -121,6 +131,18 @@ function createApp() {
   if (app) return app;
   
   const expressApp = express();
+  
+  // Session configuration
+  expressApp.use(session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
   
   // Middleware
   expressApp.use(cors({
@@ -134,6 +156,90 @@ function createApp() {
   
   expressApp.use(express.json({ limit: '10mb' }));
   expressApp.use(express.urlencoded({ extended: false, limit: '10mb' }));
+  
+  // Passport configuration
+  expressApp.use(passport.initialize());
+  expressApp.use(passport.session());
+  
+  // Discord OAuth Strategy
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    passport.use(new DiscordStrategy({
+      clientID: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      callbackURL: process.env.DISCORD_CALLBACK_URL || 'https://jsdmods.com/api/auth/discord/callback',
+      scope: ['identify', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log('🔗 Discord OAuth callback received:', {
+          id: profile.id,
+          username: profile.username,
+          email: profile.email
+        });
+        
+        // Check if user exists by Discord ID
+        let user = await getUserByDiscordId(profile.id);
+        
+        if (user) {
+          console.log('✅ Existing Discord user found:', user.username);
+          // Update Discord info
+          user = await updateUserDiscord(user.id, profile.id, profile.username, profile.avatar);
+          return done(null, user);
+        }
+        
+        // Check if user exists by email
+        if (profile.email) {
+          const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [profile.email]);
+          if (existingUser.rows.length > 0) {
+            console.log('✅ Linking Discord to existing email account');
+            user = await updateUserDiscord(existingUser.rows[0].id, profile.id, profile.username, profile.avatar);
+            return done(null, user);
+          }
+        }
+        
+        // Create new user
+        console.log('🆕 Creating new Discord user');
+        const username = profile.username || `discord_${profile.id}`;
+        const email = profile.email || '';
+        
+        // Check if username already exists
+        let finalUsername = username;
+        let counter = 1;
+        while (await getUserByUsername(finalUsername)) {
+          finalUsername = `${username}_${counter}`;
+          counter++;
+        }
+        
+        user = await createUser(
+          finalUsername,
+          email,
+          '', // No password for Discord users
+          profile.id,
+          profile.username,
+          profile.avatar
+        );
+        
+        console.log('✅ Discord user created successfully:', user.username);
+        return done(null, user);
+      } catch (error) {
+        console.error('❌ Discord OAuth error:', error);
+        return done(error, null);
+      }
+    }));
+  }
+  
+  // Passport serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+  
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await getUserById(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
   
   // Request logging
   expressApp.use((req, res, next) => {
@@ -350,6 +456,69 @@ function createApp() {
         message: 'User test failed',
         error: error.message
       });
+    }
+  });
+  
+  // Discord authentication endpoints
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+    console.log("✅ Discord authentication configured - setting up routes");
+    
+    expressApp.get("/api/auth/discord", (req, res, next) => {
+      console.log("🔗 Discord auth route hit - redirecting to Discord");
+      passport.authenticate("discord")(req, res, next);
+    });
+    
+    expressApp.get("/api/auth/discord/callback", 
+      passport.authenticate("discord", { 
+        failureRedirect: "/login?error=discord_failed",
+        failureMessage: true 
+      }),
+      (req, res) => {
+        console.log("✅ Discord callback successful, user authenticated");
+        
+        // Generate JWT token for API consistency
+        const user = req.user as any;
+        const token = generateToken(user);
+        
+        // Redirect to frontend with token
+        res.redirect(`/?discord_success=true&token=${token}`);
+      }
+    );
+  } else {
+    console.log("❌ Discord authentication not configured - missing credentials");
+    
+    // Fallback routes when Discord is not configured
+    expressApp.get("/api/auth/discord", (req, res) => {
+      console.log("❌ Discord auth attempted but not configured");
+      res.status(503).json({ 
+        error: "Discord authentication not configured",
+        message: "Discord authentication is not available" 
+      });
+    });
+    
+    expressApp.get("/api/auth/discord/callback", (req, res) => {
+      console.log("❌ Discord callback attempted but not configured");
+      res.status(503).json({ 
+        error: "Discord authentication not configured",
+        message: "Discord authentication is not available" 
+      });
+    });
+  }
+  
+  // Add a route to check Discord auth availability
+  expressApp.get("/api/auth/discord-status", (req, res) => {
+    try {
+      console.log("🔍 Discord status check");
+      const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
+      console.log("Discord available:", available);
+      res.json({ 
+        available,
+        clientId: process.env.DISCORD_CLIENT_ID ? "configured" : "missing",
+        clientSecret: process.env.DISCORD_CLIENT_SECRET ? "configured" : "missing"
+      });
+    } catch (error) {
+      console.error("Error checking Discord status:", error);
+      res.status(500).json({ error: "Failed to check Discord status" });
     }
   });
   
@@ -665,16 +834,6 @@ function createApp() {
         message: 'Admin authentication service error'
       });
     }
-  });
-  
-  // Discord auth status
-  expressApp.get('/api/auth/discord-status', (req, res) => {
-    console.log('[DISCORD] Status check');
-    const available = !!(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET);
-    res.json({
-      success: true,
-      available
-    });
   });
   
   // MODS ENDPOINTS
