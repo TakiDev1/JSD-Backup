@@ -5,6 +5,15 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Pool } from '@neondatabase/serverless';
 
+// Type definitions
+interface AuthenticatedRequest extends express.Request {
+  user: {
+    id: number;
+    username: string;
+    isAdmin: boolean;
+  };
+}
+
 // Environment variables
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key';
@@ -135,6 +144,95 @@ function createApp() {
       message: 'JSD Mods API (PostgreSQL)',
       database: !!DATABASE_URL
     });
+  });
+  
+  // Test authentication endpoint
+  expressApp.post('/api/test/auth-debug', async (req, res) => {
+    try {
+      console.log('[DEBUG] Auth debug endpoint hit');
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.json({
+          success: true,
+          debug: 'No username provided',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      console.log(`[DEBUG] Testing auth for username: ${username}`);
+      
+      // Test database connection
+      const result = await pool.query('SELECT id, username, is_admin, is_premium, is_banned, password FROM users WHERE username = $1', [username]);
+      console.log(`[DEBUG] Database query result:`, result.rows.length > 0 ? 'User found' : 'User not found');
+      
+      if (result.rows.length === 0) {
+        return res.json({
+          success: true,
+          debug: `User '${username}' not found in database`,
+          availableUsers: ['JSD', 'Von', 'Developer', 'Camoz']
+        });
+      }
+      
+      const user = result.rows[0];
+      console.log(`[DEBUG] User data:`, { id: user.id, username: user.username, is_admin: user.is_admin, hasPassword: !!user.password });
+      
+      // Test password comparison (if provided)
+      const { password } = req.body;
+      if (password && user.password) {
+        console.log(`[DEBUG] Testing password for user: ${username}`);
+        const isValid = await comparePasswords(password, user.password);
+        console.log(`[DEBUG] Password valid:`, isValid);
+        
+        if (isValid) {
+          // Test JWT generation
+          try {
+            const token = generateToken(user);
+            console.log(`[DEBUG] JWT token generated successfully`);
+            
+            return res.json({
+              success: true,
+              debug: 'Authentication test successful',
+              user: {
+                id: user.id,
+                username: user.username,
+                isAdmin: user.is_admin,
+                isPremium: user.is_premium
+              },
+              tokenGenerated: true
+            });
+          } catch (jwtError) {
+            console.error('[DEBUG] JWT generation error:', jwtError);
+            return res.json({
+              success: false,
+              debug: 'JWT generation failed',
+              error: jwtError.message
+            });
+          }
+        }
+      }
+      
+      res.json({
+        success: true,
+        debug: 'User found but password not tested',
+        user: {
+          id: user.id,
+          username: user.username,
+          isAdmin: user.is_admin,
+          isPremium: user.is_premium,
+          hasPassword: !!user.password
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('[DEBUG] Auth debug error:', error);
+      res.json({
+        success: false,
+        debug: 'Authentication debug failed',
+        error: error.message,
+        stack: error.stack
+      });
+    }
   });
   
   // AUTH ENDPOINTS
@@ -274,12 +372,13 @@ function createApp() {
   });
   
   // Get current user
-  expressApp.get('/api/auth/user', authMiddleware, async (req, res) => {
+  expressApp.get('/api/auth/user', authMiddleware, async (req: any, res) => {
     try {
-      console.log(`[AUTH] User info request for ID: ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[AUTH] User info request for ID: ${userId}`);
       
       // Get fresh user data from database
-      const user = await getUserById(req.user.id);
+      const user = await getUserById(userId);
       
       if (!user) {
         return res.status(401).json({
@@ -582,9 +681,10 @@ function createApp() {
   // CART ENDPOINTS (protected)
   
   // Get cart
-  expressApp.get('/api/cart', authMiddleware, async (req, res) => {
+  expressApp.get('/api/cart', authMiddleware, async (req: any, res) => {
     try {
-      console.log(`[CART] Fetching cart for user ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[CART] Fetching cart for user ${userId}`);
       
       const result = await pool.query(`
         SELECT ci.*, m.title, m.description, m.price, m.discount_price, m.preview_image_url, m.category
@@ -592,7 +692,7 @@ function createApp() {
         JOIN mods m ON ci.mod_id = m.id
         WHERE ci.user_id = $1
         ORDER BY ci.added_at DESC
-      `, [req.user.id]);
+      `, [userId]);
       
       res.json({
         success: true,
@@ -609,9 +709,10 @@ function createApp() {
   });
   
   // Add to cart
-  expressApp.post('/api/cart', authMiddleware, async (req, res) => {
+  expressApp.post('/api/cart', authMiddleware, async (req: any, res) => {
     try {
       const { modId } = req.body;
+      const userId = req.user?.id;
       
       if (!modId || isNaN(modId)) {
         return res.status(400).json({
@@ -620,7 +721,7 @@ function createApp() {
         });
       }
       
-      console.log(`[CART] Adding mod ${modId} to cart for user ${req.user.id}`);
+      console.log(`[CART] Adding mod ${modId} to cart for user ${userId}`);
       
       // Check if mod exists
       const modResult = await pool.query('SELECT * FROM mods WHERE id = $1', [modId]);
@@ -634,7 +735,7 @@ function createApp() {
       // Check if already in cart
       const cartCheck = await pool.query(
         'SELECT * FROM cart_items WHERE user_id = $1 AND mod_id = $2',
-        [req.user.id, modId]
+        [userId, modId]
       );
       
       if (cartCheck.rows.length > 0) {
@@ -647,7 +748,7 @@ function createApp() {
       // Check if already purchased
       const purchaseCheck = await pool.query(
         'SELECT * FROM purchases WHERE user_id = $1 AND mod_id = $2',
-        [req.user.id, modId]
+        [userId, modId]
       );
       
       if (purchaseCheck.rows.length > 0) {
@@ -660,7 +761,7 @@ function createApp() {
       // Add to cart
       const result = await pool.query(
         'INSERT INTO cart_items (user_id, mod_id, added_at) VALUES ($1, $2, $3) RETURNING *',
-        [req.user.id, modId, new Date()]
+        [userId, modId, new Date()]
       );
       
       res.status(201).json({
@@ -681,9 +782,10 @@ function createApp() {
   });
   
   // Remove from cart
-  expressApp.delete('/api/cart/:modId', authMiddleware, async (req, res) => {
+  expressApp.delete('/api/cart/:modId', authMiddleware, async (req: any, res) => {
     try {
       const modId = parseInt(req.params.modId);
+      const userId = req.user?.id;
       
       if (isNaN(modId)) {
         return res.status(400).json({
@@ -692,11 +794,11 @@ function createApp() {
         });
       }
       
-      console.log(`[CART] Removing mod ${modId} from cart for user ${req.user.id}`);
+      console.log(`[CART] Removing mod ${modId} from cart for user ${userId}`);
       
       await pool.query(
         'DELETE FROM cart_items WHERE user_id = $1 AND mod_id = $2',
-        [req.user.id, modId]
+        [userId, modId]
       );
       
       res.json({
@@ -714,11 +816,12 @@ function createApp() {
   });
   
   // Clear cart
-  expressApp.delete('/api/cart', authMiddleware, async (req, res) => {
+  expressApp.delete('/api/cart', authMiddleware, async (req: any, res) => {
     try {
-      console.log(`[CART] Clearing cart for user ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[CART] Clearing cart for user ${userId}`);
       
-      await pool.query('DELETE FROM cart_items WHERE user_id = $1', [req.user.id]);
+      await pool.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
       
       res.json({
         success: true,
@@ -737,9 +840,10 @@ function createApp() {
   // ADMIN ENDPOINTS (protected)
   
   // Get admin settings
-  expressApp.get('/api/admin/settings', adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/settings', adminMiddleware, async (req: any, res) => {
     try {
-      console.log(`[ADMIN] Settings request from user ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[ADMIN] Settings request from user ${userId}`);
       
       const result = await pool.query('SELECT * FROM site_settings');
       const settings: Record<string, string> = {};
@@ -769,9 +873,10 @@ function createApp() {
   });
   
   // Get admin users
-  expressApp.get('/api/admin/users', adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/users', adminMiddleware, async (req: any, res) => {
     try {
-      console.log(`[ADMIN] Users request from user ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[ADMIN] Users request from user ${userId}`);
       
       const result = await pool.query('SELECT id, username, email, is_admin, is_premium, is_banned, created_at, last_login FROM users ORDER BY username');
       
@@ -790,9 +895,10 @@ function createApp() {
   });
   
   // Get admin stats
-  expressApp.get('/api/admin/stats', adminMiddleware, async (req, res) => {
+  expressApp.get('/api/admin/stats', adminMiddleware, async (req: any, res) => {
     try {
-      console.log(`[ADMIN] Stats request from user ${req.user.id}`);
+      const userId = req.user?.id;
+      console.log(`[ADMIN] Stats request from user ${userId}`);
       
       const [usersResult, modsResult, purchasesResult] = await Promise.all([
         pool.query('SELECT COUNT(*) FROM users'),
