@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Pool } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 
 // Type definitions
 interface AuthenticatedRequest extends express.Request {
@@ -22,8 +22,13 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Database connection
-const pool = new Pool({ connectionString: DATABASE_URL });
+// Database connection using standard pg instead of Neon serverless
+const pool = new Pool({ 
+  connectionString: DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 // JWT Helper functions
 function generateToken(user: any): string {
