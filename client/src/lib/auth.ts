@@ -46,6 +46,13 @@ export async function checkAuth() {
     if (response.ok) {
       const data = await response.json();
       console.log("Auth status:", data.success ? `Authenticated as ${data.user.username}` : "Not authenticated");
+      
+      // If we have session auth but no token, generate one
+      if (data.success && data.user && !token) {
+        console.log("User has session but no token, generating token...");
+        await generateTokenFromSession();
+      }
+      
       return data.success ? data.user : null;
     } else {
       console.log("Auth status: Not authenticated");
@@ -59,6 +66,35 @@ export async function checkAuth() {
     console.error("Auth check error:", error);
     return null;
   }
+}
+
+// Helper function to generate JWT token from existing session
+async function generateTokenFromSession() {
+  try {
+    console.log("Attempting to generate token from session...");
+    
+    const response = await fetch("/api/auth/generate-token", {
+      method: "POST",
+      credentials: 'include',
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.token) {
+        console.log("Token generated successfully from session");
+        storeToken(data.token);
+        return data.token;
+      }
+    } else {
+      console.log("Failed to generate token from session, status:", response.status);
+    }
+  } catch (error) {
+    console.error("Error generating token from session:", error);
+  }
+  return null;
 }
 
 // Helper function to get cookie value

@@ -779,6 +779,42 @@ function createApp() {
     }
   });
   
+  // Generate JWT token from existing session
+  expressApp.post('/api/auth/generate-token', async (req, res) => {
+    try {
+      console.log('[AUTH] Generate token request');
+      
+      // Check if user has valid session (using passport/session auth)
+      if (!req.user || !req.isAuthenticated || !req.isAuthenticated()) {
+        console.log('[AUTH] No valid session found for token generation');
+        return res.status(401).json({
+          success: false,
+          message: 'No valid session found'
+        });
+      }
+      
+      console.log('[AUTH] Valid session found for user:', req.user.username);
+      
+      // Generate JWT token from session user
+      const token = generateToken(req.user);
+      
+      console.log('[AUTH] JWT token generated successfully from session');
+      
+      res.json({
+        success: true,
+        message: 'Token generated successfully',
+        token: token
+      });
+      
+    } catch (error: any) {
+      console.error('[AUTH] Error generating token from session:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate token'
+      });
+    }
+  });
+
   // Get current user
   expressApp.get('/api/auth/user', authMiddleware, async (req: any, res) => {
     try {
