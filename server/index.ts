@@ -128,9 +128,26 @@ if (process.env.NODE_ENV !== 'production') {
       await setupVite(app, server);
     }
 
-    const port = 3000;
-    app.listen(port, "127.0.0.1", () => {
+    const port = process.env.PORT || 5000;
+    app.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
+      console.log(`✅ Server started successfully`);
+      console.log(`🔗 Local URL: http://localhost:${port}`);
+      console.log(`🔗 Discord auth: http://localhost:${port}/api/auth/discord`);
     });
   })();
+} else {
+  // For production, also start the server if not running in serverless mode
+  if (process.env.VERCEL !== '1') {
+    (async () => {
+      await initializeApp();
+      
+      const port = process.env.PORT || 5000;
+      app.listen(port, "0.0.0.0", () => {
+        log(`Production server serving on port ${port}`);
+        console.log(`✅ Production server started successfully`);
+        console.log(`🔗 Discord auth: https://jsdmods.com/api/auth/discord`);
+      });
+    })();
+  }
 }
