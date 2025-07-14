@@ -68,7 +68,8 @@ export function setupAuth(app: Express) {
         sameSite: 'lax'   // Improve CSRF protection
       },
       store: new PostgresStore({
-        pool: pool,
+        // Ensure compatibility with connect-pg-simple by casting the pool
+                pool: pool as any,
         createTableIfMissing: true,
         tableName: 'session'
       }),
