@@ -27,4 +27,13 @@ export default defineConfig({
     outDir: resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
