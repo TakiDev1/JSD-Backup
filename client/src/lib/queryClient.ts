@@ -23,7 +23,7 @@ export async function apiRequest(
     };
     
     // Include JWT token if available (for fallback authentication)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jsd_auth_token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -46,7 +46,7 @@ export async function apiRequest(
     if (res.status === 401 && token) {
       console.log("Token appears to be invalid or expired, removing it");
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('jsd_auth_token');
+        localStorage.removeItem('auth_token');
       }
     }
     
@@ -81,8 +81,20 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Build headers for hybrid authentication (session + token)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    // Include JWT token if available (for fallback authentication)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(queryKey[0] as string, {
       credentials: 'include', // Include cookies for session authentication
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

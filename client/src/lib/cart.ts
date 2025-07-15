@@ -8,6 +8,30 @@ export interface CartItem {
   mod?: Mod;
 }
 
+// Helper function to get stored token
+function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem("auth_token");
+  } catch (error) {
+    console.error("Error getting stored token:", error);
+    return null;
+  }
+}
+
+// Helper function to create authenticated headers
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  const token = getStoredToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
+}
+
 /**
  * Fetches the current user's cart items from the server
  */
@@ -17,9 +41,7 @@ export async function getCart(): Promise<CartItem[]> {
     
     const response = await fetch("/api/cart", {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       credentials: 'include'
     });
     
@@ -66,9 +88,7 @@ export async function addToCart(modId: number): Promise<CartItem | null> {
     
     const response = await fetch("/api/cart", {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       credentials: 'include',
       body: JSON.stringify({ modId: numericModId })
     });
@@ -104,9 +124,7 @@ export async function removeFromCart(modId: number): Promise<void> {
     
     const response = await fetch(`/api/cart/${modId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       credentials: 'include'
     });
     
@@ -132,9 +150,7 @@ export async function clearCart(): Promise<void> {
     
     const response = await fetch("/api/cart", {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       credentials: 'include'
     });
     
@@ -171,9 +187,7 @@ export async function completePurchase(transactionId: string): Promise<void> {
     
     const response = await fetch("/api/purchase/complete", {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       credentials: 'include',
       body: JSON.stringify({ transactionId })
     });
