@@ -30,7 +30,7 @@ export function DiscordCallbackHandler() {
         console.log('Discord authentication successful, storing token...');
         
         // Store the token in localStorage
-        localStorage.setItem('jsd_auth_token', token);
+        localStorage.setItem('auth_token', token);
         
         // Refresh the authentication state
         await refreshUser();

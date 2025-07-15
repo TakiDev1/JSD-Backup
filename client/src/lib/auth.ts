@@ -45,15 +45,15 @@ export async function checkAuth() {
     
     if (response.ok) {
       const data = await response.json();
-      console.log("Auth status:", data.success ? `Authenticated as ${data.user.username}` : "Not authenticated");
+      console.log("Auth status:", data.username ? `Authenticated as ${data.username}` : "Not authenticated");
       
       // If we have session auth but no token, generate one
-      if (data.success && data.user && !token) {
+      if (data.username && !token) {
         console.log("User has session but no token, generating token...");
         await generateTokenFromSession();
       }
       
-      return data.success ? data.user : null;
+      return data.username ? data : null;
     } else {
       console.log("Auth status: Not authenticated");
       // If we have a token but it's invalid, remove it

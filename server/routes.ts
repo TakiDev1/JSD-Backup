@@ -108,7 +108,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req, res) => {
         console.log("✅ Discord callback successful, user authenticated:", req.isAuthenticated());
         console.log("👤 User data:", req.user);
-        res.redirect("/?discord_success=true");
+        
+        // Generate JWT token for the authenticated user
+        if (req.user) {
+          const token = generateJWT(req.user);
+          console.log("🔑 Generated JWT token for Discord user:", (req.user as any).username);
+          
+          // Redirect with token as query parameter so client can store it
+          res.redirect(`/?discord_success=true&token=${encodeURIComponent(token)}`);
+        } else {
+          res.redirect("/?discord_success=false&error=no_user_data");
+        }
       }
     );
   } else {
@@ -234,6 +244,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate JWT token from existing session
+  app.post("/api/auth/generate-token", auth.isAuthenticated, (req, res) => {
+    try {
+      if (req.user) {
+        const token = generateJWT(req.user);
+        res.json({ success: true, token });
+      } else {
+        res.status(401).json({ success: false, message: "Not authenticated" });
+      }
+    } catch (error) {
+      console.error("Error generating token:", error);
+      res.status(500).json({ success: false, message: "Failed to generate token" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/user", auth.isAuthenticated, (req, res) => {
     try {
@@ -2005,21 +2030,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update settings one by one
       await storage.setSiteSetting("siteName", siteName);
-      await storage.setSiteSetting("siteDescription", siteDescription);
-      await storage.setSiteSetting("contactEmail", contactEmail);
-      await storage.setSiteSetting("maintenanceMode", maintenanceMode.toString());
-      await storage.setSiteSetting("maintenanceMessage", maintenanceMessage);
-      
-      // Log admin activity
-      await storage.logAdminActivity({
-        userId: (req.user as any).id,
-        action: "Update General Settings",
-        details: `Updated general site settings`,
-        ipAddress: req.ip
-      });
-      
-      res.status(200).json({ success: true });
-    } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
