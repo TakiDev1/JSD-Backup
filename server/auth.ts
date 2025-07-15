@@ -65,13 +65,15 @@ export function setupAuth(app: Express) {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for longer sessions
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,   // Prevent client-side JS from reading
-        sameSite: 'lax'   // Improve CSRF protection
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'   // Improve CSRF protection
       },
       store: new PostgresStore({
-        // Ensure compatibility with connect-pg-simple by casting the pool
-                pool: pool as any,
+        pool: pool as any,
         createTableIfMissing: true,
-        tableName: 'session'
+        tableName: 'session',
+        errorLog: (err: any) => {
+          console.error('Session store error:', err);
+        }
       }),
       secret: sessionSecret,
       resave: false,      // Don't save session if unmodified
@@ -87,11 +89,13 @@ export function setupAuth(app: Express) {
 
   // Serialize/deserialize user
   passport.serializeUser((user: any, done) => {
+    console.log('Serializing user:', user.id);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log('Deserializing user:', id);
       const user = await storage.getUser(id);
       // Convert null to undefined for TypeScript compatibility
       if (user) {
@@ -109,8 +113,10 @@ export function setupAuth(app: Express) {
           lastLogin: user.lastLogin ?? undefined,
           isBanned: user.isBanned ?? undefined
         };
+        console.log('User deserialized successfully:', convertedUser.username);
         done(null, convertedUser);
       } else {
+        console.log('User not found during deserialization:', id);
         done(null, false);
       }
     } catch (err) {
@@ -275,16 +281,29 @@ export function setupAuth(app: Express) {
   // Authentication middleware
   return {
     isAuthenticated: (req: any, res: any, next: any) => {
+      console.log('Checking authentication for:', req.path);
+      console.log('Session ID:', req.sessionID);
+      console.log('Is authenticated:', req.isAuthenticated?.());
+      console.log('User:', req.user?.username);
+      
       if (req.isAuthenticated()) {
         return next();
       }
+      
+      console.log('Authentication failed for:', req.path);
       res.status(401).json({ message: 'Unauthorized' });
     },
     
     isAdmin: (req: any, res: any, next: any) => {
+      console.log('Checking admin access for:', req.path);
+      console.log('User:', req.user?.username);
+      console.log('Is admin:', req.user?.isAdmin || req.user?.is_admin);
+      
       if (req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
         return next();
       }
+      
+      console.log('Admin access denied for:', req.path);
       res.status(403).json({ message: 'Forbidden' });
     }
   };

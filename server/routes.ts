@@ -227,15 +227,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get current user
   app.get("/api/auth/user", (req, res) => {
     try {
+      console.log('[AUTH] /api/auth/user endpoint hit');
+      console.log('[AUTH] Session ID:', req.sessionID);
+      console.log('[AUTH] Is authenticated:', req.isAuthenticated?.());
+      console.log('[AUTH] User in session:', req.user?.username);
+      
       if (req.isAuthenticated() && req.user) {
         const user = { ...req.user };
         
         // Don't send sensitive information to the client
         delete (user as any).password;
+        console.log('[AUTH] Returning authenticated user:', user.username);
         res.json(user);
       } else {
+        console.log('[AUTH] No authenticated user found');
         res.status(401).json({ message: "Not authenticated" });
       }
     } catch (error) {
