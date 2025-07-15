@@ -7,19 +7,19 @@ import { apiRequest } from "./queryClient";
 // Helper function to get stored token
 function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('jsd_auth_token');
+  return localStorage.getItem('auth_token');
 }
 
 // Helper function to store token
 function storeToken(token: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('jsd_auth_token', token);
+  localStorage.setItem('auth_token', token);
 }
 
 // Helper function to remove token
 function removeToken(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem('jsd_auth_token');
+  localStorage.removeItem('auth_token');
 }
 
 // Check if the user is logged in

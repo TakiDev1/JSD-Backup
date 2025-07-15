@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { mods, userRoles, roles, permissions, rolePermissions } from "@shared/schema";
-import { setupAuth, hashPassword, comparePasswords } from "./auth";
+import { setupAuth, hashPassword, comparePasswords, generateJWT } from "./auth";
 import { stripe, createPaymentIntent, getOrCreateSubscription, handleWebhookEvent } from "./stripe";
 import { notifyModUpdateToAllOwners } from "./notifications";
 import { z } from "zod";
@@ -219,7 +219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userWithoutPassword = { ...convertedUser };
         delete (userWithoutPassword as any).password;
         
-        res.json({ success: true, user: userWithoutPassword });
+        // Generate JWT token
+        const token = generateJWT(convertedUser);
+        
+        res.json({ 
+          success: true, 
+          user: userWithoutPassword,
+          token: token 
+        });
       });
     } catch (error: any) {
       console.error('Login error:', error);
@@ -228,14 +235,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get current user
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/user", auth.isAuthenticated, (req, res) => {
     try {
       console.log('[AUTH] /api/auth/user endpoint hit');
       console.log('[AUTH] Session ID:', req.sessionID);
       console.log('[AUTH] Is authenticated:', req.isAuthenticated?.());
       console.log('[AUTH] User in session:', req.user?.username);
       
-      if (req.isAuthenticated() && req.user) {
+      if (req.user) {
         const user = { ...req.user };
         
         // Don't send sensitive information to the client
@@ -253,11 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user permissions
-  app.get("/api/auth/user/permissions", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
+  app.get("/api/auth/user/permissions", auth.isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser((req.user as any).id);
       if (!user) {
@@ -397,8 +400,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error("Error saving admin session:", saveErr);
           }
           console.log("Admin session saved successfully, user authenticated:", req.isAuthenticated());
+          
+          // Generate JWT token
+          const token = generateJWT(convertedUser);
+          
           // Return the user object directly as this will be the authenticated user session
-          res.json({ success: true, user: userWithoutPassword });
+          res.json({ 
+            success: true, 
+            user: userWithoutPassword,
+            token: token 
+          });
         });
       });
     } catch (error: any) {

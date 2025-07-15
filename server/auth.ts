@@ -5,6 +5,7 @@ import session from 'express-session';
 import { Express } from 'express';
 import crypto from 'crypto';
 import { promisify } from 'util';
+import jwt from 'jsonwebtoken';
 import { storage } from './storage';
 import connectPg from 'connect-pg-simple';
 import { pool } from './db';
@@ -54,6 +55,29 @@ const DISCORD_SCOPES = ['identify', 'email'];
 // PostgreSQL session store
 const PostgresStore = connectPg(session);
 
+// JWT helper functions
+export function generateJWT(user: any): string {
+  const payload = {
+    id: user.id,
+    username: user.username,
+    isAdmin: user.isAdmin || user.is_admin,
+    email: user.email
+  };
+  
+  const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+  return jwt.sign(payload, jwtSecret, { expiresIn: '30d' });
+}
+
+export function verifyJWT(token: string): any {
+  try {
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+    return jwt.verify(token, jwtSecret);
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return null;
+  }
+}
+
 export function setupAuth(app: Express) {
   // Setup session with enhanced security
   const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(20).toString('hex');
@@ -89,13 +113,13 @@ export function setupAuth(app: Express) {
 
   // Serialize/deserialize user
   passport.serializeUser((user: any, done) => {
-    console.log('Serializing user:', user.id);
+    console.log('Serializing user:', user.id, user.username);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log('Deserializing user:', id);
+      console.log('Deserializing user ID:', id);
       const user = await storage.getUser(id);
       // Convert null to undefined for TypeScript compatibility
       if (user) {
@@ -113,7 +137,7 @@ export function setupAuth(app: Express) {
           lastLogin: user.lastLogin ?? undefined,
           isBanned: user.isBanned ?? undefined
         };
-        console.log('User deserialized successfully:', convertedUser.username);
+        console.log('User deserialized successfully:', convertedUser.username, 'isAdmin:', convertedUser.isAdmin);
         done(null, convertedUser);
       } else {
         console.log('User not found during deserialization:', id);
@@ -281,12 +305,32 @@ export function setupAuth(app: Express) {
   // Authentication middleware
   return {
     isAuthenticated: (req: any, res: any, next: any) => {
-      console.log('Checking authentication for:', req.path);
+      console.log('=== Authentication Check ===');
+      console.log('Path:', req.path);
       console.log('Session ID:', req.sessionID);
+      console.log('Session data:', req.session);
       console.log('Is authenticated:', req.isAuthenticated?.());
       console.log('User:', req.user?.username);
+      console.log('User ID:', req.user?.id);
       
-      if (req.isAuthenticated()) {
+      // Check for JWT token in Authorization header
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const decoded = verifyJWT(token);
+        if (decoded) {
+          console.log('JWT authentication successful for user:', decoded.username);
+          req.user = decoded;
+          console.log('=== End Auth Check (JWT) ===');
+          return next();
+        } else {
+          console.log('JWT authentication failed');
+        }
+      }
+      
+      console.log('=== End Auth Check ===');
+      
+      if (req.isAuthenticated && req.isAuthenticated()) {
         return next();
       }
       
@@ -295,11 +339,29 @@ export function setupAuth(app: Express) {
     },
     
     isAdmin: (req: any, res: any, next: any) => {
-      console.log('Checking admin access for:', req.path);
+      console.log('=== Admin Check ===');
+      console.log('Path:', req.path);
       console.log('User:', req.user?.username);
       console.log('Is admin:', req.user?.isAdmin || req.user?.is_admin);
       
-      if (req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
+      // Check for JWT token in Authorization header
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const decoded = verifyJWT(token);
+        if (decoded && (decoded.isAdmin || decoded.is_admin)) {
+          console.log('JWT admin authentication successful for user:', decoded.username);
+          req.user = decoded;
+          console.log('=== End Admin Check (JWT) ===');
+          return next();
+        } else {
+          console.log('JWT admin authentication failed');
+        }
+      }
+      
+      console.log('=== End Admin Check ===');
+      
+      if (req.isAuthenticated && req.isAuthenticated() && (req.user.isAdmin || req.user.is_admin)) {
         return next();
       }
       
